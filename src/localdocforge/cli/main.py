@@ -1,0 +1,563 @@
+"""``ldf`` — the LocalDocForge CLI.
+
+Exit codes (stable, documented in docs/CLI.md):
+    0  success
+    1  operation failed
+    2  usage error (bad arguments)
+    3  no engine available for the operation
+    4  output validation failed (nothing was written)
+    5  output already exists and collision policy is 'fail'
+    130  cancelled
+"""
+
+from __future__ import annotations
+
+import glob as _glob
+import json
+import sys
+from pathlib import Path
+from typing import Annotated
+
+import typer
+
+from localdocforge import __version__
+from localdocforge.config.settings import Settings, set_settings
+from localdocforge.domain.models import ConversionReport
+from localdocforge.domain.pages import PageRange, PageRangeError
+from localdocforge.engines.base import EngineUnavailableError
+from localdocforge.engines.registry import default_registry
+from localdocforge.jobs.workspace import (
+    CollisionPolicy,
+    OutputCollisionError,
+    cleanup_stale_workspaces,
+)
+from localdocforge.operations import images as image_ops
+from localdocforge.operations import organize as organize_ops
+from localdocforge.pipelines.runner import PipelineError
+from localdocforge.reporting.writers import write_report_files
+
+EXIT_OK = 0
+EXIT_FAILED = 1
+EXIT_USAGE = 2
+EXIT_NO_ENGINE = 3
+EXIT_VALIDATION = 4
+EXIT_COLLISION = 5
+EXIT_CANCELLED = 130
+
+app = typer.Typer(
+    name="ldf",
+    help="LocalDocForge: private, fully local PDF and document tools.",
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    pretty_exceptions_show_locals=False,
+)
+
+_state: dict[str, object] = {"json": False, "quiet": False, "report_dir": None}
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"LocalDocForge {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit machine-readable JSON on stdout.")
+    ] = False,
+    quiet: Annotated[
+        bool, typer.Option("--quiet", "-q", help="Suppress the report summary.")
+    ] = False,
+    strict_offline: Annotated[
+        bool,
+        typer.Option(
+            "--strict-offline",
+            help="Refuse any network use. (This build contains no network code paths; "
+            "the flag pins that guarantee and is recorded in reports.)",
+        ),
+    ] = False,
+    report_dir: Annotated[
+        Path | None,
+        typer.Option("--report-dir", help="Also write JSON + text reports into this directory."),
+    ] = None,
+    version: Annotated[
+        bool | None,
+        typer.Option("--version", callback=_version_callback, is_eager=True),
+    ] = None,
+) -> None:
+    _state["json"] = json_output
+    _state["quiet"] = quiet
+    _state["report_dir"] = report_dir
+    settings = Settings(strict_offline=strict_offline)
+    set_settings(settings)
+    # Sweep leftovers from interrupted sessions; cheap and safe.
+    cleanup_stale_workspaces(settings.jobs_root)
+
+
+def _emit_report(report: ConversionReport, *, failed: bool = False) -> None:
+    if _state["report_dir"] is not None:
+        basename = f"{report.operation}-{report.job_id}"
+        write_report_files(report, Path(str(_state["report_dir"])), basename)
+    if _state["json"]:
+        typer.echo(report.model_dump_json(indent=2))
+    elif not _state["quiet"] or failed:
+        typer.echo(report.to_human())
+
+
+def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
+    """Execute an operation function, handling errors and report output."""
+    try:
+        report = operation_fn(*args, **kwargs)
+    except organize_ops.EncryptedInputError as exc:
+        if password_retry and sys.stdin.isatty():
+            password = typer.prompt("PDF password", hide_input=True)
+            options = kwargs.get("options")
+            if options is not None:
+                options.password = password
+                _run(operation_fn, *args, password_retry=False, **kwargs)
+                return
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_FAILED) from exc
+    except EngineUnavailableError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_NO_ENGINE) from exc
+    except PageRangeError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_USAGE) from exc
+    except PipelineError as exc:
+        if exc.report is not None:
+            _emit_report(exc.report, failed=True)
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        cause = exc.__cause__
+        if isinstance(cause, OutputCollisionError):
+            raise typer.Exit(EXIT_COLLISION) from exc
+        report = exc.report
+        if report is not None and report.status == "cancelled":
+            raise typer.Exit(EXIT_CANCELLED) from exc
+        if report is not None and report.validation is not None and not report.validation.passed:
+            raise typer.Exit(EXIT_VALIDATION) from exc
+        raise typer.Exit(EXIT_FAILED) from exc
+    else:
+        _emit_report(report)
+        for warning in report.security_warnings:
+            typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
+
+
+def _parse_range(value: str | None, *, what: str = "--pages") -> PageRange | None:
+    if value is None:
+        return None
+    try:
+        return PageRange(spec=value)
+    except (PageRangeError, ValueError) as exc:
+        typer.secho(f"Error in {what}: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_USAGE) from exc
+
+
+def _expand_inputs(raw: list[Path]) -> list[Path]:
+    """Expand glob patterns ourselves — PowerShell does not."""
+    expanded: list[Path] = []
+    for item in raw:
+        text = str(item)
+        if any(char in text for char in "*?["):
+            matches = sorted(_glob.glob(text))
+            if not matches:
+                typer.secho(f"Error: no files match {text!r}", fg=typer.colors.RED, err=True)
+                raise typer.Exit(EXIT_USAGE)
+            expanded.extend(Path(match) for match in matches)
+        else:
+            expanded.append(item)
+    return expanded
+
+
+Collision = Annotated[
+    CollisionPolicy,
+    typer.Option("--collision", help="What to do when the output already exists."),
+]
+
+
+# --------------------------------------------------------------------------- doctor
+
+
+@app.command()
+def doctor() -> None:
+    """Show engine availability and honest capability status."""
+    registry = default_registry()
+    infos = registry.all_infos()
+    capabilities = registry.capabilities()
+    if _state["json"]:
+        payload = {
+            "version": __version__,
+            "engines": [info.model_dump() for info in infos],
+            "capabilities": [cap.model_dump() for cap in capabilities],
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+    typer.secho(f"LocalDocForge {__version__} — diagnostics", bold=True)
+    typer.echo("\nEngines:")
+    for info in infos:
+        mark = "✓" if info.available else "✗"
+        color = typer.colors.GREEN if info.available else typer.colors.RED
+        line = f"  {mark} {info.name:<12} {info.version or '—'}"
+        if info.notes:
+            line += f"  ({info.notes})"
+        typer.secho(line, fg=color)
+        if not info.available and info.install_hint:
+            typer.echo(f"      install: {info.install_hint}")
+    typer.echo("\nCapabilities:")
+    by_category: dict[str, list] = {}
+    for capability in capabilities:
+        by_category.setdefault(capability.category, []).append(capability)
+    for category, caps in by_category.items():
+        typer.echo(f"  {category}:")
+        for capability in caps:
+            mark = "✓" if capability.available else "·"
+            color = typer.colors.GREEN if capability.available else typer.colors.BRIGHT_BLACK
+            suffix = ""
+            if not capability.available and capability.missing_requirements:
+                suffix = f"  [{'; '.join(capability.missing_requirements)}]"
+            typer.secho(f"    {mark} {capability.title}{suffix}", fg=color)
+    typer.echo(
+        "\nPrivacy: all processing is local. This build contains no telemetry, "
+        "no update checks, and no remote-resource loading."
+    )
+
+
+# --------------------------------------------------------------------------- web
+
+_LOOPBACK_BIND_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+
+def bind_allowed(host: str, allow_nonlocal: bool) -> bool:
+    """Loopback is always fine; anything else needs the explicit opt-in flag."""
+    return host in _LOOPBACK_BIND_HOSTS or allow_nonlocal
+
+
+@app.command()
+def web(
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8477,
+    allow_nonlocal: Annotated[
+        bool,
+        typer.Option(
+            "--allow-nonlocal",
+            help="DANGEROUS: bind beyond loopback. Anyone who can reach the port "
+            "can read and process files through this server.",
+        ),
+    ] = False,
+) -> None:
+    """Serve the local web API (and UI shell) on localhost."""
+    import secrets
+
+    import uvicorn
+
+    from localdocforge.api.app import create_app
+    from localdocforge.config.settings import get_settings
+
+    if not bind_allowed(host, allow_nonlocal):
+        typer.secho(
+            f"Refusing to bind to {host!r}. LocalDocForge serves loopback only; "
+            f"pass --allow-nonlocal if you truly accept the exposure.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    if allow_nonlocal and host not in _LOOPBACK_BIND_HOSTS:
+        typer.secho(
+            "WARNING: binding beyond loopback. Every document on this machine that "
+            "this server can read is now reachable by whoever can reach the port.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    token = secrets.token_urlsafe(32)
+    typer.echo(f"LocalDocForge web: http://{host}:{port}/")
+    typer.echo(f"API token (send as X-LDF-Token header): {token}")
+    typer.echo("Press Ctrl+C to stop. Nothing leaves this machine.")
+    uvicorn.run(
+        create_app(get_settings(), token=token), host=host, port=port, log_level="warning"
+    )
+
+
+# --------------------------------------------------------------------------- inspect
+
+
+@app.command()
+def inspect(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+) -> None:
+    """Read-only structural inventory of a PDF."""
+    try:
+        info = organize_ops.inspect_pdf(input_file)
+    except organize_ops.EncryptedInputError:
+        if sys.stdin.isatty():
+            password = typer.prompt("PDF password", hide_input=True)
+            try:
+                info = organize_ops.inspect_pdf(input_file, password=password)
+            except Exception as exc:  # wrong password or damaged file
+                typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+                raise typer.Exit(EXIT_FAILED) from exc
+        else:
+            typer.secho(
+                "Error: file is encrypted; run interactively to enter the password.",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(EXIT_FAILED) from None
+    except Exception as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_FAILED) from exc
+    if _state["json"]:
+        typer.echo(json.dumps(info, indent=2, ensure_ascii=False))
+        return
+    for key, value in info.items():
+        typer.echo(f"{key:>14}: {value}")
+
+
+# --------------------------------------------------------------------------- organize
+
+
+@app.command()
+def merge(
+    inputs: Annotated[
+        list[str],
+        typer.Argument(help="Input PDFs, in order. Append ::RANGE to select pages, "
+                            "e.g. report.pdf::1-5"),
+    ],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    pages: Annotated[
+        list[str] | None,
+        typer.Option("--pages", help="Page range for the input at the same position; "
+                                     "repeat once per input."),
+    ] = None,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Merge PDFs (whole files or selected page ranges) into one."""
+    paths: list[Path] = []
+    ranges: list[PageRange | None] = []
+    for item in inputs:
+        if "::" in item:
+            path_text, _, range_text = item.rpartition("::")
+            paths.append(Path(path_text))
+            ranges.append(_parse_range(range_text, what=f"range for {path_text}"))
+        else:
+            paths.append(Path(item))
+            ranges.append(None)
+    if pages:
+        if len(pages) != len(paths):
+            typer.secho(
+                f"Error: got {len(paths)} inputs but {len(pages)} --pages options; "
+                f"repeat --pages once per input (or use file.pdf::RANGE).",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(EXIT_USAGE)
+        ranges = [_parse_range(page_spec) for page_spec in pages]
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.merge_pdfs,
+        _expand_inputs(paths),
+        output,
+        page_ranges=ranges,
+        options=options,
+    )
+
+
+@app.command()
+def split(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
+    pages: Annotated[
+        str | None,
+        typer.Option("--pages", help='One output per comma token, e.g. "1-3,7,10-end".'),
+    ] = None,
+    every: Annotated[
+        int | None,
+        typer.Option("--every", min=1, help="Split into chunks of N pages."),
+    ] = None,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Split a PDF into ranges, every-N chunks, or single pages (default)."""
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.split_pdf,
+        input_file,
+        output_dir,
+        pages=_parse_range(pages),
+        every=every,
+        options=options,
+    )
+
+
+@app.command("remove-pages")
+def remove_pages_cmd(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    pages: Annotated[str, typer.Option("--pages", help='Pages to remove, e.g. "2,5-7".')],
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Remove the selected pages."""
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.remove_pages,
+        input_file,
+        output,
+        _parse_range(pages),
+        options=options,
+    )
+
+
+@app.command("extract-pages")
+def extract_pages_cmd(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    pages: Annotated[str, typer.Option("--pages", help='Pages to extract, e.g. "1-3,10".')],
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Extract the selected pages into a new PDF."""
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.extract_pages,
+        input_file,
+        output,
+        _parse_range(pages),
+        options=options,
+    )
+
+
+@app.command()
+def organize(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    order: Annotated[str, typer.Option("--order", help='New page order, e.g. "3,1,2,4-end".')],
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Reorder, duplicate, or drop pages using an explicit order."""
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.organize_pdf,
+        input_file,
+        output,
+        _parse_range(order, what="--order"),
+        options=options,
+    )
+
+
+@app.command()
+def rotate(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    degrees: Annotated[int, typer.Option("--degrees", help="90, 180, 270 (or negative).")],
+    pages: Annotated[str | None, typer.Option("--pages")] = None,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Rotate the selected pages (default: all) by a multiple of 90 degrees."""
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.rotate_pages,
+        input_file,
+        output,
+        degrees=degrees,
+        pages=_parse_range(pages),
+        options=options,
+    )
+
+
+@app.command()
+def crop(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    box: Annotated[
+        str,
+        typer.Option("--box", help='Visible area "x0,y0,x1,y1" in PDF points, origin bottom-left.'),
+    ],
+    pages: Annotated[str | None, typer.Option("--pages")] = None,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Crop pages. NOT redaction: hidden content remains inside the file."""
+    try:
+        parts = [float(part) for part in box.split(",")]
+        if len(parts) != 4:
+            raise ValueError
+    except ValueError:
+        typer.secho(
+            'Error: --box must be four numbers "x0,y0,x1,y1" in points.',
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE) from None
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(
+        organize_ops.crop_pages,
+        input_file,
+        output,
+        box=(parts[0], parts[1], parts[2], parts[3]),
+        pages=_parse_range(pages),
+        options=options,
+    )
+
+
+# --------------------------------------------------------------------------- images
+
+
+@app.command("images-to-pdf")
+def images_to_pdf_cmd(
+    inputs: Annotated[list[Path], typer.Argument(help="Image files (globs allowed).")],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    page_size: Annotated[
+        str, typer.Option("--page-size", help="A4, Letter, Legal, image, or WxH[mm|cm|in|pt].")
+    ] = "A4",
+    fit: Annotated[str, typer.Option("--fit", help="fit | stretch | center")] = "fit",
+    margin: Annotated[float, typer.Option("--margin", help="Margin in points.")] = 24.0,
+    background: Annotated[str, typer.Option("--background")] = "white",
+    dpi: Annotated[int, typer.Option("--dpi", min=36, max=600)] = 200,
+    quality: Annotated[int, typer.Option("--quality", min=1, max=100)] = 95,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Combine images (JPG/PNG/TIFF/BMP/WebP) into a single PDF."""
+    options = image_ops.ImagesToPdfOptions(
+        page_size=page_size,
+        fit=fit,
+        margin_pt=margin,
+        background=background,
+        dpi=dpi,
+        jpeg_quality=quality,
+        collision=collision,
+    )
+    _run(image_ops.images_to_pdf, _expand_inputs(inputs), output, options=options)
+
+
+@app.command("pdf-to-images")
+def pdf_to_images_cmd(
+    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
+    image_format: Annotated[str, typer.Option("--format")] = "png",
+    dpi: Annotated[int, typer.Option("--dpi", min=18, max=1200)] = 150,
+    pages: Annotated[str | None, typer.Option("--pages")] = None,
+    quality: Annotated[int, typer.Option("--quality", min=1, max=100)] = 90,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Render PDF pages to PNG/JPEG/WebP/TIFF images."""
+    options = image_ops.PdfToImagesOptions(
+        image_format=image_format,
+        dpi=dpi,
+        pages=_parse_range(pages),
+        jpeg_quality=quality,
+        collision=collision,
+    )
+    _run(image_ops.pdf_to_images, input_file, output_dir, options=options)
+
+
+def app_entry() -> None:  # console_scripts entry point
+    # Legacy Windows consoles default to a narrow codepage; our output contains
+    # ✓/⚠ marks and Unicode filenames. Never crash over display encoding.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except (OSError, ValueError):
+                pass
+    app()
+
+
+if __name__ == "__main__":
+    app_entry()

@@ -1,29 +1,118 @@
-# LocalDocForge Specification Baseline
+# LocalDocForge
 
-This initial snapshot records the LocalDocForge implementation specification and the review workflow used to validate the completed system.
+A privacy-first, fully local document-processing workbench: a typed Python
+core library and a scriptable CLI (localhost web UI in progress) for working
+with PDFs and images **without any file, hash, or metadata ever leaving your
+machine**.
 
-## Recommended engineering order
+> **Project status: early alpha.** Phase 0 (foundation) and the core of
+> Phase 1 (structural PDF tools + image conversion) are implemented and
+> tested. Everything else in the roadmap is *not yet available* and is
+> honestly reported as such by `ldf doctor`. See `docs/FEATURE_MATRIX.md`.
 
-1. Initialize Git and create a specification baseline commit.
-2. Implement the specification in the working tree.
-3. Run focused and full verification before checkpointing the implementation.
-4. Have an independent reviewer audit the checkpoint against the specification, security requirements, and executed evidence.
+## Privacy guarantees (and their limits)
 
-## Initial setup in PowerShell
+- All processing is local. This build contains **no network code paths**: no
+  telemetry, no update checks, no remote fonts/assets, no cloud conversion.
+- `--strict-offline` records the pledge in settings and reports, and will
+  hard-gate any future optional engine that could touch a network.
+- Reports never include document text, passwords, or redacted content.
+- Limits, honestly stated: deleting temp files on SSDs is best-effort, not
+  forensic erasure; in-process PDF parsers execute with your user privileges
+  (see `docs/THREAT_MODEL.md` for the full model).
+
+## What works today (verified by the test suite)
+
+| Area | Capabilities |
+|---|---|
+| Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
+| Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
+| Convert | images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF at any DPI) |
+| Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
+| Safety net | every output is reopened and render-checked before it is published atomically; sources are never modified |
+
+## Quick start
 
 ```powershell
-git init
-git add .
-git commit -m "Add LocalDocForge specification baseline"
+# Windows (PowerShell) — from the repository root
+py -3.12 -m venv .venv           # 3.12+ (this repo is developed on 3.14)
+.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.venv\Scripts\python.exe -m pip install -e . --no-deps
+
+.venv\Scripts\ldf.exe doctor     # what can this machine do right now?
 ```
 
-If Git asks for identity configuration, set your normal `user.name` and `user.email`, then retry the commit.
+```bash
+# macOS/Linux
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-lock.txt
+.venv/bin/pip install -e . --no-deps
+.venv/bin/ldf doctor
+```
 
-## Prepare for independent review
+Or run `scripts/bootstrap.ps1` / `scripts/bootstrap.sh`.
+
+## CLI examples (all verified in this repository)
 
 ```powershell
-git add -A
-git commit -m "Checkpoint LocalDocForge implementation"
+ldf merge a.pdf b.pdf -o merged.pdf
+ldf merge a.pdf --pages 1-5 b.pdf --pages 2-end -o merged.pdf
+ldf split input.pdf -d parts/ --every 10
+ldf remove-pages input.pdf --pages "2,5-7" -o out.pdf
+ldf extract-pages input.pdf --pages "1-3,10" -o out.pdf
+ldf organize input.pdf --order "3,1,2,4-end" -o out.pdf
+ldf rotate input.pdf --degrees 90 --pages odd -o out.pdf
+ldf crop input.pdf --box "50,50,400,500" -o out.pdf    # warns: NOT redaction
+ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
+ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
+ldf inspect input.pdf
+ldf --json doctor
+ldf web        # localhost-only API + honest UI shell; prints the session token
 ```
 
-Review the checkpoint independently against the specification, security requirements, and verification evidence. Do not claim completion without executing the required tests.
+The `ldf web` server binds to 127.0.0.1 only, authenticates every API call
+with a per-session token header, sends CSP/hardening headers, and keeps job
+history in memory only. Endpoint reference: `docs/CLI.md`.
+
+Page ranges: `1-5,9,12-end`, `odd`, `even`, `reverse`, `last`, `last-5`
+(the last five pages). Full grammar and exit codes: `docs/CLI.md`.
+
+Encrypted PDFs prompt for the password interactively (hidden input);
+passwords are never taken as command-line arguments and never logged.
+
+## Honesty rules baked into the product
+
+- A capability shows as available only when its implementation **and** a live
+  engine probe both pass — placeholder buttons do not exist.
+- Cropping, whiteout, and covering content are never called redaction.
+- Conversions report exactly which document features could not be preserved
+  (`fidelity_warnings` with stable codes; see `docs/CONVERSION_FIDELITY.md`).
+- A file will only ever be labelled PDF/A-compliant after an authoritative
+  local validator passes it (validator integration is a later phase — today
+  nothing is labelled PDF/A).
+
+## Development
+
+```powershell
+.venv\Scripts\python.exe -m pytest tests -q     # 186 tests
+.venv\Scripts\python.exe -m ruff check src tests
+```
+
+Test fixtures are synthetic and generated by
+`tests/fixtures/make_fixtures.py` — no third-party documents.
+
+Repository map: `src/localdocforge/` (domain, security, jobs, engines,
+pipelines, operations, validation, reporting, config, cli) · `tests/`
+(unit, integration, security, fixtures) · `docs/` (architecture, threat
+model, engine decisions, feature matrix, status).
+
+## Roadmap
+
+Compression, repair, OCR, Office↔PDF, PDF/A, PDF↔Markdown, editor, forms,
+encryption, redaction, signatures, compare, scanner acquisition, localhost
+web UI — phased plan in `docs/IMPLEMENTATION_PLAN.md`, current truth in
+`docs/STATUS.md`.
+
+## License
+
+MIT. Dependency and external-engine licensing: `docs/LICENSING.md`.

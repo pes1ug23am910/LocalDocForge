@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Generated test fixtures (recreated by tests/fixtures/make_fixtures.py)
+tests/fixtures/generated/
+
+# Node (frontend, later phases)
+node_modules/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

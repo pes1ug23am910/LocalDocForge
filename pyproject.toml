@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localdocforge"
+version = "0.1.0"
+description = "Privacy-first, fully local document-processing workbench: core library, CLI, and localhost web UI."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "LocalDocForge contributors" }]
+keywords = ["pdf", "local", "privacy", "document", "conversion"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business",
+]
+
+# Version floors are intentionally conservative; exact pins live in
+# requirements-lock.txt (generated from the working environment).
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "typer>=0.12",
+    "pikepdf>=9.0",
+    "pypdf>=5.0",
+    "pypdfium2>=4.30",
+    "pillow>=10.4",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "reportlab>=4.2",
+    "ruff>=0.6",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+ldf = "localdocforge.cli.main:app_entry"
+localdocforge = "localdocforge.cli.main:app_entry"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+localdocforge = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # pypdfium2 emits a benign warning about callback signatures on some builds
+    "ignore::DeprecationWarning:pypdfium2",
+    # fastapi's own testclient shim triggers this; nothing we can act on
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "S"]
+ignore = [
+    "S101", # assert use is fine in tests; kept globally simple for now
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B017"]
+# S105 false positives: page-range grammar compares a variable named `token`
+# against grammar keywords like "odd"/"even"; nothing secret involved.
+"src/localdocforge/domain/pages.py" = ["S105"]
