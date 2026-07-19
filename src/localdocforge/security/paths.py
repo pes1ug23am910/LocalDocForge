@@ -2,11 +2,34 @@
 
 from __future__ import annotations
 
+import contextlib
+import os
 from pathlib import Path
 
 
 class PathSecurityError(Exception):
     """A path escaped its allowed root or is otherwise unsafe."""
+
+
+def is_remote_path(path: Path) -> bool:
+    """Detect path forms that can trigger network filesystem traffic.
+
+    UNC/device paths are rejected lexically, before any stat/resolve call.
+    On Windows, mapped network drives are detected with ``GetDriveTypeW``.
+    """
+    raw = os.fspath(path)
+    normalized = raw.replace("/", "\\")
+    if normalized.startswith("\\\\"):
+        return True
+    if os.name == "nt":
+        drive, _tail = os.path.splitdrive(raw)
+        if len(drive) == 2 and drive[1] == ":":
+            with contextlib.suppress(AttributeError, OSError):
+                import ctypes
+
+                drive_type = ctypes.windll.kernel32.GetDriveTypeW(f"{drive}\\")  # type: ignore[attr-defined]
+                return drive_type == 4  # DRIVE_REMOTE
+    return False
 
 
 def is_within(path: Path, root: Path) -> bool:

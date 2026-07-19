@@ -28,8 +28,21 @@ class TestSanitizeFilename:
         assert result == expected_tail
         assert "/" not in result and "\\" not in result and ".." not in result
 
-    @pytest.mark.parametrize("name", ["CON", "con.txt", "PRN.pdf", "aux", "NUL.tar.gz",
-                                      "COM1", "lpt9.doc"])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "CON",
+            "con.txt",
+            "PRN.pdf",
+            "aux",
+            "NUL.tar.gz",
+            "CONIN$",
+            "CONOUT$.txt",
+            "CLOCK$",
+            "COM1",
+            "lpt9.doc",
+        ],
+    )
     def test_reserved_device_names_prefixed(self, name):
         result = sanitize_filename(name)
         assert result.startswith("_")

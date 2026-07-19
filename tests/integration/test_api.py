@@ -70,6 +70,8 @@ class TestSecurityBaseline:
         page = client.get("/").text
         assert "Not available yet" in page
         assert "OCR" in page  # unimplemented features are listed as such
+        assert "interface coverage varies" in page
+        assert "Everything below is usable" not in page
 
     def test_bind_guard(self):
         assert bind_allowed("127.0.0.1", False)
@@ -217,6 +219,65 @@ class TestJobErrors:
             files=[upload(fixtures_dir / "simple-3page.pdf")],
         )
         assert response.status_code == 422
+
+    def test_unknown_form_field_is_rejected(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/extract-pages",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data={"pages": "1", "ignored_option": "surprise"},
+        )
+        assert response.status_code == 422
+        assert "Unknown form field" in response.json()["detail"]
+
+    def test_image_api_honors_layout_and_quality_parameters(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/images-to-pdf",
+            headers=auth(),
+            files=[upload(fixtures_dir / "images" / "diagram.png")],
+            data={
+                "page_size": "64x48pt",
+                "fit": "center",
+                "margin": "2.5",
+                "background": "#00ff00",
+                "dpi": "72",
+                "quality": "41",
+            },
+        )
+        assert response.status_code == 201, response.text
+        details = response.json()["report"]["details"]
+        assert details | {
+            "page_size": "64x48pt",
+            "fit": "center",
+            "margin_pt": 2.5,
+            "background": "#00ff00",
+            "dpi": 72,
+            "jpeg_quality": 41,
+        } == details
+
+    def test_pdf_image_api_honors_webp_quality(self, client, fixtures_dir):
+        outputs = []
+        for quality in (1, 100):
+            response = client.post(
+                "/api/jobs/pdf-to-images",
+                headers=auth(),
+                files=[upload(fixtures_dir / "simple-3page.pdf")],
+                data={
+                    "format": "webp",
+                    "dpi": "72",
+                    "pages": "1",
+                    "quality": str(quality),
+                },
+            )
+            assert response.status_code == 201, response.text
+            payload = response.json()
+            assert payload["report"]["details"]["jpeg_quality"] == quality
+            outputs.append(
+                client.get(
+                    f"/api/jobs/{payload['job_id']}/outputs/0", headers=auth()
+                ).content
+            )
+        assert outputs[0] != outputs[1]
 
     def test_hostile_upload_filename_neutralized(self, client, fixtures_dir):
         response = client.post(

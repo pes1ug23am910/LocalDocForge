@@ -39,7 +39,12 @@ def render_pdf_page(
         page = pdf[page_index]
         try:
             bitmap = page.render(scale=scale)
-            return bitmap.to_pil()
+            try:
+                # PDFium-backed PIL buffers may share memory with the bitmap;
+                # copy before closing native objects and returning to callers.
+                return bitmap.to_pil().copy()
+            finally:
+                bitmap.close()
         finally:
             page.close()
     finally:
@@ -87,7 +92,11 @@ def validate_pdf(
         return ValidationResult.combine(checks)
 
     try:
-        page_count = count_pdf_pages(path, password=password)
+        import pikepdf
+
+        with pikepdf.open(path, password=password or "") as pdf:
+            page_count = len(pdf.pages)
+            syntax_issues = list(pdf.check_pdf_syntax())
         structural_ok = page_count >= 1
         checks.append(
             ValidationCheck(
@@ -104,6 +113,20 @@ def validate_pdf(
     if not structural_ok:
         return ValidationResult.combine(checks)
 
+    checks.append(
+        ValidationCheck(
+            name="pdf-syntax",
+            passed=not syntax_issues,
+            detail=(
+                "no syntax warnings"
+                if not syntax_issues
+                else f"parser reported {len(syntax_issues)} syntax warning(s)"
+            ),
+        )
+    )
+    if syntax_issues:
+        return ValidationResult.combine(checks)
+
     if expected_pages is not None:
         checks.append(
             ValidationCheck(
@@ -114,20 +137,35 @@ def validate_pdf(
         )
 
     if render_pages:
-        if render_sample_limit is None or page_count <= render_sample_limit:
+        if (
+            render_sample_limit is None
+            or render_sample_limit < 1
+            or page_count <= render_sample_limit
+        ):
             indices = list(range(page_count))
         else:
-            step = page_count / render_sample_limit
-            indices = sorted(
-                {min(int(i * step), page_count - 1) for i in range(render_sample_limit)}
-            )
+            if render_sample_limit == 1:
+                indices = [0]
+            else:
+                # Include both endpoints and distribute the remaining samples
+                # across the document. The previous floor-based calculation
+                # never rendered the final page of a long routine output.
+                indices = sorted(
+                    {
+                        round(i * (page_count - 1) / (render_sample_limit - 1))
+                        for i in range(render_sample_limit)
+                    }
+                )
         blank_pages: list[int] = []
         render_failures: list[int] = []
         for index in indices:
             try:
                 image = render_pdf_page(path, index, scale=_RENDER_SCALE, password=password)
-                if _page_is_blank(image):
-                    blank_pages.append(index + 1)
+                try:
+                    if _page_is_blank(image):
+                        blank_pages.append(index + 1)
+                finally:
+                    image.close()
             except Exception:
                 render_failures.append(index + 1)
         checks.append(

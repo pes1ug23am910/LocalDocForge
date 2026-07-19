@@ -137,6 +137,24 @@ class TestPdfToImages:
         with Image.open(files[0]) as image:
             assert image.format == "JPEG"
 
+    def test_repeated_page_selection_gets_deterministic_unique_names(
+        self, fixtures_dir, out_dir
+    ):
+        report = pdf_to_images(
+            fixtures_dir / "simple-3page.pdf",
+            out_dir,
+            options=PdfToImagesOptions(dpi=72, pages=PageRange(spec="1,1")),
+        )
+        assert report.status == ReportStatus.SUCCESS
+        files = sorted(out_dir.glob("*.png"))
+        assert [path.name for path in files] == [
+            "simple-3page-page-001-repeat-002.png",
+            "simple-3page-page-001.png",
+        ]
+        for path in files:
+            with Image.open(path) as image:
+                image.load()
+
     def test_unsupported_format_rejected(self, fixtures_dir, out_dir):
         with pytest.raises(PipelineError, match="Unsupported image format"):
             pdf_to_images(

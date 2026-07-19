@@ -21,7 +21,7 @@ from typing import Annotated
 import typer
 
 from localdocforge import __version__
-from localdocforge.config.settings import Settings, set_settings
+from localdocforge.config.settings import Settings, get_settings, set_settings
 from localdocforge.domain.models import ConversionReport
 from localdocforge.domain.pages import PageRange, PageRangeError
 from localdocforge.engines.base import EngineUnavailableError
@@ -35,6 +35,8 @@ from localdocforge.operations import images as image_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.reporting.writers import write_report_files
+from localdocforge.security.paths import is_remote_path
+from localdocforge.security.sniff import ContentTypeError
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -70,13 +72,13 @@ def main(
         bool, typer.Option("--quiet", "-q", help="Suppress the report summary.")
     ] = False,
     strict_offline: Annotated[
-        bool,
+        bool | None,
         typer.Option(
             "--strict-offline",
-            help="Refuse any network use. (This build contains no network code paths; "
-            "the flag pins that guarantee and is recorded in reports.)",
+            help="Reject recognized network filesystem paths and non-loopback serving; "
+            "this application policy is recorded in reports but is not an OS firewall.",
         ),
-    ] = False,
+    ] = None,
     report_dir: Annotated[
         Path | None,
         typer.Option("--report-dir", help="Also write JSON + text reports into this directory."),
@@ -89,7 +91,11 @@ def main(
     _state["json"] = json_output
     _state["quiet"] = quiet
     _state["report_dir"] = report_dir
-    settings = Settings(strict_offline=strict_offline)
+    # Preserve LDF_STRICT_OFFLINE when the flag was not supplied. Passing a
+    # concrete False here would incorrectly outrank the environment setting.
+    settings = Settings() if strict_offline is None else Settings(strict_offline=strict_offline)
+    if report_dir is not None and settings.strict_offline and is_remote_path(report_dir):
+        raise typer.BadParameter("strict-offline mode forbids a network report directory")
     set_settings(settings)
     # Sweep leftovers from interrupted sessions; cheap and safe.
     cleanup_stale_workspaces(settings.jobs_root)
@@ -132,6 +138,10 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
         cause = exc.__cause__
         if isinstance(cause, OutputCollisionError):
             raise typer.Exit(EXIT_COLLISION) from exc
+        if isinstance(cause, FileNotFoundError):
+            raise typer.Exit(EXIT_USAGE) from exc
+        if isinstance(cause, ContentTypeError) and str(cause).startswith("Not a file:"):
+            raise typer.Exit(EXIT_USAGE) from exc
         report = exc.report
         if report is not None and report.status == "cancelled":
             raise typer.Exit(EXIT_CANCELLED) from exc
@@ -158,6 +168,13 @@ def _expand_inputs(raw: list[Path]) -> list[Path]:
     """Expand glob patterns ourselves — PowerShell does not."""
     expanded: list[Path] = []
     for item in raw:
+        if get_settings().strict_offline and is_remote_path(item):
+            typer.secho(
+                "Error: strict-offline mode forbids network filesystem inputs.",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(EXIT_USAGE)
         text = str(item)
         if any(char in text for char in "*?["):
             matches = sorted(_glob.glob(text))
@@ -185,9 +202,12 @@ def doctor() -> None:
     registry = default_registry()
     infos = registry.all_infos()
     capabilities = registry.capabilities()
+    settings = get_settings()
     if _state["json"]:
         payload = {
             "version": __version__,
+            "strict_offline": settings.strict_offline,
+            "outbound_network_client": False,
             "engines": [info.model_dump() for info in infos],
             "capabilities": [cap.model_dump() for cap in capabilities],
         }
@@ -217,9 +237,10 @@ def doctor() -> None:
             if not capability.available and capability.missing_requirements:
                 suffix = f"  [{'; '.join(capability.missing_requirements)}]"
             typer.secho(f"    {mark} {capability.title}{suffix}", fg=color)
+    strict_state = "enabled" if settings.strict_offline else "disabled"
     typer.echo(
-        "\nPrivacy: all processing is local. This build contains no telemetry, "
-        "no update checks, and no remote-resource loading."
+        "\nPrivacy: shipped engines contain no outbound network client, telemetry, "
+        f"update check, or remote resource loader. Strict-offline mode is {strict_state}."
     )
 
 
@@ -254,10 +275,19 @@ def web(
     from localdocforge.api.app import create_app
     from localdocforge.config.settings import get_settings
 
+    settings = get_settings()
+
     if not bind_allowed(host, allow_nonlocal):
         typer.secho(
             f"Refusing to bind to {host!r}. LocalDocForge serves loopback only; "
             f"pass --allow-nonlocal if you truly accept the exposure.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    if settings.strict_offline and host not in _LOOPBACK_BIND_HOSTS:
+        typer.secho(
+            "Refusing non-loopback web access because strict-offline mode is enabled.",
             fg=typer.colors.RED,
             err=True,
         )
@@ -272,9 +302,19 @@ def web(
     token = secrets.token_urlsafe(32)
     typer.echo(f"LocalDocForge web: http://{host}:{port}/")
     typer.echo(f"API token (send as X-LDF-Token header): {token}")
-    typer.echo("Press Ctrl+C to stop. Nothing leaves this machine.")
+    if allow_nonlocal and host not in _LOOPBACK_BIND_HOSTS:
+        typer.echo("Press Ctrl+C to stop. Non-loopback clients can reach this server.")
+    else:
+        typer.echo("Press Ctrl+C to stop. The server is restricted to loopback.")
     uvicorn.run(
-        create_app(get_settings(), token=token), host=host, port=port, log_level="warning"
+        create_app(
+            settings,
+            token=token,
+            allow_nonlocal=allow_nonlocal and host not in _LOOPBACK_BIND_HOSTS,
+        ),
+        host=host,
+        port=port,
+        log_level="warning",
     )
 
 
@@ -283,9 +323,19 @@ def web(
 
 @app.command()
 def inspect(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
 ) -> None:
     """Read-only structural inventory of a PDF."""
+    if get_settings().strict_offline and is_remote_path(input_file):
+        typer.secho(
+            "Error: strict-offline mode forbids network filesystem inputs.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    if not input_file.is_file():
+        typer.secho(f"Error: file does not exist: {input_file}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_USAGE)
     try:
         info = organize_ops.inspect_pdf(input_file)
     except organize_ops.EncryptedInputError:
@@ -364,7 +414,7 @@ def merge(
 
 @app.command()
 def split(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
     pages: Annotated[
         str | None,
@@ -390,7 +440,7 @@ def split(
 
 @app.command("remove-pages")
 def remove_pages_cmd(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
     pages: Annotated[str, typer.Option("--pages", help='Pages to remove, e.g. "2,5-7".')],
     collision: Collision = CollisionPolicy.FAIL,
@@ -408,7 +458,7 @@ def remove_pages_cmd(
 
 @app.command("extract-pages")
 def extract_pages_cmd(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
     pages: Annotated[str, typer.Option("--pages", help='Pages to extract, e.g. "1-3,10".')],
     collision: Collision = CollisionPolicy.FAIL,
@@ -426,7 +476,7 @@ def extract_pages_cmd(
 
 @app.command()
 def organize(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
     order: Annotated[str, typer.Option("--order", help='New page order, e.g. "3,1,2,4-end".')],
     collision: Collision = CollisionPolicy.FAIL,
@@ -444,7 +494,7 @@ def organize(
 
 @app.command()
 def rotate(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
     degrees: Annotated[int, typer.Option("--degrees", help="90, 180, 270 (or negative).")],
     pages: Annotated[str | None, typer.Option("--pages")] = None,
@@ -464,7 +514,7 @@ def rotate(
 
 @app.command()
 def crop(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
     box: Annotated[
         str,
@@ -528,7 +578,7 @@ def images_to_pdf_cmd(
 
 @app.command("pdf-to-images")
 def pdf_to_images_cmd(
-    input_file: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
     image_format: Annotated[str, typer.Option("--format")] = "png",
     dpi: Annotated[int, typer.Option("--dpi", min=18, max=1200)] = 150,

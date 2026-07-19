@@ -9,6 +9,7 @@ description = "Privacy-first, fully local document-processing workbench: core li
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "LocalDocForge contributors" }]
 keywords = ["pdf", "local", "privacy", "document", "conversion"]
 classifiers = [

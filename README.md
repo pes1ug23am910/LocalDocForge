@@ -1,9 +1,9 @@
 # LocalDocForge
 
-A privacy-first, fully local document-processing workbench: a typed Python
-core library and a scriptable CLI (localhost web UI in progress) for working
-with PDFs and images **without any file, hash, or metadata ever leaving your
-machine**.
+A privacy-focused document-processing workbench: a typed Python core library,
+a scriptable CLI, and a localhost API with a minimal status page. The current
+package has no outbound network client, telemetry, update check, or remote
+browser asset. A full browser workflow is still planned.
 
 > **Project status: early alpha.** Phase 0 (foundation) and the core of
 > Phase 1 (structural PDF tools + image conversion) are implemented and
@@ -12,24 +12,31 @@ machine**.
 
 ## Privacy guarantees (and their limits)
 
-- All processing is local. This build contains **no network code paths**: no
-  telemetry, no update checks, no remote fonts/assets, no cloud conversion.
-- `--strict-offline` records the pledge in settings and reports, and will
-  hard-gate any future optional engine that could touch a network.
-- Reports never include document text, passwords, or redacted content.
+- The shipped operations run on the host machine and contain no cloud
+  conversion or outbound network-resource loading. The web command listens on
+  loopback by default; non-loopback serving requires an explicit dangerous
+  opt-in.
+- `--strict-offline` is recorded in reports and rejects recognizable network
+  filesystem paths, network report/job/output locations, and non-loopback web
+  serving. It is an application policy, not an operating-system firewall;
+  container or host network isolation remains the stronger defense.
+- Reports omit document text and passwords. Public API reports also replace
+  server-side paths with artifact basenames; CLI reports intentionally name
+  the user-selected input and output files.
 - Limits, honestly stated: deleting temp files on SSDs is best-effort, not
-  forensic erasure; in-process PDF parsers execute with your user privileges
-  (see `docs/THREAT_MODEL.md` for the full model).
+  forensic erasure; a crash can leave a private session directory until a
+  later startup sweep; and in-process PDF/image parsers execute with your user
+  privileges (see `docs/THREAT_MODEL.md` for the full model).
 
 ## What works today (verified by the test suite)
 
 | Area | Capabilities |
 |---|---|
-| Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
+| Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse. Page-moving operations warn about known document-level losses; remove-pages refuses structures it cannot safely rewrite. |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
-| Convert | images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF at any DPI) |
+| Convert | images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes, 36–600 DPI) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI) |
 | Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
-| Safety net | every output is reopened and render-checked before it is published atomically; sources are never modified |
+| Safety net | every candidate PDF is structurally reopened and render-checked (all pages for selected high-risk cases, otherwise up to 20 sampled pages); generated images must decode. All candidates validate before publication, each final file is published atomically, and input/output aliases are refused. Multi-output rollback after a handled publication failure is best effort, not a process-crash transaction. |
 
 ## Quick start
 
@@ -67,12 +74,16 @@ ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf inspect input.pdf
 ldf --json doctor
-ldf web        # localhost-only API + honest UI shell; prints the session token
+ldf --strict-offline web  # localhost API + status shell; prints the session token
 ```
 
-The `ldf web` server binds to 127.0.0.1 only, authenticates every API call
-with a per-session token header, sends CSP/hardening headers, and keeps job
-history in memory only. Endpoint reference: `docs/CLI.md`.
+The `ldf web` server binds to 127.0.0.1 by default, authenticates every API
+call with a per-session token header, sends CSP/hardening headers, and keeps
+job history in memory only. Outputs remain in a private session directory
+until deletion, eviction, or graceful shutdown; crashed-session cleanup is
+best effort on a later startup. `--allow-nonlocal` is an explicit dangerous
+opt-in and is refused when strict-offline mode is active. Endpoint reference:
+`docs/CLI.md`.
 
 Page ranges: `1-5,9,12-end`, `odd`, `even`, `reverse`, `last`, `last-5`
 (the last five pages). Full grammar and exit codes: `docs/CLI.md`.
@@ -85,8 +96,9 @@ passwords are never taken as command-line arguments and never logged.
 - A capability shows as available only when its implementation **and** a live
   engine probe both pass — placeholder buttons do not exist.
 - Cropping, whiteout, and covering content are never called redaction.
-- Conversions report exactly which document features could not be preserved
-  (`fidelity_warnings` with stable codes; see `docs/CONVERSION_FIDELITY.md`).
+- Conversions report detected, known preservation losses through stable
+  `fidelity_warnings` codes. The warning set is not a claim of exhaustive
+  semantic equivalence; see `docs/CONVERSION_FIDELITY.md`.
 - A file will only ever be labelled PDF/A-compliant after an authoritative
   local validator passes it (validator integration is a later phase — today
   nothing is labelled PDF/A).
@@ -94,7 +106,7 @@ passwords are never taken as command-line arguments and never logged.
 ## Development
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests -q     # 186 tests
+.venv\Scripts\python.exe -m pytest tests -q     # run the complete suite
 .venv\Scripts\python.exe -m ruff check src tests
 ```
 
@@ -109,8 +121,8 @@ model, engine decisions, feature matrix, status).
 ## Roadmap
 
 Compression, repair, OCR, Office↔PDF, PDF/A, PDF↔Markdown, editor, forms,
-encryption, redaction, signatures, compare, scanner acquisition, localhost
-web UI — phased plan in `docs/IMPLEMENTATION_PLAN.md`, current truth in
+encryption, redaction, signatures, compare, scanner acquisition, full browser
+UI — phased plan in `docs/IMPLEMENTATION_PLAN.md`, current truth in
 `docs/STATUS.md`.
 
 ## License

@@ -1,50 +1,69 @@
-# CLI Reference (`ldf` / `localdocforge`)
+# CLI and Local API Reference (`ldf` / `localdocforge`)
 
-All commands run fully locally. Global options come **before** the command:
+Implemented conversion engines execute on the host machine. The shipped
+package contains no outbound network client or remote browser asset, but
+non-strict CLI paths may refer to filesystems the operating system exposes over
+a network. Use strict-offline mode for the application's strongest local-only
+policy.
 
-```
+Global options come **before** the command:
+
+```text
 ldf [--json] [--quiet] [--strict-offline] [--report-dir DIR] <command> …
 ```
 
-- `--json` — machine-readable report/diagnostics on stdout.
-- `--quiet` — suppress the human report summary.
-- `--strict-offline` — pin the no-network guarantee (no network code paths
-  exist in this build; the flag records the pledge and gates future engines).
-- `--report-dir DIR` — additionally write `<op>-<job>.report.json` and `.txt`.
+- `--json` — machine-readable report or diagnostics on stdout.
+- `--quiet` — suppress the human conversion-report summary.
+- `--strict-offline` — record strict state in reports and reject recognizable
+  network filesystem inputs, outputs, jobs/report locations, external-tool
+  paths, and non-loopback web serving. `LDF_STRICT_OFFLINE=true` is preserved
+  when the flag is omitted. This is application enforcement, not an OS
+  firewall; ordinary-looking POSIX network mounts cannot be distinguished.
+- `--report-dir DIR` — additionally write
+  `<operation>-<job-id>.report.json` and `.txt`. In strict mode this must be a
+  recognized local path.
 
 ## Exit codes
+
 | Code | Meaning |
-|---|---|
+|---:|---|
 | 0 | success |
 | 1 | operation failed |
 | 2 | usage error (bad arguments, bad page range, missing file) |
 | 3 | no engine available for the operation |
-| 4 | output validation failed — nothing was written |
+| 4 | generated-output validation failed before publication |
 | 5 | output exists and collision policy is `fail` |
-| 130 | cancelled |
+| 130 | cancelled or cooperative job timeout |
 
-Every writing command accepts `--collision fail|rename|overwrite`
-(default `fail`; `rename` writes `name (1).pdf`).
+Every writing command accepts `--collision fail|rename|overwrite` (default
+`fail`; `rename` chooses `name (1).pdf`, then the next available suffix).
+Input/output aliases are refused even with `overwrite`.
+
+All candidates are validated before publication starts. Each final file is
+published atomically, but a multi-output job is not an all-files transaction
+across a process or machine crash. A handled publication failure performs
+best-effort rollback.
 
 ## Page-range grammar
-`7` · `2-9` · `9-2` (descending) · `12-end` · `odd` · `even` · `all` ·
-`reverse` · `last` · `last-5` (the last 5 pages) — comma-combinable:
-`1-5,9,12-end`. Ranges are validated against the real page count before any
-work happens.
 
-## Commands verified in this build
+`7` · `2-9` · `9-2` (descending) · `12-end` · `odd` · `even` · `all` ·
+`reverse` · `last`/`end` · `last-5` (the last five pages), comma-combinable as
+`1-5,9,12-end`. Repeated pages remain repeated. Ranges are resolved against the
+real page count before page processing.
+
+## Commands available in this build
 
 ```powershell
-ldf doctor                      # engines + honest capability list
+ldf doctor                      # engines + capability list
 ldf --json doctor               # machine-readable diagnostics
 ldf inspect input.pdf           # read-only structural inventory
-ldf web                         # local API + UI shell on http://127.0.0.1:8477
-ldf web --port 9000             # loopback only; --allow-nonlocal is a
-                                # deliberate, warned, dangerous opt-in
+ldf --strict-offline web        # API + status shell on http://127.0.0.1:8477
+ldf web --port 9000             # loopback on another port
+ldf web --host 0.0.0.0 --allow-nonlocal  # dangerous; refused in strict mode
 
 ldf merge a.pdf b.pdf -o merged.pdf
 ldf merge a.pdf --pages 1-5 b.pdf --pages 2-end -o merged.pdf
-ldf merge "a.pdf::1,3" "b.pdf::2" -o merged.pdf   # inline-range form
+ldf merge "a.pdf::1,3" "b.pdf::2" -o merged.pdf
 
 ldf split input.pdf -d parts/                  # one file per page
 ldf split input.pdf -d parts/ --pages "1-3,7"  # one file per token
@@ -54,7 +73,7 @@ ldf remove-pages input.pdf --pages "2,5-7" -o out.pdf
 ldf extract-pages input.pdf --pages "1-3,10" -o out.pdf
 ldf organize input.pdf --order "3,1,2,4-end" -o out.pdf
 ldf rotate input.pdf --degrees 90 --pages "1,3-5" -o out.pdf
-ldf crop input.pdf --box "50,50,400,500" -o out.pdf   # warns: NOT redaction
+ldf crop input.pdf --box "50,50,400,500" -o out.pdf
 
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4 --fit fit
 ldf images-to-pdf photo.png -o photo.pdf --page-size image
@@ -62,38 +81,86 @@ ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300 --pages odd
 ```
 
 Notes:
-- Globs are expanded by `ldf` itself (PowerShell does not expand `*`).
-- Encrypted inputs: run interactively and you get a hidden password prompt;
-  passwords are never accepted as command-line arguments.
-- `--page-size` accepts `A4`, `Letter`, `Legal`, `image`, or `WxH` with an
-  optional `pt|mm|cm|in` suffix (default mm), e.g. `210x297mm`.
-- Reports never contain document text or passwords.
+
+- PowerShell does not expand `*`; LocalDocForge expands globs itself.
+- Encrypted CLI inputs prompt interactively with hidden input. Passwords are
+  not accepted as CLI arguments or written to reports. Successful output is
+  not re-encrypted and carries a critical `input-encryption-removed` warning.
+- `--page-size` accepts `A4`, `Letter`, `Legal`, `image`, or `WxH` with optional
+  `pt|mm|cm|in` (default `mm`), such as `210x297mm`.
+- Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and
+  PNG/JPEG/WebP/TIFF output. Resource limits may reject a value that would
+  exceed configured pixel, decompressed-byte, page, or output bounds.
+- Crop sets the PDF CropBox. Hidden content remains; it is not redaction.
+- Page-moving operations emit warnings for detected document-level losses.
+  `remove-pages` refuses outlines/forms/signatures/page labels/open actions,
+  named destinations, internal links, and tagged structures that this build
+  cannot safely rewrite.
+- CLI reports omit document text and passwords but intentionally include
+  artifact filenames and user-selected output paths. Treat saved reports as
+  local metadata.
 
 ## The local API (`ldf web`)
 
-Serves loopback only. Authentication: a random per-session token printed at
-startup; send it as the `X-LDF-Token` header. State-changing requests
-require the header (a cookie alone is refused — CSRF protection). Browser
-payloads never contain filesystem paths: files are uploaded, results are
-downloaded by job id. Job history is in memory and vanishes with the process.
+The default service binds to `127.0.0.1`. A random token is printed at startup;
+every `/api` request must send it in `X-LDF-Token`. The status page sets a
+same-site, HTTP-only cookie, but a cookie alone cannot authorize an API request.
+No CORS grant is sent. CSP, no-store, frame, MIME-sniffing, referrer, and
+camera/microphone/geolocation restrictions are applied to responses.
+
+`--allow-nonlocal` is a deliberate dangerous opt-in. It disables the loopback
+Host restriction but not token authentication. Strict-offline mode refuses a
+non-loopback host even if that option is supplied. Nonlocal mode provides no
+TLS; it is not recommended for sensitive documents.
 
 ```text
-GET  /                      honest capability page (sets session cookie)
-GET  /api/health            {status, version}
-GET  /api/capabilities      engines + capability gating (doctor as JSON)
-POST /api/jobs/{op}         multipart 'files' + form params; 201 + report
-                            op ∈ merge, split, remove-pages, extract-pages,
-                                 organize, rotate, crop, images-to-pdf,
-                                 pdf-to-images
-GET  /api/jobs              recent jobs (in-memory)
-GET  /api/jobs/{id}         full ConversionReport
-GET  /api/jobs/{id}/outputs/{index}   download one artifact
-DELETE /api/jobs/{id}       forget the job and delete its outputs
+GET  /                      capability/status page (sets token cookie)
+GET  /api/health            status, version, strict_offline, loopback_only
+GET  /api/capabilities      API-safe engine probes + capability gating
+POST /api/jobs/{operation}  multipart files/params; synchronous 201 + report
+GET  /api/jobs              recent in-memory jobs
+GET  /api/jobs/{id}         API-safe ConversionReport (paths are basenames)
+GET  /api/jobs/{id}/outputs/{index}   contained artifact download
+DELETE /api/jobs/{id}       delete private job files, then forget the job
 ```
 
-## Planned (not in this build — commands do not exist yet)
+`operation` is one of `merge`, `split`, `remove-pages`, `extract-pages`,
+`organize`, `rotate`, `crop`, `images-to-pdf`, or `pdf-to-images`. Upload each
+source under multipart field `files`. The server, not the request, chooses all
+output paths. Supported string form fields are:
+
+| Operation | Honored form fields |
+|---|---|
+| merge | `pages` as a JSON list of string/null entries, optional `password` |
+| split | `pages` or integer `every`, optional `password` |
+| remove-pages / extract-pages | required `pages`, optional `password` |
+| organize | required `order`, optional `password` |
+| rotate | required integer `degrees`, optional `pages` and `password` |
+| crop | required finite `box=x0,y0,x1,y1`, optional `pages` and `password` |
+| images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
+| pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), and `password` |
+
+Unknown, duplicated, invalid, or out-of-range parameters return 422. Upload bytes are counted
+cumulatively against `LDF_LIMITS__MAX_INPUT_BYTES`; the middleware also caps
+the total multipart request with bounded overhead and limits file/field counts
+and non-file field size. Generated bytes are checked against
+`LDF_LIMITS__MAX_OUTPUT_BYTES` before publication, though candidate generation
+can consume workspace space first.
+
+Jobs complete inside the request process; the API has no background queue,
+progress stream, cancellation endpoint, rate limiter, or concurrency quota.
+History is memory-only and capped at 50. Uploaded inputs are removed after
+success; successful outputs remain in a private session directory until
+DELETE, eviction, or graceful shutdown. A crash can leave data until a
+best-effort startup sweep removes sessions older than 24 hours. DELETE,
+eviction, and request cleanup failures are returned as errors; shutdown cleanup
+is best effort. None of these paths is described as secure erasure.
+
+## Planned (commands and job endpoints do not exist)
+
 `compress`, `repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `pdf-to-md`,
 `md-to-pdf`, `pdf-to-pdfa`, `pdf-to-docx/pptx/xlsx`, `watermark`,
-`page-numbers`, `forms`, `protect`, `unlock`, `redact`, `sanitize`,
-`metadata`, `attachments`, `sign`, `verify-signatures`, `compare`,
-`validate`, `batch`, `scan`, `edit`.
+`page-numbers`, `forms`, `protect`, `unlock`, `redact`, `sanitize`, `metadata`,
+`attachments`, `sign`, `verify-signatures`, `compare`, `validate`, `batch`,
+`scan`, and `edit` are unavailable. The full browser job UI is also planned;
+the shipped page is a status shell only.

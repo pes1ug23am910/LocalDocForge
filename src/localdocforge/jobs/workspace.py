@@ -22,6 +22,8 @@ from pathlib import Path
 from localdocforge.security.paths import PathSecurityError, ensure_contained
 
 _WORKSPACE_PREFIX = "ldf-job-"
+_SAFE_JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
+_SAFE_TEMP_SUFFIX = re.compile(r"^(?:\.[A-Za-z0-9_-]{1,16})?$")
 
 
 class CollisionPolicy(StrEnum):
@@ -39,9 +41,18 @@ def default_jobs_root() -> Path:
     return Path(tempfile.gettempdir()) / "localdocforge" / "jobs"
 
 
-def _make_private_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    if os.name == "posix":
+def make_private_dir(path: Path, *, exist_ok: bool = True) -> None:
+    """Create a private directory without chmodding a pre-existing parent."""
+    created = False
+    try:
+        path.mkdir(parents=True, exist_ok=False)
+        created = True
+    except FileExistsError:
+        if not exist_ok:
+            raise
+        if not path.is_dir():
+            raise NotADirectoryError(path) from None
+    if created and os.name == "posix":
         os.chmod(path, stat.S_IRWXU)  # 0700; on Windows the user temp dir is already per-user
 
 
@@ -49,11 +60,15 @@ class JobWorkspace:
     """An isolated scratch directory for exactly one job."""
 
     def __init__(self, job_id: str | None = None, *, root: Path | None = None) -> None:
-        self.job_id = job_id or uuid.uuid4().hex
+        self.job_id = uuid.uuid4().hex if job_id is None else job_id
+        if not _SAFE_JOB_ID.fullmatch(self.job_id):
+            raise ValueError("job_id must contain only ASCII letters, digits, '_' or '-'")
         base = root or default_jobs_root()
-        _make_private_dir(base)
-        self.path = base / f"{_WORKSPACE_PREFIX}{self.job_id}"
-        _make_private_dir(self.path)
+        make_private_dir(base)
+        self.path = ensure_contained(
+            base / f"{_WORKSPACE_PREFIX}{self.job_id}", base, what="job workspace"
+        )
+        make_private_dir(self.path, exist_ok=False)
 
     def subdir(self, name: str) -> Path:
         target = ensure_contained(self.path / name, self.path, what="workspace subdir")
@@ -61,14 +76,16 @@ class JobWorkspace:
         return target
 
     def temp_file(self, suffix: str = "") -> Path:
-        return self.path / f"tmp-{uuid.uuid4().hex}{suffix}"
+        if not _SAFE_TEMP_SUFFIX.fullmatch(suffix):
+            raise ValueError("temporary suffix must be empty or a short ASCII file extension")
+        return self.contain(self.path / f"tmp-{uuid.uuid4().hex}{suffix}")
 
     def contain(self, path: Path) -> Path:
         """Assert that ``path`` stays inside this workspace and return it resolved."""
         return ensure_contained(path, self.path, what="workspace path")
 
-    def cleanup(self) -> None:
-        _remove_tree_with_retries(self.path)
+    def cleanup(self) -> bool:
+        return remove_tree_with_retries(self.path)
 
     def __enter__(self) -> JobWorkspace:
         return self
@@ -77,17 +94,18 @@ class JobWorkspace:
         self.cleanup()
 
 
-def _remove_tree_with_retries(path: Path, attempts: int = 5, delay: float = 0.2) -> None:
-    """Best-effort recursive removal; retries cover transient Windows file locks."""
+def remove_tree_with_retries(path: Path, attempts: int = 5, delay: float = 0.2) -> bool:
+    """Remove a tree with Windows-lock retries and report whether it is gone."""
     for attempt in range(attempts):
         try:
             if path.exists():
                 shutil.rmtree(path)
-            return
+            return not path.exists()
         except OSError:
             if attempt == attempts - 1:
-                return  # leave it for the startup sweep rather than crash the app
+                return not path.exists()  # leave it for the startup sweep
             time.sleep(delay)
+    return not path.exists()
 
 
 def cleanup_stale_workspaces(
@@ -104,8 +122,8 @@ def cleanup_stale_workspaces(
             continue
         try:
             if entry.stat().st_mtime < cutoff:
-                _remove_tree_with_retries(entry)
-                removed += 1
+                if remove_tree_with_retries(entry):
+                    removed += 1
         except OSError:
             continue
     return removed
@@ -146,23 +164,30 @@ def atomic_publish(
         raise IsADirectoryError(f"Destination is a directory: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    final = destination
-    if destination.exists():
-        if collision is CollisionPolicy.FAIL:
-            raise OutputCollisionError(
-                f"Output already exists: {destination}. "
-                f"Choose --collision rename or --collision overwrite."
-            )
-        if collision is CollisionPolicy.RENAME:
-            final = _next_free_path(destination)
-
     staging = destination.parent / f".ldf-staging-{uuid.uuid4().hex}{destination.suffix}"
     try:
         with source.open("rb") as src, staging.open("wb") as dst:
             shutil.copyfileobj(src, dst, length=1024 * 1024)
             dst.flush()
             os.fsync(dst.fileno())
-        os.replace(staging, final)
+        if collision is CollisionPolicy.OVERWRITE:
+            final = destination
+            os.replace(staging, final)
+        else:
+            final = destination
+            while True:
+                try:
+                    # Atomic no-replace publication. Unlike os.replace, this
+                    # cannot clobber a file created after our collision check.
+                    os.link(staging, final)
+                    break
+                except FileExistsError as exc:
+                    if collision is CollisionPolicy.FAIL:
+                        raise OutputCollisionError(
+                            f"Output already exists: {destination}. "
+                            f"Choose --collision rename or --collision overwrite."
+                        ) from exc
+                    final = _next_free_path(final)
     finally:
         if staging.exists():
             try:
@@ -175,7 +200,7 @@ def atomic_publish(
 def contained_output_path(destination: Path, allowed_roots: list[Path] | None) -> Path:
     """Validate a user-requested output path against configured allowed roots."""
     resolved = destination.expanduser().resolve(strict=False)
-    if allowed_roots:
+    if allowed_roots is not None:
         for root in allowed_roots:
             try:
                 return ensure_contained(resolved, root, what="output path")

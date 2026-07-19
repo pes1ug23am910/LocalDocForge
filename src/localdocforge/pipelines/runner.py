@@ -17,6 +17,8 @@ unless it passed validation.
 from __future__ import annotations
 
 import contextlib
+import os
+import shutil
 import time
 import uuid
 from collections.abc import Callable
@@ -38,14 +40,17 @@ from localdocforge.domain.models import (
     SecurityWarning,
     ValidationCheck,
     ValidationResult,
+    WarningSeverity,
     utc_now,
 )
 from localdocforge.jobs.workspace import (
     CollisionPolicy,
     JobWorkspace,
+    OutputCollisionError,
     atomic_publish,
     contained_output_path,
 )
+from localdocforge.security.paths import is_remote_path
 from localdocforge.security.sniff import ContentTypeError, require_media_type
 from localdocforge.validation.pdf_checks import count_pdf_pages, validate_pdf
 
@@ -87,6 +92,15 @@ ExecuteFn = Callable[[JobContext, list[InputArtifact]], ExecuteResult]
 _RENDER_SAMPLE_LIMIT = 20  # pages rendered for routine (non-high-risk) validation
 
 
+def _paths_alias(first: Path, second: Path) -> bool:
+    if first == second:
+        return True
+    try:
+        return first.exists() and second.exists() and os.path.samefile(first, second)
+    except OSError:
+        return False
+
+
 def _validate_image_candidate(path: Path) -> ValidationResult:
     """A generated image must actually decode, not merely exist."""
     checks: list[ValidationCheck] = []
@@ -119,12 +133,16 @@ def _gather_inputs(
 ) -> list[InputArtifact]:
     artifacts: list[InputArtifact] = []
     max_bytes = settings.limits.max_input_bytes
+    total_bytes = 0
     for path in paths:
+        if settings.strict_offline and is_remote_path(path):
+            raise ContentTypeError("strict-offline mode forbids network filesystem inputs")
         media = require_media_type(path, *expected_types)
         size = path.stat().st_size
-        if max_bytes is not None and size > max_bytes:
+        total_bytes += size
+        if max_bytes is not None and total_bytes > max_bytes:
             raise ContentTypeError(
-                f"{path.name!r} is {size:,} bytes, over the configured input "
+                f"Inputs total {total_bytes:,} bytes, over the configured per-job input "
                 f"limit of {max_bytes:,} bytes"
             )
         artifact = InputArtifact(path=path.resolve(), media_type=media, size_bytes=size)
@@ -171,9 +189,12 @@ def run_pipeline(
     """
     settings = settings or get_settings()
     collision = collision or settings.collision
-    job_id = uuid.uuid4().hex[:12]
+    job_id = uuid.uuid4().hex
     started = time.monotonic()
 
+    report_details = dict(details or {})
+    # This is authoritative runtime state, not caller-supplied descriptive data.
+    report_details["strict_offline"] = settings.strict_offline
     report = ConversionReport(
         operation=operation,
         status=ReportStatus.FAILED,
@@ -181,7 +202,7 @@ def run_pipeline(
         engine=engine_name,
         engine_version=engine_version,
         fallback_engine=fallback_engine,
-        details=details or {},
+        details=report_details,
     )
 
     try:
@@ -215,11 +236,50 @@ def run_pipeline(
         if not result.candidates:
             raise PipelineError(f"{operation} produced no output", report)
 
+        # Resolve candidates once, before validation, and enforce the aggregate
+        # output bound before spending time rendering or publishing anything.
+        output_limit = settings.limits.max_output_bytes
+        candidate_bytes = 0
+        destinations: list[Path] = []
+        input_paths = [artifact.path.resolve(strict=False) for artifact in inputs]
+        for candidate in result.candidates:
+            candidate.workspace_path = workspace.contain(candidate.workspace_path)
+            if settings.strict_offline and is_remote_path(candidate.destination):
+                raise PipelineError(
+                    "strict-offline mode forbids network filesystem outputs", report
+                )
+            candidate.destination = contained_output_path(
+                candidate.destination, settings.allowed_output_roots
+            )
+            if any(_paths_alias(candidate.destination, input_path) for input_path in input_paths):
+                raise PipelineError(
+                    "Output path aliases an input file; in-place source modification is forbidden",
+                    report,
+                )
+            if any(_paths_alias(candidate.destination, prior) for prior in destinations):
+                raise PipelineError("Multiple outputs resolve to the same destination", report)
+            destinations.append(candidate.destination)
+            if candidate.workspace_path.is_file():
+                candidate_bytes += candidate.workspace_path.stat().st_size
+            if output_limit is not None and candidate_bytes > output_limit:
+                raise PipelineError(
+                    f"Generated outputs total {candidate_bytes:,} bytes, over the configured "
+                    f"per-job output limit of {output_limit:,} bytes; nothing was published",
+                    report,
+                )
+
+        if collision is CollisionPolicy.FAIL:
+            for destination in destinations:
+                if destination.exists():
+                    raise OutputCollisionError(
+                        f"Output already exists: {destination}. "
+                        "Choose --collision rename or --collision overwrite."
+                    )
+
         # Validate every candidate before anything is published.
         context.emit("validate", total=len(result.candidates))
         all_checks: list[ValidationCheck] = []
         for index, candidate in enumerate(result.candidates):
-            workspace.contain(candidate.workspace_path)
             if candidate.media_type == "application/pdf":
                 validation = validate_pdf(
                     candidate.workspace_path,
@@ -263,25 +323,59 @@ def run_pipeline(
         # Publish all candidates atomically (validation passed for every one).
         context.emit("publish", total=len(result.candidates))
         published: list[OutputArtifact] = []
-        for candidate in result.candidates:
-            destination = contained_output_path(
-                candidate.destination, settings.allowed_output_roots
-            )
-            final_path = atomic_publish(
-                candidate.workspace_path, destination, collision=collision
-            )
-            pages: int | None = None
-            if candidate.media_type == "application/pdf":
-                pages = candidate.expected_pages or count_pdf_pages(final_path)
-            published.append(
-                OutputArtifact(
-                    path=final_path,
-                    media_type=candidate.media_type,
-                    size_bytes=final_path.stat().st_size,
-                    kind=candidate.kind,
-                    page_count=pages,
+        published_paths: list[Path] = []
+        overwrite_backups: dict[Path, Path] = {}
+        if collision is CollisionPolicy.OVERWRITE:
+            backup_dir = workspace.subdir("publish-backups")
+            for index, destination in enumerate(destinations):
+                if destination.is_file():
+                    # Do not mirror an attacker-controlled destination name in
+                    # the private backup component; it could exceed filesystem
+                    # filename limits even when the destination itself exists.
+                    backup = backup_dir / f"{index:04d}.bak"
+                    shutil.copy2(destination, backup)
+                    overwrite_backups[destination] = backup
+        try:
+            for candidate in result.candidates:
+                final_path = atomic_publish(
+                    candidate.workspace_path, candidate.destination, collision=collision
                 )
-            )
+                published_paths.append(final_path)
+                pages: int | None = None
+                if candidate.media_type == "application/pdf":
+                    pages = candidate.expected_pages or count_pdf_pages(final_path)
+                published.append(
+                    OutputArtifact(
+                        path=final_path,
+                        media_type=candidate.media_type,
+                        size_bytes=final_path.stat().st_size,
+                        kind=candidate.kind,
+                        page_count=pages,
+                    )
+                )
+        except BaseException:
+            rollback_failed = False
+            for final_path in reversed(published_paths):
+                try:
+                    backup = overwrite_backups.get(final_path)
+                    if backup is not None:
+                        atomic_publish(backup, final_path, collision=CollisionPolicy.OVERWRITE)
+                    else:
+                        final_path.unlink(missing_ok=True)
+                except OSError:
+                    rollback_failed = True
+            if rollback_failed:
+                report.security_warnings.append(
+                    SecurityWarning(
+                        code="publication-rollback-incomplete",
+                        message=(
+                            "A multi-output publication failed and at least one destination "
+                            "could not be restored automatically."
+                        ),
+                        severity=WarningSeverity.CRITICAL,
+                    )
+                )
+            raise
 
         report.outputs = published
         report.output_bytes = sum(artifact.size_bytes for artifact in published)
@@ -303,4 +397,14 @@ def run_pipeline(
     finally:
         report.elapsed_seconds = round(time.monotonic() - started, 3)
         report.finished_at = utc_now()
-        workspace.cleanup()
+        if not workspace.cleanup():
+            report.security_warnings.append(
+                SecurityWarning(
+                    code="workspace-cleanup-incomplete",
+                    message=(
+                        "Private job workspace cleanup was incomplete; close files that may be "
+                        "open and remove the stale workspace on the next startup."
+                    ),
+                    severity=WarningSeverity.CRITICAL,
+                )
+            )
