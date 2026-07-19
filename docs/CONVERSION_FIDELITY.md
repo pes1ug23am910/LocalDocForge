@@ -18,16 +18,30 @@ Not yet preserved when pages move between documents (reported per input):
 - `form-fields-detached` — AcroForm field tree (widget appearances remain on
   pages; interactivity is lost).
 - `attachments-dropped` — document-level embedded files.
-- Page labels (roman/appendix numbering) — not yet rebuilt.
+- `xmp-metadata-dropped` — document-level XMP metadata.
+- `page-labels-dropped` — roman/appendix numbering is not rebuilt.
+- `document-actions-dropped` — document-level open/additional actions and
+  JavaScript name trees are not carried into page-moving outputs.
+- `signature-semantics-dropped` — signature fields cannot remain valid after
+  page copying. This is a **critical** warning.
 - `form-field-name-conflict` — merge detects identically named fields across
   inputs and warns what that would mean.
 
-`remove-pages` and `rotate`/`crop` operate on the original document object
-model in memory, so outlines/forms/attachments of the *single* input remain
-intact in the output; only cross-document page moves lose them today.
+`remove-pages` refuses a document when this build cannot safely rewrite page
+references held by outlines, forms/signatures, page labels, open actions,
+tagged structure, named destinations, or internal links. This conservative
+policy prevents a successful-looking PDF with stale references.
+
+`rotate` and `crop` operate on the original document object model in memory,
+so outlines/forms/attachments and active content remain. Saving a modified
+PDF nevertheless invalidates cryptographic signatures and does not retain
+input password protection. Reports use the critical `signature-invalidated`
+and `input-encryption-removed` security warning codes when applicable.
 
 ## rotate
-Sets `/Rotate` relative to the page's existing rotation. Lossless.
+Sets `/Rotate` relative to the page's existing rotation without re-encoding
+page graphics. Calling it wholly "lossless" would be misleading because the
+rewrite invalidates cryptographic signatures and removes input encryption.
 
 ## crop
 Sets `/CropBox` only; `MediaBox` and content untouched. **Cropping is not
@@ -43,15 +57,32 @@ warning) and non-intersecting boxes are refused.
 - `--page-size image` keeps the source pixel grid (no canvas compositing) but
   still re-encodes through Pillow's PDF writer.
 - Alpha channels are flattened onto the background color (PDF pages here are
-  opaque RGB).
+  opaque RGB), including `--page-size image`.
+- Margins that leave no drawable area and canvases exceeding the pixel limit
+  are refused before allocation/publication.
 
 ## pdf-to-images
 - Rasterization at the requested DPI; vector content and text become pixels
   (inherently lossy in editability, faithful in appearance).
-- JPEG output is lossy (quality configurable); PNG/TIFF lossless; WebP lossy
-  per Pillow defaults at the configured quality.
+- JPEG output is lossy (quality configurable); PNG/TIFF lossless; WebP uses
+  the configured quality.
+- Inputs with parser-reported structural syntax damage are refused rather
+  than silently repaired by PDFium.
+
+## Encrypted inputs and active content
+
+- A supplied password authorizes reading an encrypted input. Generated PDFs
+  and raster images are not password protected; reports carry the critical
+  `input-encryption-removed` security warning.
+- No PDF JavaScript, launch action, attachment, or form script is executed.
+  Single-document rotate/crop can retain active objects, while page-moving
+  operations warn when document-level active content is dropped.
 
 ## Validation floor for every operation
-Every generated PDF is reopened structurally; risky outputs render every
-page; blank/zero-page results are caught before publish. Page-count
-expectations are asserted per candidate.
+Every generated PDF is reopened with pikepdf/libqpdf, parser syntax warnings
+are rejected, expected page counts are checked, and pages are rendered through
+PDFium (all pages for high-risk/small outputs, a documented sample for routine
+large outputs). Zero-page and render failures block publication. Blank pages
+are reported and may be legitimate; only callers that explicitly forbid an
+all-blank result make blankness a hard failure. These checks do not establish
+PDF/A or PDF/UA conformance.

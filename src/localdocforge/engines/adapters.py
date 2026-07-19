@@ -67,7 +67,7 @@ class PikepdfEngine(EngineAdapter):
 
 
 class PypdfEngine(EngineAdapter):
-    """Fallback pure-Python structural engine (BSD-3-Clause)."""
+    """Installed pure-Python PDF library, not yet wired as an operation engine."""
 
     name = "pypdf"
 
@@ -93,8 +93,10 @@ class PypdfEngine(EngineAdapter):
             )
 
     def supported_operations(self) -> frozenset[str]:
-        # Fallback only for a subset today; extended as fallback paths are tested.
-        return frozenset({OP_MERGE, OP_REMOVE_PAGES, OP_EXTRACT_PAGES, OP_INSPECT})
+        # Probing an installed library is not an implementation. Operations
+        # currently call pikepdf-specific APIs, so advertising pypdf here as a
+        # fallback would make capability selection lie when pikepdf is absent.
+        return frozenset()
 
 
 class PdfiumEngine(EngineAdapter):

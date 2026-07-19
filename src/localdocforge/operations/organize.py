@@ -38,6 +38,7 @@ from localdocforge.pipelines.runner import (
     PipelineError,
     run_pipeline,
 )
+from localdocforge.security.filenames import sanitize_filename
 
 
 class EncryptedInputError(PipelineError):
@@ -47,12 +48,22 @@ class EncryptedInputError(PipelineError):
 def _open_pdf(path: Path, password: str | None):
     import pikepdf
 
+    def checked(pdf):
+        issues = list(pdf.check_pdf_syntax())
+        if issues:
+            pdf.close()
+            raise PipelineError(
+                f"{path.name!r} has {len(issues)} structural syntax warning(s); "
+                "automatic repair is not an implemented operation"
+            )
+        return pdf
+
     try:
-        return pikepdf.open(path)
+        return checked(pikepdf.open(path))
     except pikepdf.PasswordError:
         if password:
             try:
-                return pikepdf.open(path, password=password)
+                return checked(pikepdf.open(path, password=password))
             except pikepdf.PasswordError as exc:
                 raise EncryptedInputError(f"Wrong password for {path.name!r}.") from exc
         raise EncryptedInputError(
@@ -108,7 +119,84 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                 f"into the output by this operation yet",
             )
         )
+    if "/Metadata" in root:
+        warnings.append(
+            FidelityWarning(
+                code="xmp-metadata-dropped",
+                message=f"XMP metadata from {source_name!r} is not carried into the output",
+            )
+        )
+    if "/PageLabels" in root:
+        warnings.append(
+            FidelityWarning(
+                code="page-labels-dropped",
+                message=f"Page labels from {source_name!r} are not rebuilt in the output",
+            )
+        )
+    names = root.get("/Names", {})
+    if "/OpenAction" in root or "/AA" in root or "/JavaScript" in names:
+        warnings.append(
+            FidelityWarning(
+                code="document-actions-dropped",
+                message=(
+                    f"Document-level actions/JavaScript from {source_name!r} are not carried "
+                    "into the output"
+                ),
+            )
+        )
+    if _has_signature_fields(pdf):
+        warnings.append(
+            FidelityWarning(
+                code="signature-semantics-dropped",
+                message=(
+                    f"Signature fields from {source_name!r} are not validly preserved by "
+                    "this page-moving operation"
+                ),
+                severity=WarningSeverity.CRITICAL,
+            )
+        )
     return warnings
+
+
+def _has_signature_fields(pdf) -> bool:
+    try:
+        pending = list(pdf.Root.AcroForm.get("/Fields", []))
+        while pending:
+            field = pending.pop()
+            if str(field.get("/FT", "")) == "/Sig":
+                return True
+            pending.extend(field.get("/Kids", []))
+    except (AttributeError, TypeError):
+        return False
+    return False
+
+
+def _page_removal_unsafe_features(pdf) -> list[str]:
+    """Features whose page references this phase cannot safely rewrite."""
+    root = pdf.Root
+    unsafe: list[str] = []
+    root_features = {
+        "/Outlines": "outlines",
+        "/AcroForm": "forms/signatures",
+        "/PageLabels": "page labels",
+        "/OpenAction": "open action",
+        "/StructTreeRoot": "tagged structure",
+        "/Dests": "named destinations",
+    }
+    unsafe.extend(label for key, label in root_features.items() if key in root)
+    names = root.get("/Names", {})
+    if "/Dests" in names:
+        unsafe.append("named destinations")
+    for page in pdf.pages:
+        for annotation in page.obj.get("/Annots", []):
+            try:
+                action = annotation.get("/A", {})
+                if "/Dest" in annotation or str(action.get("/S", "")) == "/GoTo":
+                    unsafe.append("internal links")
+                    return sorted(set(unsafe))
+            except (AttributeError, TypeError):
+                continue
+    return sorted(set(unsafe))
 
 
 @dataclass
@@ -126,6 +214,26 @@ def _engine():
     engine = registry.engine_for(OP_MERGE)
     info = engine.probe()
     return engine.name, info.version
+
+
+def _enforce_page_limit(context: JobContext, page_count: int, *, total: int | None = None) -> None:
+    limit = context.limits.max_pages
+    measured = page_count if total is None else total
+    if limit is not None and measured > limit:
+        raise PipelineError(
+            f"Inputs total {measured} pages after opening, over the configured limit of {limit}"
+        )
+
+
+def _encryption_removed_warning(source_name: str) -> SecurityWarning:
+    return SecurityWarning(
+        code="input-encryption-removed",
+        message=(
+            f"{source_name!r} was password protected. The generated PDF is not password "
+            "protected; secure it separately before sharing."
+        ),
+        severity=WarningSeverity.CRITICAL,
+    )
 
 
 def merge_pdfs(
@@ -153,16 +261,23 @@ def merge_pdfs(
 
     def execute(context: JobContext, artifacts: list[InputArtifact]) -> ExecuteResult:
         fidelity: list[FidelityWarning] = []
+        security: list[SecurityWarning] = []
         merged = pikepdf.new()
         total_pages = 0
+        total_input_pages = 0
         field_names: set[str] = set()
         conflicting_fields = False
         for index, artifact in enumerate(artifacts):
             context.emit("merge", current=index, total=len(artifacts), message=artifact.path.name)
             with _open_pdf(artifact.path, options.password) as source:
+                if source.is_encrypted:
+                    security.append(_encryption_removed_warning(artifact.path.name))
                 count = len(source.pages)
+                total_input_pages += count
+                _enforce_page_limit(context, count, total=total_input_pages)
                 selection = ranges[index].resolve(count) if ranges[index] else range(1, count + 1)
                 for page_number in selection:
+                    context.check_cancelled()
                     merged.pages.append(source.pages[page_number - 1])
                     total_pages += 1
                 fidelity.extend(_feature_warnings(source, artifact.path.name, moved_pages=True))
@@ -197,6 +312,7 @@ def merge_pdfs(
                 )
             ],
             fidelity_warnings=fidelity,
+            security_warnings=security,
             output_page_count=total_pages,
             details={"inputs_merged": len(artifacts)},
         )
@@ -214,11 +330,17 @@ def merge_pdfs(
     )
 
 
-def _copy_pages_to_new(source, page_numbers, fidelity: list[FidelityWarning]):
+def _copy_pages_to_new(
+    source,
+    page_numbers,
+    fidelity: list[FidelityWarning],
+    context: JobContext,
+):
     import pikepdf
 
     result = pikepdf.new()
     for number in page_numbers:
+        context.check_cancelled()
         result.pages.append(source.pages[number - 1])
     _copy_docinfo(source, result, fidelity)
     return result
@@ -244,34 +366,62 @@ def split_pdf(
     if every is not None and every < 1:
         raise PipelineError("--every must be at least 1")
     engine_name, engine_version = _engine()
-    stem = input_path.stem
+    stem = sanitize_filename(input_path.stem, fallback="document")
 
     def execute(context: JobContext, artifacts: list[InputArtifact]) -> ExecuteResult:
         fidelity: list[FidelityWarning] = []
+        security: list[SecurityWarning] = []
         with _open_pdf(artifacts[0].path, options.password) as source:
+            if source.is_encrypted:
+                security.append(_encryption_removed_warning(input_path.name))
             total = len(source.pages)
+            _enforce_page_limit(context, total)
             groups: list[tuple[str, list[int]]] = []
+            name_occurrences: dict[str, int] = {}
+
+            def unique_name(name: str) -> str:
+                occurrence = name_occurrences.get(name, 0) + 1
+                name_occurrences[name] = occurrence
+                if occurrence == 1:
+                    return name
+                path = Path(name)
+                return f"{path.stem}-repeat-{occurrence:03d}{path.suffix}"
+
             if pages is not None:
                 for token in pages.spec.split(","):
                     token = token.strip()
                     selection = PageRange(spec=token).resolve(total)
                     label = token.replace("-", "_")
-                    groups.append((f"{stem}-pages-{label}.pdf", list(selection)))
+                    groups.append(
+                        (unique_name(f"{stem}-pages-{label}.pdf"), list(selection))
+                    )
             elif every is not None:
                 for start in range(1, total + 1, every):
                     chunk = list(range(start, min(start + every, total + 1)))
-                    groups.append((f"{stem}-part-{(start - 1) // every + 1:03d}.pdf", chunk))
+                    groups.append(
+                        (
+                            unique_name(
+                                f"{stem}-part-{(start - 1) // every + 1:03d}.pdf"
+                            ),
+                            chunk,
+                        )
+                    )
             else:
-                groups = [(f"{stem}-page-{n:03d}.pdf", [n]) for n in range(1, total + 1)]
+                groups = [
+                    (unique_name(f"{stem}-page-{n:03d}.pdf"), [n])
+                    for n in range(1, total + 1)
+                ]
 
             fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
             candidates: list[CandidateOutput] = []
             for index, (name, numbers) in enumerate(groups):
                 context.emit("split", current=index, total=len(groups), message=name)
-                part = _copy_pages_to_new(source, numbers, fidelity)
+                part = _copy_pages_to_new(source, numbers, fidelity, context)
                 staging = context.workspace / name
-                part.save(staging)
-                part.close()
+                try:
+                    part.save(staging)
+                finally:
+                    part.close()
                 candidates.append(
                     CandidateOutput(
                         workspace_path=staging,
@@ -282,6 +432,7 @@ def split_pdf(
         return ExecuteResult(
             candidates=candidates,
             fidelity_warnings=fidelity,
+            security_warnings=security,
             details={"parts": len(candidates)},
         )
 
@@ -314,6 +465,20 @@ def _single_output_operation(
         fidelity: list[FidelityWarning] = []
         security: list[SecurityWarning] = []
         with _open_pdf(artifacts[0].path, options.password) as source:
+            if source.is_encrypted:
+                security.append(_encryption_removed_warning(input_path.name))
+            if _has_signature_fields(source):
+                security.append(
+                    SecurityWarning(
+                        code="signature-invalidated",
+                        message=(
+                            f"{operation} rewrites the PDF and invalidates existing "
+                            "cryptographic signatures. Signature appearance objects may remain."
+                        ),
+                        severity=WarningSeverity.CRITICAL,
+                    )
+                )
+            _enforce_page_limit(context, len(source.pages))
             result_pdf, expected_pages = transform(source, fidelity, security, context)
             staging = context.workspace / f"{operation}.pdf"
             result_pdf.save(staging)
@@ -362,7 +527,14 @@ def remove_pages(
             raise PipelineError(
                 f"Removing {len(to_remove)} of {total} pages would leave an empty document"
             )
+        unsafe = _page_removal_unsafe_features(source)
+        if unsafe:
+            raise PipelineError(
+                "remove-pages refused because this build cannot safely rewrite: "
+                + ", ".join(unsafe)
+            )
         for number in to_remove:
+            context.check_cancelled()
             del source.pages[number - 1]
         return source, total - len(to_remove)
 
@@ -384,7 +556,7 @@ def extract_pages(
     def transform(source, fidelity, security, context):
         selection = pages.resolve(len(source.pages))
         fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
-        result = _copy_pages_to_new(source, selection, fidelity)
+        result = _copy_pages_to_new(source, selection, fidelity, context)
         return result, len(selection)
 
     return _single_output_operation(
@@ -406,7 +578,7 @@ def organize_pdf(
     def transform(source, fidelity, security, context):
         selection = order.resolve(len(source.pages))
         fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
-        result = _copy_pages_to_new(source, selection, fidelity)
+        result = _copy_pages_to_new(source, selection, fidelity, context)
         return result, len(selection)
 
     return _single_output_operation(
@@ -431,6 +603,7 @@ def rotate_pages(
     def transform(source, fidelity, security, context):
         total = len(source.pages)
         for number in set(selection_range.resolve(total)):
+            context.check_cancelled()
             source.pages[number - 1].rotate(degrees, relative=True)
         return source, total
 
@@ -475,6 +648,7 @@ def crop_pages(
         total = len(source.pages)
         adjusted = 0
         for number in set(selection_range.resolve(total)):
+            context.check_cancelled()
             page = source.pages[number - 1]
             media = [float(v) for v in page.mediabox]
             clamped = (

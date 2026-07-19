@@ -1,0 +1,2163 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "pkg:pypi/annotated-doc@0.0.4",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "annotated-doc",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.0.4"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/annotated-doc@0.0.4",
+      "scope": "required",
+      "type": "library",
+      "version": "0.0.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/annotated-types@0.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "annotated-types",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.7.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA license classifier; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/annotated-types@0.7.0",
+      "scope": "required",
+      "type": "library",
+      "version": "0.7.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/anyio@4.14.2",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "anyio",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "4.14.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/anyio@4.14.2",
+      "scope": "required",
+      "type": "library",
+      "version": "4.14.2"
+    },
+    {
+      "bom-ref": "pkg:generic/brotli@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "brotli",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section brotli-1.2.0"
+        }
+      ],
+      "purl": "pkg:generic/brotli@1.2.0",
+      "scope": "required",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/certifi@2026.6.17",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "name": "certifi",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2026.6.17"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/certifi@2026.6.17",
+      "scope": "optional",
+      "type": "library",
+      "version": "2026.6.17"
+    },
+    {
+      "bom-ref": "pkg:pypi/charset-normalizer@3.4.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "charset-normalizer",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "3.4.9"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/charset-normalizer@3.4.9",
+      "scope": "optional",
+      "type": "library",
+      "version": "3.4.9"
+    },
+    {
+      "bom-ref": "pkg:pypi/click@8.4.2",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "click",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "8.4.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/click@8.4.2",
+      "scope": "required",
+      "type": "library",
+      "version": "8.4.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/colorama@0.4.6",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD license (classifier; exact variant not stated)"
+          }
+        }
+      ],
+      "name": "colorama",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.4.6"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA license classifier; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "scope": "required",
+      "type": "library",
+      "version": "0.4.6"
+    },
+    {
+      "bom-ref": "pkg:pypi/fastapi@0.139.2",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "fastapi",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.139.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/fastapi@0.139.2",
+      "scope": "required",
+      "type": "library",
+      "version": "0.139.2"
+    },
+    {
+      "bom-ref": "pkg:generic/freetype@2.14.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "FTL OR GPL-2.0-or-later; see the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "freetype",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section freetype-2.14.3"
+        }
+      ],
+      "purl": "pkg:generic/freetype@2.14.3",
+      "scope": "required",
+      "type": "library",
+      "version": "2.14.3"
+    },
+    {
+      "bom-ref": "pkg:pypi/h11@0.16.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "h11",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.16.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/h11@0.16.0",
+      "scope": "required",
+      "type": "library",
+      "version": "0.16.0"
+    },
+    {
+      "bom-ref": "pkg:generic/harfbuzz@14.2.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "harfbuzz",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section harfbuzz-14.2.1"
+        }
+      ],
+      "purl": "pkg:generic/harfbuzz@14.2.1",
+      "scope": "required",
+      "type": "library",
+      "version": "14.2.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/httpcore@1.0.9",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "httpcore",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.0.9"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "scope": "optional",
+      "type": "library",
+      "version": "1.0.9"
+    },
+    {
+      "bom-ref": "pkg:pypi/httptools@0.8.0",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "httptools",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "lock-only"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.8.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 3 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/httptools@0.8.0",
+      "scope": "optional",
+      "type": "library",
+      "version": "0.8.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/httpx@0.28.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "httpx",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.28.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 0 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "scope": "optional",
+      "type": "library",
+      "version": "0.28.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/idna@3.18",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "idna",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "3.18"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/idna@3.18",
+      "scope": "required",
+      "type": "library",
+      "version": "3.18"
+    },
+    {
+      "bom-ref": "pkg:pypi/iniconfig@2.3.0",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "iniconfig",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2.3.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/iniconfig@2.3.0",
+      "scope": "optional",
+      "type": "library",
+      "version": "2.3.0"
+    },
+    {
+      "bom-ref": "pkg:generic/lcms2@2.19.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "lcms2",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section lcms2-2.19.1"
+        }
+      ],
+      "purl": "pkg:generic/lcms2@2.19.1",
+      "scope": "required",
+      "type": "library",
+      "version": "2.19.1"
+    },
+    {
+      "bom-ref": "pkg:generic/libavif@1.4.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "libavif",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section libavif-1.4.2"
+        }
+      ],
+      "purl": "pkg:generic/libavif@1.4.2",
+      "scope": "required",
+      "type": "library",
+      "version": "1.4.2"
+    },
+    {
+      "bom-ref": "pkg:generic/libjpeg-turbo@3.1.4.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "IJG, BSD-style, and zlib terms; see the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "libjpeg-turbo",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section libjpeg-turbo-3.1.4.1"
+        }
+      ],
+      "purl": "pkg:generic/libjpeg-turbo@3.1.4.1",
+      "scope": "required",
+      "type": "library",
+      "version": "3.1.4.1"
+    },
+    {
+      "bom-ref": "pkg:generic/libpng@1.6.58",
+      "licenses": [
+        {
+          "license": {
+            "name": "libpng terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "libpng",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section libpng-1.6.58"
+        }
+      ],
+      "purl": "pkg:generic/libpng@1.6.58",
+      "scope": "required",
+      "type": "library",
+      "version": "1.6.58"
+    },
+    {
+      "bom-ref": "pkg:generic/libwebp@1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "libwebp",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section libwebp-1.6.0"
+        }
+      ],
+      "purl": "pkg:generic/libwebp@1.6.0",
+      "scope": "required",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/lxml@6.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "lxml",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "6.1.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 2 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/lxml@6.1.1",
+      "scope": "required",
+      "type": "library",
+      "version": "6.1.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/markdown-it-py@4.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "markdown-it-py",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "4.2.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA license classifier; 2 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "scope": "required",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/mdurl@0.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "mdurl",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.1.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA license classifier; 0 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "scope": "required",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "pkg:generic/openjpeg@2.5.4",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-style terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "openjpeg",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section openjpeg-2.5.4"
+        }
+      ],
+      "purl": "pkg:generic/openjpeg@2.5.4",
+      "scope": "required",
+      "type": "library",
+      "version": "2.5.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/packaging@26.2",
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-2-Clause"
+        }
+      ],
+      "name": "packaging",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "26.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 3 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/packaging@26.2",
+      "scope": "required",
+      "type": "library",
+      "version": "26.2"
+    },
+    {
+      "bom-ref": "pkg:generic/pdfium@152.0.7947.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-style plus bundled dependency terms"
+          }
+        }
+      ],
+      "name": "PDFium",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pypdfium2"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "pypdfium2 wheel BUILD_LICENSES/pdfium.txt and related BUILD_LICENSES files"
+        }
+      ],
+      "purl": "pkg:generic/pdfium@152.0.7947.0",
+      "scope": "required",
+      "type": "library",
+      "version": "152.0.7947.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pikepdf@10.10.0",
+      "licenses": [
+        {
+          "expression": "MPL-2.0"
+        }
+      ],
+      "name": "pikepdf",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "10.10.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 0 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pikepdf@10.10.0",
+      "scope": "required",
+      "type": "library",
+      "version": "10.10.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pillow@12.3.0",
+      "licenses": [
+        {
+          "expression": "MIT-CMU"
+        }
+      ],
+      "name": "pillow",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "12.3.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "scope": "required",
+      "type": "library",
+      "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:generic/pillow%20codec%20bundle@12.3.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "Multiple licenses; see the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "Pillow codec bundle",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE"
+        }
+      ],
+      "purl": "pkg:generic/pillow%20codec%20bundle@12.3.0",
+      "scope": "required",
+      "type": "library",
+      "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pluggy@1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pluggy",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.6.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "scope": "optional",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic@2.13.4",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2.13.4"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pydantic@2.13.4",
+      "scope": "required",
+      "type": "library",
+      "version": "2.13.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic-settings@2.14.2",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic-settings",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2.14.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pydantic-settings@2.14.2",
+      "scope": "required",
+      "type": "library",
+      "version": "2.14.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic-core@2.46.4",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic_core",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2.46.4"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pydantic-core@2.46.4",
+      "scope": "required",
+      "type": "library",
+      "version": "2.46.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/pygments@2.20.0",
+      "licenses": [
+        {
+          "expression": "BSD-2-Clause"
+        }
+      ],
+      "name": "Pygments",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "2.20.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 2 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pygments@2.20.0",
+      "scope": "required",
+      "type": "library",
+      "version": "2.20.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pypdf@6.14.2",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "pypdf",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "6.14.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pypdf@6.14.2",
+      "scope": "required",
+      "type": "library",
+      "version": "6.14.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/pypdfium2@5.12.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause, Apache-2.0, dependency licenses"
+          }
+        }
+      ],
+      "name": "pypdfium2",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "5.12.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 19 License-File entries"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pypdfium2@5.12.1",
+      "scope": "required",
+      "type": "library",
+      "version": "5.12.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/pytest@9.1.1",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pytest",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "9.1.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pytest@9.1.1",
+      "scope": "optional",
+      "type": "library",
+      "version": "9.1.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/python-dotenv@1.2.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "python-dotenv",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.2.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/python-dotenv@1.2.2",
+      "scope": "required",
+      "type": "library",
+      "version": "1.2.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/python-multipart@0.0.32",
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "python-multipart",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.0.32"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/python-multipart@0.0.32",
+      "scope": "required",
+      "type": "library",
+      "version": "0.0.32"
+    },
+    {
+      "bom-ref": "pkg:pypi/pyyaml@6.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "PyYAML",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "lock-only"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "6.0.3"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "scope": "optional",
+      "type": "library",
+      "version": "6.0.3"
+    },
+    {
+      "bom-ref": "pkg:generic/qpdf@12.3.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "qpdf",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pikepdf"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "pikepdf wheel licenses/licenses-for-wheels.txt"
+        }
+      ],
+      "purl": "pkg:generic/qpdf@12.3.2",
+      "scope": "required",
+      "type": "library",
+      "version": "12.3.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/reportlab@5.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD license (see license.txt for details), Copyright (c) 2000-2025, ReportLab Inc."
+          }
+        }
+      ],
+      "name": "reportlab",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "5.0.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/reportlab@5.0.0",
+      "scope": "optional",
+      "type": "library",
+      "version": "5.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/rich@15.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "rich",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "15.0.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/rich@15.0.0",
+      "scope": "required",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/ruff@0.15.22",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "ruff",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "development"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.15.22"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/ruff@0.15.22",
+      "scope": "optional",
+      "type": "library",
+      "version": "0.15.22"
+    },
+    {
+      "bom-ref": "pkg:pypi/shellingham@1.5.4",
+      "licenses": [
+        {
+          "license": {
+            "name": "ISC License"
+          }
+        }
+      ],
+      "name": "shellingham",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.5.4"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "scope": "required",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/starlette@1.3.1",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "starlette",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.3.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/starlette@1.3.1",
+      "scope": "required",
+      "type": "library",
+      "version": "1.3.1"
+    },
+    {
+      "bom-ref": "pkg:generic/tiff@4.7.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "libtiff terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "tiff",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section tiff-4.7.1"
+        }
+      ],
+      "purl": "pkg:generic/tiff@4.7.1",
+      "scope": "required",
+      "type": "library",
+      "version": "4.7.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/typer@0.27.0",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typer",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.27.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/typer@0.27.0",
+      "scope": "required",
+      "type": "library",
+      "version": "0.27.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/typing-inspection@0.4.2",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typing-inspection",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.4.2"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/typing-inspection@0.4.2",
+      "scope": "required",
+      "type": "library",
+      "version": "0.4.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
+      "licenses": [
+        {
+          "expression": "PSF-2.0"
+        }
+      ],
+      "name": "typing_extensions",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "4.16.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "scope": "required",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/uvicorn@0.51.0",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "uvicorn",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "runtime"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "0.51.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/uvicorn@0.51.0",
+      "scope": "required",
+      "type": "library",
+      "version": "0.51.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/watchfiles@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "watchfiles",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "lock-only"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "1.2.0"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License field; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/watchfiles@1.2.0",
+      "scope": "optional",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/websockets@16.1.1",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "websockets",
+      "properties": [
+        {
+          "name": "localdocforge:dependencyCategory",
+          "value": "lock-only"
+        },
+        {
+          "name": "localdocforge:installedVersion",
+          "value": "16.1.1"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "installed METADATA License-Expression; 1 License-File entry"
+        },
+        {
+          "name": "localdocforge:lockEvidence",
+          "value": "requirements-lock.txt exact version pin; no artifact hash"
+        }
+      ],
+      "purl": "pkg:pypi/websockets@16.1.1",
+      "scope": "optional",
+      "type": "library",
+      "version": "16.1.1"
+    },
+    {
+      "bom-ref": "pkg:generic/xz@5.8.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "Mixed component terms; see the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "xz",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section xz-5.8.3"
+        }
+      ],
+      "purl": "pkg:generic/xz@5.8.3",
+      "scope": "required",
+      "type": "library",
+      "version": "5.8.3"
+    },
+    {
+      "bom-ref": "pkg:generic/zlib-ng@2.3.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "zlib terms in the Pillow wheel license bundle"
+          }
+        }
+      ],
+      "name": "zlib-ng",
+      "properties": [
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentCategory",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseEvidence",
+          "value": "Pillow wheel licenses/LICENSE section zlib-ng-2.3.3"
+        }
+      ],
+      "purl": "pkg:generic/zlib-ng@2.3.3",
+      "scope": "required",
+      "type": "library",
+      "version": "2.3.3"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/brotli@1.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/freetype@2.14.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/harfbuzz@14.2.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/lcms2@2.19.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libavif@1.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libjpeg-turbo@3.1.4.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libpng@1.6.58"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libwebp@1.6.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/openjpeg@2.5.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/pdfium@152.0.7947.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/brotli@1.2.0",
+        "pkg:generic/freetype@2.14.3",
+        "pkg:generic/harfbuzz@14.2.1",
+        "pkg:generic/lcms2@2.19.1",
+        "pkg:generic/libavif@1.4.2",
+        "pkg:generic/libjpeg-turbo@3.1.4.1",
+        "pkg:generic/libpng@1.6.58",
+        "pkg:generic/libwebp@1.6.0",
+        "pkg:generic/openjpeg@2.5.4",
+        "pkg:generic/tiff@4.7.1",
+        "pkg:generic/xz@5.8.3",
+        "pkg:generic/zlib-ng@2.3.3"
+      ],
+      "ref": "pkg:generic/pillow%20codec%20bundle@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/qpdf@12.3.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/tiff@4.7.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/xz@5.8.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/zlib-ng@2.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/annotated-doc@0.0.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/annotated-types@0.7.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/idna@3.18",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/anyio@4.14.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/certifi@2026.6.17"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/charset-normalizer@3.4.9"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/colorama@0.4.6"
+      ],
+      "ref": "pkg:pypi/click@8.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/colorama@0.4.6"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/annotated-doc@0.0.4",
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/starlette@1.3.1",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
+      "ref": "pkg:pypi/fastapi@0.139.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/h11@0.16.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/certifi@2026.6.17",
+        "pkg:pypi/h11@0.16.0"
+      ],
+      "ref": "pkg:pypi/httpcore@1.0.9"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/httptools@0.8.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/certifi@2026.6.17",
+        "pkg:pypi/httpcore@1.0.9",
+        "pkg:pypi/idna@3.18"
+      ],
+      "ref": "pkg:pypi/httpx@0.28.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/idna@3.18"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/iniconfig@2.3.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/fastapi@0.139.2",
+        "pkg:pypi/pikepdf@10.10.0",
+        "pkg:pypi/pillow@12.3.0",
+        "pkg:pypi/pydantic-settings@2.14.2",
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/pypdf@6.14.2",
+        "pkg:pypi/pypdfium2@5.12.1",
+        "pkg:pypi/python-multipart@0.0.32",
+        "pkg:pypi/typer@0.27.0",
+        "pkg:pypi/uvicorn@0.51.0"
+      ],
+      "ref": "pkg:pypi/localdocforge@0.1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/lxml@6.1.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/mdurl@0.1.2"
+      ],
+      "ref": "pkg:pypi/markdown-it-py@4.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/mdurl@0.1.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/packaging@26.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/qpdf@12.3.2",
+        "pkg:pypi/lxml@6.1.1",
+        "pkg:pypi/packaging@26.2",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/pikepdf@10.10.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/pillow%20codec%20bundle@12.3.0"
+      ],
+      "ref": "pkg:pypi/pillow@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pluggy@1.6.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/pydantic-core@2.46.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/python-dotenv@1.2.2",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
+      "ref": "pkg:pypi/pydantic-settings@2.14.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/annotated-types@0.7.0",
+        "pkg:pypi/pydantic-core@2.46.4",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
+      "ref": "pkg:pypi/pydantic@2.13.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pygments@2.20.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/pypdf@6.14.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/pdfium@152.0.7947.0"
+      ],
+      "ref": "pkg:pypi/pypdfium2@5.12.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/colorama@0.4.6",
+        "pkg:pypi/iniconfig@2.3.0",
+        "pkg:pypi/packaging@26.2",
+        "pkg:pypi/pluggy@1.6.0",
+        "pkg:pypi/pygments@2.20.0"
+      ],
+      "ref": "pkg:pypi/pytest@9.1.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/python-dotenv@1.2.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/python-multipart@0.0.32"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pyyaml@6.0.3"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/charset-normalizer@3.4.9",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/reportlab@5.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/markdown-it-py@4.2.0",
+        "pkg:pypi/pygments@2.20.0"
+      ],
+      "ref": "pkg:pypi/rich@15.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/ruff@0.15.22"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/shellingham@1.5.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/starlette@1.3.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/annotated-doc@0.0.4",
+        "pkg:pypi/colorama@0.4.6",
+        "pkg:pypi/rich@15.0.0",
+        "pkg:pypi/shellingham@1.5.4"
+      ],
+      "ref": "pkg:pypi/typer@0.27.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/typing-extensions@4.16.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/typing-inspection@0.4.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/click@8.4.2",
+        "pkg:pypi/h11@0.16.0",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/uvicorn@0.51.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2"
+      ],
+      "ref": "pkg:pypi/watchfiles@1.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/websockets@16.1.1"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:pypi/localdocforge@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "localdocforge",
+      "properties": [
+        {
+          "name": "localdocforge:artifactGeneration",
+          "value": "offline and deterministic"
+        },
+        {
+          "name": "localdocforge:licenseFile",
+          "value": "LICENSE"
+        }
+      ],
+      "purl": "pkg:pypi/localdocforge@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    "properties": [
+      {
+        "name": "localdocforge:advisoryReview",
+        "value": "not performed; network permission required"
+      },
+      {
+        "name": "localdocforge:lockHashes",
+        "value": "absent"
+      },
+      {
+        "name": "localdocforge:profiles",
+        "value": "Lite/Standard/Full profiles are not implemented"
+      },
+      {
+        "name": "localdocforge:sourceEvidence",
+        "value": "requirements-lock.txt plus installed importlib.metadata and wheel license files"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "name": "LocalDocForge offline release-artifact generator",
+          "type": "application",
+          "version": "1"
+        }
+      ]
+    }
+  },
+  "specVersion": "1.6",
+  "version": 1
+}

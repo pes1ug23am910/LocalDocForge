@@ -8,13 +8,14 @@ Probed state on this machine is always visible via `ldf doctor`.
 | Engine | Version (this env) | License | Role | Why |
 |---|---|---|---|---|
 | pikepdf (libqpdf) | 10.10.0 / qpdf 12.3.2 | MPL-2.0 | Primary structural engine: merge/split/remove/extract/organize/rotate/crop/inspect | Mature, actively maintained, binds qpdf (the reference structural tool), preserves objects faithfully, handles encryption, robust against malformed files |
-| pypdf | 6.14.2 | BSD-3-Clause | Fallback structural engine (subset: merge/remove/extract/inspect) + text extraction in tests | Pure Python, no native deps, good enough for fallback when pikepdf wheels are unavailable |
+| pypdf | 6.14.2 | BSD-3-Clause | Installed library used for independent text assertions in tests; no production operation is wired to it | It remains probed for diagnostics but is not advertised or selected as a fallback |
 | pypdfium2 (PDFium) | 5.12.1 | Apache-2.0 OR BSD-3-Clause | Rendering: validation renders, pdf-to-images, future previews/thumbnails | Chrome's PDF renderer: fast, robust on hostile files, permissive license, abi3 wheels |
 | Pillow | 12.3.0 | MIT-CMU | Image decode/encode, images-to-pdf composition | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 
 Rationale for the split: structural edits (pikepdf) and rasterization
 (PDFium) are different failure domains; no single library is trusted for
-both. pypdf keeps a zero-native-deps fallback path alive.
+both. A pypdf production fallback remains a future implementation task; an
+installed library alone is not reported as an executable operation engine.
 
 ## Probed but absent on this machine (adapters exist, features gated off)
 

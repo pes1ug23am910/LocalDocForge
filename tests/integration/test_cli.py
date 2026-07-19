@@ -34,6 +34,8 @@ class TestDoctor:
         result = runner.invoke(app, ["--json", "doctor"])
         assert result.exit_code == 0
         payload = json.loads(result.output)
+        assert payload["strict_offline"] is False
+        assert payload["outbound_network_client"] is False
         engines = {e["name"]: e for e in payload["engines"]}
         assert engines["pikepdf"]["available"] is True
         assert engines["pillow"]["available"] is True
@@ -41,6 +43,11 @@ class TestDoctor:
         assert capabilities["merge"]["available"] is True
         assert capabilities["ocr"]["available"] is False
         assert capabilities["office-to-pdf"]["available"] is False
+
+    def test_doctor_reports_strict_offline_state(self):
+        result = runner.invoke(app, ["--strict-offline", "doctor"])
+        assert result.exit_code == 0
+        assert "Strict-offline mode is enabled" in result.output
 
 
 class TestVersionAndHelp:
@@ -54,6 +61,14 @@ class TestVersionAndHelp:
         assert result.exit_code == 0
         for command in ("merge", "split", "rotate", "doctor", "inspect"):
             assert command in result.output
+
+    def test_strict_offline_refuses_explicit_nonlocal_web_bind(self):
+        result = runner.invoke(
+            app,
+            ["--strict-offline", "web", "--host", "0.0.0.0", "--allow-nonlocal"],
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert "strict-offline" in combined_output(result)
 
 
 class TestMergeCommand:

@@ -111,7 +111,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         None,
         False,
         notes="planned: Phase 3",
-        install_hint="Typst detected on this machine will be evaluated as the renderer",
+        install_hint="Typst is a candidate renderer, but no adapter pipeline is implemented",
     ),
     CapabilitySpec(
         "pdf-to-pdfa",

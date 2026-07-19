@@ -1,36 +1,90 @@
-# Licensing
+# Licensing and release evidence
 
-LocalDocForge itself: MIT (see `pyproject.toml`).
+LocalDocForge source code is licensed under the MIT License. The complete
+license grant is in the repository-root `LICENSE` file and is declared through
+the `license-files` project metadata in `pyproject.toml`.
 
-## Runtime dependency licenses (core, as pinned in requirements-lock.txt)
+This document describes the evidence available in the audited local
+environment. It is an engineering inventory, not legal advice.
 
-| Package | License | Notes |
-|---|---|---|
-| pikepdf | MPL-2.0 | File-level copyleft; used as an unmodified library dependency — no obligations propagate to LocalDocForge code |
-| pypdf | BSD-3-Clause | |
-| pypdfium2 / PDFium | Apache-2.0 OR BSD-3-Clause | PDFium binary bundled by the wheel |
-| Pillow | MIT-CMU | |
-| pydantic, pydantic-settings | MIT | |
-| typer, click | MIT / BSD-3-Clause | |
-| FastAPI, Starlette, uvicorn | MIT / BSD-3-Clause | API layer (planned use) |
+## Generated release artifacts
 
-Dev-only: pytest (MIT), reportlab (BSD-3-Clause; fixture generation only),
-ruff (MIT), httpx (BSD-3-Clause).
+- `THIRD_PARTY_NOTICES.md` inventories the locked Python distributions,
+  locally evidenced license labels, bundled native components, build
+  requirements, and optional external engines.
+- `docs/SBOM.cdx.json` is a CycloneDX 1.6 software bill of materials for the
+  single locked environment. It includes PyPI package URLs and explicit qpdf,
+  PDFium, and Pillow codec-bundle components.
+- `scripts/generate_release_artifacts.py` regenerates both files using only
+  `requirements-lock.txt`, `pyproject.toml`, `importlib.metadata`, and
+  license evidence already installed on the machine. It makes no network
+  requests.
 
-## External engines (invoked as subprocesses, never bundled, never linked)
+Regenerate and verify drift with:
 
-Optional tools the user installs themselves: qpdf (Apache-2.0), Tesseract
-(Apache-2.0), OCRmyPDF (MPL-2.0), Ghostscript (AGPL-3.0), LibreOffice
-(MPL-2.0), Pandoc (GPL-2.0+), Typst (Apache-2.0), veraPDF (GPL/MPL dual).
+```powershell
+.venv\Scripts\python.exe scripts\generate_release_artifacts.py
+.venv\Scripts\python.exe scripts\generate_release_artifacts.py --check
+```
 
-Policy:
-- Copyleft engines (Ghostscript, Pandoc, veraPDF) stay behind optional
-  adapters; LocalDocForge invokes installed binaries via subprocess and
-  redistributes nothing, so their licenses do not attach to this codebase.
-- No silent bundling of external binaries — installation is explicit and
-  documented per profile (Lite/Standard/Full).
+The generated inventory does not replace upstream license texts. Wheel license
+and notice files must be preserved when dependencies are redistributed, and a
+standalone bundler or installer needs a fresh review of the files it actually
+contains.
 
-## Obligations tracked for release (Phase 6)
-- `THIRD_PARTY_NOTICES` generation.
-- SBOM (CycloneDX) for the Python distribution and frontend bundle.
-- License texts for MPL components (pikepdf) alongside binary distributions.
+## Dependency categories
+
+`pyproject.toml` declares runtime dependencies and a `dev` extra. The current
+`requirements-lock.txt` combines their transitive closures and also contains
+several Uvicorn-standard extras not requested by the project metadata. The
+generated notices label packages as `runtime`, `development`, or `lock-only`
+instead of implying that every locked package is a production dependency.
+
+The lock contains exact versions but no artifact hashes or platform markers.
+It was derived from Windows/Python 3.14 and is not proof that the same wheels
+exist or behave correctly on Python 3.12/3.13, macOS, or Linux.
+
+Lite, Standard, and Full installation profiles are **not implemented**. Until
+profile-specific dependency definitions, locks, installation tests, and SBOMs
+exist, the combined lock must not be described as any of those profiles.
+
+## Bundled native code
+
+The repository does not bundle optional qpdf, Tesseract, OCRmyPDF,
+Ghostscript, LibreOffice, Pandoc, Typst, or veraPDF executables. However, core
+Python wheels do contain native code and their associated licensing evidence:
+
+- pikepdf includes libqpdf; the inspected wheel reports qpdf 12.3.2,
+  Apache-2.0 qpdf notices, libjpeg/IJG terms, and Microsoft Visual C++ Runtime
+  redistributable terms.
+- pypdfium2 includes a PDFium DLL. The inspected build reports PDFium
+  152.0.7947.0 and supplies per-component `BUILD_LICENSES` files.
+- Pillow supplies native image/codec libraries. Their exact versions and the
+  wheel's license-bundle evidence are recorded in the generated notices and
+  SBOM.
+
+The generated nested-component list is environment-specific. A different
+wheel or standalone build must be inventoried again.
+
+## Optional external engines
+
+External engines remain user-installed subprocess candidates and are absent
+from the Python dependency lock. Their license strings in diagnostics are
+expected upstream identities, not proof of the terms governing an arbitrary
+binary found on `PATH`.
+
+Copyleft, dual-licensed, and commercial terms depend on the exact engine,
+version, distribution method, and use. In particular, Ghostscript's
+AGPL/commercial choices and veraPDF's GPL/MPL choices require authoritative
+upstream review before redistribution or release enablement. Merely invoking a
+separate process is not used here as a categorical conclusion about every
+licensing scenario.
+
+## Checks still requiring approved network access
+
+No online license, wheel-availability, or security-advisory lookup was
+performed during offline generation. Before a sensitive-document release,
+review every exact Python and nested native version against authoritative
+upstream license files and security advisories, then record the date and
+results in the independent audit. Repeat that review for each optional engine
+that is enabled or distributed.

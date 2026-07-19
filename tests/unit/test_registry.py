@@ -43,8 +43,9 @@ class TestSelection:
     def test_engine_for_render_is_pdfium(self, registry):
         assert registry.engine_for(OP_RENDER).name == "pdfium"
 
-    def test_preferred_engine_honored(self, registry):
-        assert registry.engine_for(OP_MERGE, preferred="pypdf").name == "pypdf"
+    def test_unwired_library_cannot_be_selected_as_an_engine(self, registry):
+        with pytest.raises(EngineUnavailableError):
+            registry.engine_for(OP_MERGE, preferred="pypdf")
 
     def test_preferred_engine_must_support_operation(self, registry):
         with pytest.raises(EngineUnavailableError):
@@ -54,8 +55,8 @@ class TestSelection:
         with pytest.raises(EngineUnavailableError):
             registry.engine_for("teleport")
 
-    def test_fallback_engine_reported(self, registry):
-        assert registry.fallback_engine_name(OP_MERGE, "pikepdf") == "pypdf"
+    def test_no_unimplemented_fallback_is_reported(self, registry):
+        assert registry.fallback_engine_name(OP_MERGE, "pikepdf") is None
 
 
 class TestCapabilityHonesty:

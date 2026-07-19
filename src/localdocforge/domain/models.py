@@ -226,6 +226,9 @@ class JobContext:
     def check_cancelled(self) -> None:
         if self.cancel_event.is_set():
             raise JobCancelled(f"Job {self.job_id} was cancelled")
+        timeout = self.limits.timeout_seconds
+        if timeout is not None and (utc_now() - self.started_at).total_seconds() > timeout:
+            raise JobCancelled(f"Job {self.job_id} exceeded its {timeout:g}s time limit")
 
     def emit(self, stage: str, current: int = 0, total: int = 0, message: str = "") -> None:
         self.check_cancelled()

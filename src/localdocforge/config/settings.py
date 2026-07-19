@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from localdocforge.domain.models import ResourceLimits
-from localdocforge.jobs.workspace import CollisionPolicy
+from localdocforge.jobs.workspace import CollisionPolicy, default_jobs_root
+from localdocforge.security.paths import is_remote_path
 
 
 class Settings(BaseSettings):
@@ -42,6 +44,16 @@ class Settings(BaseSettings):
     bind_port: int = 8477
 
     verbose: bool = False
+
+    @model_validator(mode="after")
+    def strict_offline_paths_are_local(self) -> Settings:
+        if not self.strict_offline:
+            return self
+        configured = [self.jobs_root or default_jobs_root()]
+        configured.extend(self.allowed_output_roots or [])
+        if any(path is not None and is_remote_path(path) for path in configured):
+            raise ValueError("strict-offline mode forbids UNC and network-drive paths")
+        return self
 
 
 _settings: Settings | None = None

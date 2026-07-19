@@ -148,6 +148,20 @@ class TestSplit:
         assert page_count(out_dir / "simple-3page-pages-1_2.pdf") == 2
         assert page_count(out_dir / "simple-3page-pages-3.pdf") == 1
 
+    def test_split_duplicate_tokens_get_deterministic_unique_names(
+        self, fixtures_dir, out_dir
+    ):
+        report = split_pdf(
+            fixtures_dir / "simple-3page.pdf", out_dir, pages=PageRange(spec="1,1")
+        )
+        assert report.status == ReportStatus.SUCCESS
+        names = sorted(path.name for path in out_dir.glob("*.pdf"))
+        assert names == [
+            "simple-3page-pages-1-repeat-002.pdf",
+            "simple-3page-pages-1.pdf",
+        ]
+        assert all(page_count(out_dir / name) == 1 for name in names)
+
     def test_split_every_n(self, fixtures_dir, out_dir):
         report = split_pdf(fixtures_dir / "outline-6page.pdf", out_dir, every=4)
         assert report.status == ReportStatus.SUCCESS
