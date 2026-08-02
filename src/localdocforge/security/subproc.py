@@ -47,6 +47,7 @@ _SAFE_ENV_KEYS = (
 )
 _PATHLIKE_ENV_KEYS = frozenset({"HOME", "TEMP", "TMP", "TMPDIR", "SYSTEMROOT", "WINDIR"})
 _SAFE_EXTRA_ENV_KEYS = frozenset({"HOME", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"})
+_WORKER_PROCESS_GROUP_ENV = "LDF_WORKER_PROCESS_GROUP"
 
 
 class ToolError(Exception):
@@ -81,10 +82,7 @@ def minimal_env(extra: dict[str, str] | None = None) -> dict[str, str]:
         if key in os.environ
         and (
             key not in _PATHLIKE_ENV_KEYS
-            or (
-                Path(os.environ[key]).is_absolute()
-                and not is_remote_path(Path(os.environ[key]))
-            )
+            or (Path(os.environ[key]).is_absolute() and not is_remote_path(Path(os.environ[key])))
         )
     }
     env["PATH"] = os.pathsep.join(str(path) for path in _safe_search_directories())
@@ -117,7 +115,8 @@ def find_executable(tool: str) -> str | None:
         raise ToolError(f"Executable {tool!r} is not on the allowlist")
     if os.name == "nt":
         path_extensions = [
-            ext for ext in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(os.pathsep)
+            ext
+            for ext in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(os.pathsep)
             if ext.startswith(".") and "/" not in ext and "\\" not in ext
         ]
     else:
@@ -135,8 +134,29 @@ def find_executable(tool: str) -> str | None:
     return None
 
 
-def kill_process_tree(process: subprocess.Popen[bytes]) -> None:
-    """Terminate a process and all of its descendants."""
+def _validated_worker_process_group() -> int | None:
+    """Return the inherited worker process group only when it matches this process."""
+    if os.name == "nt":
+        return None
+    raw_group = os.environ.get(_WORKER_PROCESS_GROUP_ENV, "")
+    if not raw_group.isascii() or not raw_group.isdecimal():
+        return None
+    try:
+        process_group = int(raw_group)
+    except ValueError:
+        return None
+    if process_group <= 0:
+        return None
+    try:
+        return process_group if process_group == os.getpgrp() else None
+    except OSError:
+        return None
+
+
+def kill_process_tree(
+    process: subprocess.Popen[bytes], *, shared_worker_group: bool = False
+) -> None:
+    """Terminate a process tree without signalling a shared worker group."""
     if process.poll() is not None:
         return
     try:
@@ -152,7 +172,16 @@ def kill_process_tree(process: subprocess.Popen[bytes]) -> None:
             if result.returncode != 0 and process.poll() is None:
                 process.kill()
         else:
-            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            process_group = os.getpgid(process.pid)
+            if shared_worker_group or process_group == os.getpgrp():
+                # A worker's tool processes deliberately inherit the worker group so
+                # the outer supervisor can terminate every descendant. Signalling
+                # that group here would kill this wrapper before it can report the
+                # timeout. Kill the direct tool and leave group-wide cleanup to the
+                # worker supervisor.
+                process.kill()
+            else:
+                os.killpg(process_group, signal.SIGKILL)
     except (OSError, subprocess.TimeoutExpired):
         process.kill()
     try:
@@ -202,10 +231,14 @@ def run_tool(
     else:
         child_cwd = Path(executable).parent
     popen_kwargs: dict[str, object] = {}
+    worker_process_group = _validated_worker_process_group()
     if os.name == "nt":
         popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     else:
-        popen_kwargs["start_new_session"] = True  # own process group for killpg
+        # Standalone CLI tools get a private session for killpg. Worker tools
+        # instead stay in the validated worker group so the worker supervisor owns
+        # their complete descendant tree.
+        popen_kwargs["start_new_session"] = worker_process_group is None
     process = subprocess.Popen(  # noqa: S603 - allowlisted executable, argv list, no shell
         argv,
         stdout=subprocess.PIPE,
@@ -227,14 +260,20 @@ def run_tool(
     try:
         process.wait(timeout=timeout)
     except subprocess.TimeoutExpired as exc:
-        kill_process_tree(process)
+        if worker_process_group is None:
+            kill_process_tree(process)
+        else:
+            kill_process_tree(process, shared_worker_group=True)
         reader.join(timeout=5)
         raise ToolTimeout(
             f"{tool} exceeded its {timeout:.0f}s time limit and was terminated"
         ) from exc
     except BaseException:
         # KeyboardInterrupt/SystemExit must not orphan an engine or its children.
-        kill_process_tree(process)
+        if worker_process_group is None:
+            kill_process_tree(process)
+        else:
+            kill_process_tree(process, shared_worker_group=True)
         reader.join(timeout=5)
         raise
     reader.join(timeout=5)

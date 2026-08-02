@@ -1,0 +1,132 @@
+name: Packaging and install matrix
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packaging-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.26"
+  SOURCE_DATE_EPOCH: "1704067200"
+
+jobs:
+  build-and-local-gate:
+    name: Build and Linux 3.14 release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up CPython 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Set up pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.26"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install the hash-locked development set
+        run: |
+          uv venv --python 3.14 .release-venv
+          uv pip sync --python .release-venv/bin/python --require-hashes requirements/locks/dev.txt
+          uv pip install --python .release-venv/bin/python --no-deps ".[dev]"
+
+      - name: Run the complete local release gate
+        run: >
+          .release-venv/bin/python scripts/release_gate.py
+          --dist-dir dist
+          --profile-evidence packaging-evidence/linux-3.14-source.json
+
+      - name: Record retained release checksums
+        run: sha256sum dist/localdocforge-* > dist/SHA256SUMS
+
+      - name: Upload release distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: localdocforge-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload source-profile evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: packaging-evidence-linux-3.14-source
+          path: packaging-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload profile SBOMs and notices
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: profile-sboms-and-notices
+          path: |
+            docs/SBOM.lite.cdx.json
+            docs/SBOM.standard.cdx.json
+            docs/SBOM.full.cdx.json
+            THIRD_PARTY_NOTICES.md
+            THIRD_PARTY_NOTICES.lite.md
+            THIRD_PARTY_NOTICES.standard.md
+            THIRD_PARTY_NOTICES.full.md
+          if-no-files-found: error
+          retention-days: 30
+
+  install-and-test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    needs: build-and-local-gate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python: ["3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up CPython
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Set up pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.26"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Download the audited wheel and sdist
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: localdocforge-distributions
+          path: dist
+
+      - name: Verify lock drift, checksums, clean profiles, full tests, and blocked network
+        run: |
+          python scripts/lock_profiles.py --check
+          python scripts/profile_matrix.py --wheel-dir dist --checksum-file dist/SHA256SUMS --full-tests --evidence packaging-evidence/${{ matrix.os }}-py${{ matrix.python }}.json
+
+      - name: Upload runner evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: packaging-evidence-${{ matrix.os }}-py${{ matrix.python }}
+          path: packaging-evidence/
+          if-no-files-found: warn
+          retention-days: 30

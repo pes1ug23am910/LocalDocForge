@@ -17,6 +17,7 @@ OP_ORGANIZE = "organize"
 OP_ROTATE = "rotate"
 OP_CROP = "crop"
 OP_INSPECT = "inspect"
+OP_COMPRESS = "compress"
 OP_RENDER = "render"
 OP_PDF_TO_IMAGES = "pdf-to-images"
 OP_IMAGES_TO_PDF = "images-to-pdf"
@@ -31,6 +32,7 @@ _STRUCTURAL_OPS = frozenset(
         OP_ROTATE,
         OP_CROP,
         OP_INSPECT,
+        OP_COMPRESS,
     }
 )
 

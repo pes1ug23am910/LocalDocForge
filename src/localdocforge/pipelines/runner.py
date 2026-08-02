@@ -50,7 +50,7 @@ from localdocforge.jobs.workspace import (
     atomic_publish,
     contained_output_path,
 )
-from localdocforge.security.paths import is_remote_path
+from localdocforge.security.paths import PathSecurityError, validate_path_before_access
 from localdocforge.security.sniff import ContentTypeError, require_media_type
 from localdocforge.validation.pdf_checks import count_pdf_pages, validate_pdf
 
@@ -135,8 +135,18 @@ def _gather_inputs(
     max_bytes = settings.limits.max_input_bytes
     total_bytes = 0
     for path in paths:
-        if settings.strict_offline and is_remote_path(path):
-            raise ContentTypeError("strict-offline mode forbids network filesystem inputs")
+        try:
+            path = validate_path_before_access(
+                path,
+                what="input path",
+                require_local=settings.strict_offline,
+            )
+        except PathSecurityError as exc:
+            if "UNC or mapped network-drive" in str(exc):
+                raise ContentTypeError(
+                    "strict-offline mode forbids network filesystem inputs"
+                ) from exc
+            raise ContentTypeError(str(exc)) from exc
         media = require_media_type(path, *expected_types)
         size = path.stat().st_size
         total_bytes += size
@@ -244,13 +254,21 @@ def run_pipeline(
         input_paths = [artifact.path.resolve(strict=False) for artifact in inputs]
         for candidate in result.candidates:
             candidate.workspace_path = workspace.contain(candidate.workspace_path)
-            if settings.strict_offline and is_remote_path(candidate.destination):
-                raise PipelineError(
-                    "strict-offline mode forbids network filesystem outputs", report
+            try:
+                candidate.destination = validate_path_before_access(
+                    candidate.destination,
+                    what="output path",
+                    require_local=settings.strict_offline,
                 )
-            candidate.destination = contained_output_path(
-                candidate.destination, settings.allowed_output_roots
-            )
+                candidate.destination = contained_output_path(
+                    candidate.destination, settings.allowed_output_roots
+                )
+            except PathSecurityError as exc:
+                if "UNC or mapped network-drive" in str(exc):
+                    raise PipelineError(
+                        "strict-offline mode forbids network filesystem outputs", report
+                    ) from exc
+                raise PipelineError(str(exc), report) from exc
             if any(_paths_alias(candidate.destination, input_path) for input_path in input_paths):
                 raise PipelineError(
                     "Output path aliases an input file; in-place source modification is forbidden",

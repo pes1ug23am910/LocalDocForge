@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "executed_at": "2026-07-20",
+  "platform": {
+    "system": "Windows",
+    "release": "11",
+    "platform_version": "10.0.26200",
+    "machine": "AMD64",
+    "python": "3.14.4"
+  },
+  "input_boundary": "Repository-owned synthetic fixtures only",
+  "strict_offline": true,
+  "operations": [
+    "crop",
+    "images-to-pdf",
+    "merge",
+    "rotate"
+  ],
+  "tools": {
+    "pikepdf": "10.10.0",
+    "pypdfium2": "5.12.1",
+    "Pillow": "12.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact": "cropped.pdf",
+      "bytes": 2729,
+      "pages": 3,
+      "sha256": "f1fc6017955b3d0b967c32a76a33e159f187b6741cb62d9182cd31e82f8f9415",
+      "pikepdf_reopen": "passed",
+      "pdfium_render": "passed"
+    },
+    {
+      "artifact": "images-6page.pdf",
+      "bytes": 919500,
+      "pages": 6,
+      "sha256": "1419fa2b07d4b5c0ee5e37ac8e398d1ae1b7e16092e31eee50affe6070077025",
+      "pikepdf_reopen": "passed",
+      "pdfium_render": "passed"
+    },
+    {
+      "artifact": "merge-4page.pdf",
+      "bytes": 3548,
+      "pages": 4,
+      "sha256": "748e7a3ed925dcb9adf849a1c5404018de0ef516e6fcfa62839331f7faea8130",
+      "pikepdf_reopen": "passed",
+      "pdfium_render": "passed"
+    },
+    {
+      "artifact": "rotated.pdf",
+      "bytes": 2677,
+      "pages": 3,
+      "sha256": "5cadd195f044342a656a84b670456ce26cf476932789c20c553d56c25cb6332a",
+      "pikepdf_reopen": "passed",
+      "pdfium_render": "passed"
+    }
+  ],
+  "rendered_pages": 16,
+  "visual_inspection": {
+    "status": "passed",
+    "contact_sheets_reviewed": 4,
+    "defects_observed": 0,
+    "checks": [
+      "content visible and legible",
+      "page order retained",
+      "crop geometry visible",
+      "image orientation and fit visible",
+      "rotation visible",
+      "no blank, clipped, corrupt, or raster-failure page"
+    ]
+  },
+  "retention": "Temporary PDFs and page renders may be removed after inspection; this sanitized evidence retains artifact hashes and results."
+}

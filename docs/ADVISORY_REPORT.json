@@ -1,0 +1,1620 @@
+{
+  "schemaVersion": 1,
+  "reportId": "localdocforge-advisory-license-review-2026-07-19",
+  "accessDate": "2026-07-19",
+  "amendedDate": "2026-07-20",
+  "scope": {
+    "sbom": "docs/SBOM.cdx.json",
+    "profileSboms": {
+      "lite": "docs/SBOM.lite.cdx.json",
+      "standard": "docs/SBOM.standard.cdx.json",
+      "full": "docs/SBOM.full.cdx.json"
+    },
+    "profileNotices": {
+      "lite": "THIRD_PARTY_NOTICES.lite.md",
+      "standard": "THIRD_PARTY_NOTICES.standard.md",
+      "full": "THIRD_PARTY_NOTICES.full.md"
+    },
+    "profileLocks": {
+      "lite": "requirements/locks/lite.txt",
+      "standard": "requirements/locks/standard.txt",
+      "full": "requirements/locks/full.txt"
+    },
+    "runtimePythonComponents": 29,
+    "runtimePythonComponentsByProfile": {
+      "lite": 20,
+      "standard": 28,
+      "full": 29
+    },
+    "versionedBundledNativeComponents": 16,
+    "unversionedNestedNativeComponents": 18,
+    "versionedReviewRecordCount": 45,
+    "optionalEngines": {
+      "reviewed": false,
+      "reason": "No optional external executable is enabled or distributed. Typst is locally detectable but its capability is unwired; qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
+    }
+  },
+  "summary": {
+    "dispositionCounts": {
+      "affected": 1,
+      "contains-affected-component": 2,
+      "contains-unknown-component": 1,
+      "no-known-applicable-advisory": 40,
+      "unknown": 1
+    },
+    "uniqueApplicableAdvisories": 1,
+    "applicableAdvisoryIds": [
+      "OSV-2025-219"
+    ],
+    "releaseDisposition": "not-cleared",
+    "releaseRationale": "Bundled OpenJPEG 2.5.4 is affected by OSV-2025-219 even though JP2/J2K is rejected by the current LocalDocForge media-type boundary. PDFium 152.0.7947.0 and all enumerated version-unknown nested children remain advisory-unknown. Empty exact-version database results are not treated as proof of safety, and the Windows-native inventory is compositionally incomplete for other target platforms."
+  },
+  "verificationRuns": [
+    {
+      "accessDate": "2026-07-20",
+      "scope": "Exact-version advisory refresh and isolated-build-backend provenance verification",
+      "dataBoundary": "Only public component names and exact public versions were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "29 locked PyPI runtime components",
+          "conclusion": "The official OSV batch API returned zero matching vulnerability records for the 29 exact PyPI name/version queries.",
+          "disposition": "The existing no-known-applicable-advisory records remain time-bounded no-findings, not safety guarantees."
+        },
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "16 versioned bundled-native components",
+          "conclusion": "The official OSV batch API returned one applicable match: OpenJPEG 2.5.4 maps to OSV-2025-219; no other exact native query returned a match.",
+          "disposition": "OpenJPEG remains affected; empty results remain time-bounded no-findings or unknown where provenance is insufficient."
+        },
+        {
+          "url": "https://osv.dev/vulnerability/OSV-2025-219",
+          "exactVersions": "OpenJPEG 2.5.4",
+          "conclusion": "The authoritative OSV record still enumerates v2.5.4 as affected by the HIGH-severity heap-buffer-overflow and identifies fixed commit d33cbecc148d3affcdf403211fddc2cc5d442379.",
+          "disposition": "affected"
+        },
+        {
+          "url": "https://github.com/python-pillow/Pillow/blob/12.3.0/winbuild/build_prepare.py",
+          "exactVersions": "Pillow 12.3.0 Windows build source",
+          "conclusion": "The exact Pillow tag retains its native OpenJPEG acquisition path; local exact-wheel notice evidence continues to identify bundled OpenJPEG 2.5.4, and no fixed same-version bundle evidence was established.",
+          "disposition": "contains-affected-component"
+        },
+        {
+          "url": "https://pypi.org/pypi/setuptools/83.0.0/json",
+          "exactVersions": "setuptools 83.0.0",
+          "conclusion": "Official PyPI metadata authenticated the release wheel SHA-256 29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3 and sdist SHA-256 025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef used by the build-backend lock.",
+          "disposition": "approved as the hash-locked isolated PEP 517 build backend"
+        }
+      ],
+      "releaseDisposition": "not-cleared",
+      "releaseRationale": "The refresh did not remove the affected OpenJPEG result or resolve PDFium and unversioned-child provenance."
+    }
+  ],
+  "method": {
+    "conclusionVocabulary": {
+      "affected": "An authoritative or official advisory source identifies the exact installed version as affected.",
+      "contains-affected-component": "The component is an aggregate or distribution that contains an affected nested component.",
+      "contains-unknown-component": "The component contains a nested component whose exact advisory disposition could not be established.",
+      "no-known-applicable-advisory": "No advisory matching the exact version was identified in the named sources on the access date; this is not a safety guarantee.",
+      "unknown": "Available provenance or advisory mapping is insufficient to reach an affected/not-affected conclusion."
+    },
+    "licenseVerification": {
+      "authorityOrder": [
+        "exact release-tag upstream license text",
+        "exact release metadata",
+        "exact installed wheel license and notice files",
+        "moving upstream text only when exact source provenance is unavailable and the limitation is explicit"
+      ],
+      "exactVersionPolicy": "A moving main/master license file alone is insufficient. Exact tag references are used wherever the upstream exposes a release tag; exact wheel/sdist evidence and a stated limitation are required otherwise.",
+      "platformEvidence": "Nested native versions and wheel notice bundles were inspected from Windows x86-64 / CPython 3.14 artifacts. Each other target platform requires equivalent wheel inventory and license retention.",
+      "networkAccessDate": "2026-07-19"
+    },
+    "unversionedComponentPolicy": {
+      "securityDisposition": "unknown",
+      "affectedVersionRanges": null,
+      "licenseTreatment": "Retain the complete aggregate wheel notice named by each record; no exact-version license conclusion is inferred when the child version is unavailable.",
+      "applicability": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec.",
+      "remediation": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established.",
+      "residualRisk": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+    },
+    "querySets": {
+      "osv-pypi-exact": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "PyPI",
+        "results": {
+          "pkg:pypi/annotated-doc@0.0.4": [],
+          "pkg:pypi/annotated-types@0.7.0": [],
+          "pkg:pypi/anyio@4.14.2": [],
+          "pkg:pypi/click@8.4.2": [],
+          "pkg:pypi/colorama@0.4.6": [],
+          "pkg:pypi/fastapi@0.139.2": [],
+          "pkg:pypi/h11@0.16.0": [],
+          "pkg:pypi/idna@3.18": [],
+          "pkg:pypi/lxml@6.1.1": [],
+          "pkg:pypi/markdown-it-py@4.2.0": [],
+          "pkg:pypi/mdurl@0.1.2": [],
+          "pkg:pypi/packaging@26.2": [],
+          "pkg:pypi/pikepdf@10.10.0": [],
+          "pkg:pypi/pillow@12.3.0": [],
+          "pkg:pypi/pydantic@2.13.4": [],
+          "pkg:pypi/pydantic-core@2.46.4": [],
+          "pkg:pypi/pydantic-settings@2.14.2": [],
+          "pkg:pypi/pygments@2.20.0": [],
+          "pkg:pypi/pypdf@6.14.2": [],
+          "pkg:pypi/pypdfium2@5.12.1": [],
+          "pkg:pypi/python-dotenv@1.2.2": [],
+          "pkg:pypi/python-multipart@0.0.32": [],
+          "pkg:pypi/rich@15.0.0": [],
+          "pkg:pypi/shellingham@1.5.4": [],
+          "pkg:pypi/starlette@1.3.1": [],
+          "pkg:pypi/typer@0.27.0": [],
+          "pkg:pypi/typing-extensions@4.16.0": [],
+          "pkg:pypi/typing-inspection@0.4.2": [],
+          "pkg:pypi/uvicorn@0.51.0": []
+        }
+      },
+      "github-reviewed-pip-exact": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "pip",
+        "queriedBomRefs": [
+          "pkg:pypi/annotated-doc@0.0.4",
+          "pkg:pypi/annotated-types@0.7.0",
+          "pkg:pypi/anyio@4.14.2",
+          "pkg:pypi/click@8.4.2",
+          "pkg:pypi/colorama@0.4.6",
+          "pkg:pypi/fastapi@0.139.2",
+          "pkg:pypi/h11@0.16.0",
+          "pkg:pypi/idna@3.18",
+          "pkg:pypi/lxml@6.1.1",
+          "pkg:pypi/markdown-it-py@4.2.0",
+          "pkg:pypi/mdurl@0.1.2",
+          "pkg:pypi/packaging@26.2",
+          "pkg:pypi/pikepdf@10.10.0",
+          "pkg:pypi/pillow@12.3.0",
+          "pkg:pypi/pydantic@2.13.4",
+          "pkg:pypi/pydantic-core@2.46.4",
+          "pkg:pypi/pydantic-settings@2.14.2",
+          "pkg:pypi/pygments@2.20.0",
+          "pkg:pypi/pypdf@6.14.2",
+          "pkg:pypi/pypdfium2@5.12.1",
+          "pkg:pypi/python-dotenv@1.2.2",
+          "pkg:pypi/python-multipart@0.0.32",
+          "pkg:pypi/rich@15.0.0",
+          "pkg:pypi/shellingham@1.5.4",
+          "pkg:pypi/starlette@1.3.1",
+          "pkg:pypi/typer@0.27.0",
+          "pkg:pypi/typing-extensions@4.16.0",
+          "pkg:pypi/typing-inspection@0.4.2",
+          "pkg:pypi/uvicorn@0.51.0"
+        ],
+        "results": []
+      },
+      "osv-oss-fuzz-exact": {
+        "authority": "official advisory database and OSS-Fuzz evidence",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "OSS-Fuzz",
+        "results": {
+          "pkg:generic/brotli@1.2.0": [],
+          "pkg:generic/freetype@2.14.3": [],
+          "pkg:generic/harfbuzz@14.2.1": [],
+          "pkg:generic/lcms2@2.19.1": [],
+          "pkg:generic/libavif@1.4.2": [],
+          "pkg:generic/libjpeg-turbo@3.1.4.1": [],
+          "pkg:generic/libpng@1.6.58": [],
+          "pkg:generic/libwebp@1.6.0": [],
+          "pkg:generic/openjpeg@2.5.4": [
+            "OSV-2025-219"
+          ],
+          "pkg:generic/pdfium@152.0.7947.0": [],
+          "pkg:generic/qpdf@12.3.2": [],
+          "pkg:generic/tiff@4.7.1": [],
+          "pkg:generic/xz@5.8.3": [],
+          "pkg:generic/zlib-ng@2.3.3": []
+        }
+      },
+      "github-reviewed-other-exact": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "other",
+        "queriedBomRefs": [
+          "pkg:generic/brotli@1.2.0",
+          "pkg:generic/freetype@2.14.3",
+          "pkg:generic/harfbuzz@14.2.1",
+          "pkg:generic/lcms2@2.19.1",
+          "pkg:generic/libavif@1.4.2",
+          "pkg:generic/libjpeg-turbo@3.1.4.1",
+          "pkg:generic/libpng@1.6.58",
+          "pkg:generic/libwebp@1.6.0",
+          "pkg:generic/openjpeg@2.5.4",
+          "pkg:generic/pdfium@152.0.7947.0",
+          "pkg:generic/qpdf@12.3.2",
+          "pkg:generic/tiff@4.7.1",
+          "pkg:generic/xz@5.8.3",
+          "pkg:generic/zlib-ng@2.3.3"
+        ],
+        "results": []
+      },
+      "microsoft-vc-runtime-exact": {
+        "authority": "official Microsoft lifecycle, licensing, and Security Update Guide review",
+        "version": "14.44.35211.0",
+        "lifecycleEvidence": "https://learn.microsoft.com/en-us/lifecycle/faq/visual-c-faq",
+        "licenseEvidence": "https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/",
+        "advisoryPortal": "https://msrc.microsoft.com/update-guide/",
+        "results": [],
+        "limitation": "Microsoft's public advisory portal does not provide a stable exact-DLL-version API mapping. No matching applicable advisory was identified on 2026-07-19; this is not proof of safety."
+      }
+    },
+    "limitations": [
+      "Database results are a time-bounded snapshot, not proof that a component has no vulnerability.",
+      "GitHub repository security tabs may omit vulnerabilities published only through OSS-Fuzz, vendor trackers, or private disclosure; OpenJPEG is a demonstrated example.",
+      "PDFium security bugs are generally handled through Chromium/Google private disclosure. The installed wheel records PDFium 152.0.7947.0 with n_commits=0 and hash=null, so public release notices cannot be mapped authoritatively to this binary.",
+      "The components array contains versioned review records, not an exhaustive native inventory. Known unversioned PDFium and Pillow/libavif children are enumerated separately, inherit unknown advisory provenance, and make the CycloneDX composition incomplete.",
+      "Native evidence comes from Windows x86-64 / CPython 3.14 wheels even though the Python lock and generated SBOM files are universal-profile artifacts. Other platform wheels require independent native inventory.",
+      "Platform markers mean a package can be absent on a particular operating system. Dispositions apply whenever the listed artifact is installed."
+    ]
+  },
+  "unversionedNestedComponents": [
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:abseil:unversioned",
+      "name": "Abseil",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "Apache-2.0 (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/abseil.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:agg23:unversioned",
+      "name": "Anti-Grain Geometry 2.3",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "license family name only; no source revision",
+      "licenseConclusion": "AGG 2.3 permissive notice",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/agg23.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:fast-float:unversioned",
+      "name": "fast_float",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "MIT (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/fast_float.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:freetype:unversioned",
+      "name": "FreeType (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; distinct from Pillow's versioned FreeType record",
+      "licenseConclusion": "FTL OR GPL-2.0-or-later (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/freetype.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:icu:unversioned",
+      "name": "ICU",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "Unicode-3.0 (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/icu.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:lcms:unversioned",
+      "name": "Little CMS (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; distinct from Pillow's versioned lcms2 record",
+      "licenseConclusion": "MIT (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/lcms.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:libjpeg-turbo:unversioned",
+      "name": "libjpeg-turbo (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; distinct from Pillow's versioned libjpeg-turbo record",
+      "licenseConclusion": "BSD-3-Clause, IJG, and related aggregate notices",
+      "licenseNotice": "pypdfium2 BUILD_LICENSES/libjpeg_turbo.md and libjpeg_turbo.ijg",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:openjpeg:unversioned",
+      "name": "OpenJPEG (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; must not inherit Pillow's 2.5.4 version",
+      "licenseConclusion": "BSD-2-Clause (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:libpng:unversioned",
+      "name": "libpng (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; distinct from Pillow's versioned libpng record",
+      "licenseConclusion": "libpng-2.0 (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libpng.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:libtiff:unversioned",
+      "name": "libtiff (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES; distinct from Pillow's versioned TIFF record",
+      "licenseConclusion": "libtiff (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libtiff.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:llvm-libc:unversioned",
+      "name": "LLVM libc",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "Apache-2.0 WITH LLVM-exception (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/llvm-libc.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:pdfium-binaries:unversioned",
+      "name": "pdfium-binaries support code",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "MIT (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:simdutf:unversioned",
+      "name": "simdutf",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "not provided by BUILD_LICENSES",
+      "licenseConclusion": "MIT (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/simdutf.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:pdfium:zlib:unversioned",
+      "name": "zlib (PDFium child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "versionEvidence": "BUILD_LICENSES text names 1.3.2.1 but provides no authoritative binary/source binding",
+      "licenseConclusion": "Zlib (aggregate notice)",
+      "licenseNotice": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/zlib.txt",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:libavif:aom:local",
+      "name": "AOM (libavif child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/libavif@1.4.2",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 Pillow wheel",
+      "versionEvidence": "LOCAL",
+      "licenseConclusion": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded",
+      "licenseNotice": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:libavif:dav1d:local",
+      "name": "dav1d (libavif child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/libavif@1.4.2",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 Pillow wheel",
+      "versionEvidence": "LOCAL",
+      "licenseConclusion": "BSD-2-Clause-style terms in aggregate notice",
+      "licenseNotice": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section (src/obu.c dav1d authors)",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:libavif:libyuv:local",
+      "name": "libyuv (libavif child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/libavif@1.4.2",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 Pillow wheel",
+      "versionEvidence": "LOCAL",
+      "licenseConclusion": "BSD-3-Clause-style terms in aggregate notice",
+      "licenseNotice": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section (third_party/libyuv)",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:libavif:libsharpyuv:local",
+      "name": "libsharpyuv (libavif child)",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:generic/libavif@1.4.2",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 Pillow wheel",
+      "versionEvidence": "LOCAL",
+      "licenseConclusion": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded",
+      "licenseNotice": "Pillow 12.3.0 wheel licenses/LICENSE and libavif-1.4.2 aggregate notices",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    }
+  ],
+  "components": [
+    {
+      "bomRef": "pkg:pypi/annotated-doc@0.0.4",
+      "name": "annotated-doc",
+      "version": "0.0.4",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Annotation documentation helper used transitively by Typer and FastAPI; document bytes are not passed to it.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/fastapi/annotated-doc/0.0.4/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/annotated-doc/0.0.4/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/fastapi/annotated-doc/security/advisories",
+        "applicability": "No direct untrusted-document or HTTP parsing path was identified.",
+        "remediation": "Keep the hash lock and repeat exact-version review on upgrade.",
+        "residualRisk": "Unpublished issues and supply-chain compromise remain possible; no-finding is not a safety claim."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/annotated-types@0.7.0",
+      "name": "annotated-types",
+      "version": "0.7.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Constraint metadata consumed by Pydantic.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/annotated-types/annotated-types/v0.7.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/annotated-types/0.7.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/annotated-types/annotated-types/security/advisories",
+        "applicability": "Only application-declared type metadata is consumed; untrusted files do not define annotations.",
+        "remediation": "Keep the hash lock and repeat exact-version review on upgrade.",
+        "residualRisk": "Pydantic behavior still depends on this metadata; unpublished semantic-validation defects remain possible."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/anyio@4.14.2",
+      "name": "anyio",
+      "version": "4.14.2",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "ASGI concurrency layer used by Starlette when the local web service is enabled.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/agronholm/anyio/4.14.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/anyio/4.14.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/agronholm/anyio/security/advisories",
+        "applicability": "Reachable indirectly through concurrent API requests only in standard/full profiles; the service defaults to loopback.",
+        "remediation": "Retain request, concurrency, timeout, and process-isolation controls and update if a matching advisory appears.",
+        "residualRisk": "Concurrency cancellation and resource-exhaustion defects can still affect availability even without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/click@8.4.2",
+      "name": "click",
+      "version": "8.4.2",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "Command-line parsing dependency of Uvicorn.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pallets/click/8.4.2/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/click/8.4.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pallets/click/security/advisories",
+        "applicability": "Parses trusted local launch arguments; uploaded document bytes are not passed to Click.",
+        "remediation": "Keep the hash lock and repeat exact-version review on upgrade.",
+        "residualRisk": "Terminal and argument-handling defects remain possible for attacker-influenced filenames shown by higher layers."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/colorama@0.4.6",
+      "name": "colorama",
+      "version": "0.4.6",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "platformMarker": "sys_platform == 'win32'",
+      "role": "Windows terminal-color compatibility for CLI output.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/tartley/colorama/0.4.6/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/colorama/0.4.6/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/tartley/colorama/security/advisories",
+        "applicability": "Used only on Windows for local terminal output; it does not parse document bodies.",
+        "remediation": "Keep output escaping/bounds in higher layers and repeat review on upgrade.",
+        "residualRisk": "Unpublished terminal-control handling defects remain possible."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/fastapi@0.139.2",
+      "name": "fastapi",
+      "version": "0.139.2",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "Local HTTP API routing, request validation, and response serialization.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/fastapi/fastapi/0.139.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/fastapi/0.139.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/fastapi/fastapi/security/advisories",
+        "applicability": "Directly reachable by untrusted HTTP requests when `ldf web` is running; loopback is the default but nonlocal mode exists outside strict-offline mode.",
+        "remediation": "Maintain token/Host/body/field controls and promptly update on any matching framework advisory.",
+        "residualRisk": "Framework logic and dependency interactions may expose unpublished request-smuggling, validation, or denial-of-service issues."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/h11@0.16.0",
+      "name": "h11",
+      "version": "0.16.0",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "HTTP/1.1 protocol parser used by Uvicorn.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/python-hyper/h11/v0.16.0/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/h11/0.16.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/python-hyper/h11/security/advisories",
+        "applicability": "Attacker-controlled HTTP bytes reach h11 whenever the standard/full web server is enabled.",
+        "remediation": "Keep Uvicorn/h11 jointly current and preserve request-size, timeout, concurrency, and loopback controls.",
+        "residualRisk": "Protocol differential and request-smuggling defects may arise from interactions with Uvicorn or intermediaries."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/idna@3.18",
+      "name": "idna",
+      "version": "3.18",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "Internationalized-domain helper pulled by AnyIO; LocalDocForge ships no outbound client.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/kjd/idna/v3.18/LICENSE.md",
+        "exactReleaseMetadata": "https://pypi.org/project/idna/3.18/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/kjd/idna/security/advisories",
+        "applicability": "No application route passes untrusted document domains to IDNA; it is retained by the ASGI dependency closure.",
+        "remediation": "Keep the hash lock and remove the dependency if the upstream closure no longer requires it.",
+        "residualRisk": "Future API or networking features could make normalization issues reachable."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/lxml@6.1.1",
+      "name": "lxml",
+      "version": "6.1.1",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Native XML library used by pikepdf, including document metadata paths.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/lxml/lxml/lxml-6.1.1/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/lxml/6.1.1/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/lxml/lxml/security/advisories",
+        "applicability": "Malformed PDF XML/XMP metadata may reach native XML code through pikepdf; external-entity/network behavior is not intentionally invoked.",
+        "remediation": "Keep lxml and its exact wheel current, reject malformed PDFs, and retain worker/resource containment.",
+        "residualRisk": "The wheel contains native XML code whose lower-level library revisions are not separate records in this SBOM."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/markdown-it-py@4.2.0",
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Rich Markdown rendering dependency for local CLI presentation; Markdown document conversion is not enabled.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-with-bundled-notice",
+        "upstreamText": "https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/markdown-it-py/4.2.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/executablebooks/markdown-it-py/security/advisories",
+        "applicability": "User documents are not parsed as Markdown; only application-controlled CLI presentation uses this dependency.",
+        "remediation": "Keep the hash lock and repeat review before enabling Markdown conversion.",
+        "residualRisk": "Future rendering of attacker-controlled Markdown would materially change reachability."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/mdurl@0.1.2",
+      "name": "mdurl",
+      "version": "0.1.2",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "URL parser used by markdown-it-py; document Markdown conversion is disabled.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-with-derived-code-notice",
+        "upstreamText": "https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/mdurl/0.1.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/executablebooks/mdurl/security/advisories",
+        "applicability": "No untrusted document URL is routed to mdurl in current capabilities.",
+        "remediation": "Preserve both MIT notices and repeat review before enabling Markdown input.",
+        "residualRisk": "URL normalization issues become relevant if attacker-controlled Markdown is later enabled."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/packaging@26.2",
+      "name": "packaging",
+      "version": "26.2",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Version and requirement parsing dependency of pikepdf.",
+      "license": {
+        "concluded": "Apache-2.0 OR BSD-2-Clause",
+        "status": "verified-upstream-dual-license",
+        "upstreamText": "https://raw.githubusercontent.com/pypa/packaging/26.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/packaging/26.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pypa/packaging/security/advisories",
+        "applicability": "Only trusted installed-package metadata and application constraints are parsed.",
+        "remediation": "Preserve the chosen dual-license terms and repeat exact-version review on upgrade.",
+        "residualRisk": "Malformed local package metadata could still trigger parser defects."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pikepdf@10.10.0",
+      "name": "pikepdf",
+      "version": "10.10.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Primary structural PDF wrapper; untrusted PDFs are opened through bundled qpdf.",
+      "license": {
+        "concluded": "MPL-2.0",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pikepdf/pikepdf/v10.10.0/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/pikepdf/10.10.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pikepdf/pikepdf/security/advisories",
+        "applicability": "Directly processes attacker-controlled PDFs; wrapper defects and bundled qpdf behavior are both relevant.",
+        "remediation": "Keep pikepdf/qpdf current as a pair, reject parser warnings, and retain hard worker/resource isolation.",
+        "residualRisk": "No exact-version advisory was found, but native parser memory-safety and denial-of-service defects may be unpublished."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pillow@12.3.0",
+      "name": "pillow",
+      "version": "12.3.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Primary image decoder/encoder and owner of the bundled native codec set.",
+      "license": {
+        "concluded": "MIT-CMU",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pillow/12.3.0/"
+      },
+      "security": {
+        "disposition": "contains-affected-component",
+        "advisories": [
+          {
+            "id": "OSV-2025-219",
+            "relationship": "Pillow 12.3.0 Windows wheels bundle OpenJPEG 2.5.4"
+          }
+        ],
+        "affectedVersionRanges": [
+          "OpenJPEG versions v2.*, v2.5.3, and v2.5.4 as enumerated by OSV-2025-219"
+        ],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-oss-fuzz-exact"],
+        "upstream": "https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html",
+        "applicability": "Allowed JPEG/PNG/TIFF/BMP/WebP inputs reach Pillow. JP2/J2K is not recognized by sniff.py and is excluded from images-to-PDF accepted types, so the affected OpenJPEG codec is bundled but not directly reachable through declared formats.",
+        "remediation": "Use a Pillow wheel whose OpenJPEG includes upstream fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed release; until then preserve JP2/J2K rejection and hard worker/resource isolation.",
+        "residualRisk": "Format confusion, plugin changes, or future JPEG2000 enablement could expose the affected codec; other native codecs still process hostile bytes."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pydantic@2.13.4",
+      "name": "pydantic",
+      "version": "2.13.4",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Domain, configuration, report, and API parameter validation.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pydantic/2.13.4/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pydantic/pydantic/security/advisories",
+        "applicability": "Attacker-controlled API form parameters and local CLI values reach application Pydantic models; raw document bodies do not.",
+        "remediation": "Keep Pydantic and pydantic-core aligned and retain explicit application bounds.",
+        "residualRisk": "Validation bypass or algorithmic-complexity defects can exist without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pydantic-core@2.46.4",
+      "name": "pydantic_core",
+      "version": "2.46.4",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Native Rust validation engine used by Pydantic.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/pydantic-core/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pydantic-core/2.46.4/",
+        "exactVersionEvidence": "pydantic 2.13.4 pins pydantic-core 2.46.4; the installed pydantic_core-2.46.4.dist-info/licenses/LICENSE matches the tag-pinned text"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pydantic/pydantic/security/advisories",
+        "applicability": "Attacker-controlled API parameters reach native validation code under application schemas.",
+        "remediation": "Update only with a compatible Pydantic release and retain explicit size/range limits before expensive validation.",
+        "residualRisk": "The Rust extension is native code and is not a sandbox; unpublished panics or resource-exhaustion defects remain possible."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pydantic-settings@2.14.2",
+      "name": "pydantic-settings",
+      "version": "2.14.2",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Loads LocalDocForge configuration from trusted local environment and dotenv sources.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pydantic/pydantic-settings/v2.14.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pydantic-settings/2.14.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pydantic/pydantic-settings/security/advisories",
+        "applicability": "Requires attacker influence over the process environment or local configuration files, outside the untrusted-document boundary.",
+        "remediation": "Protect local configuration permissions and repeat review on upgrade.",
+        "residualRisk": "A same-user local attacker can already influence broader application state; this package is not a trust boundary."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pygments@2.20.0",
+      "name": "Pygments",
+      "version": "2.20.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Syntax-highlighting dependency of Rich; document text is not highlighted by current capabilities.",
+      "license": {
+        "concluded": "BSD-2-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pygments/pygments/2.20.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pygments/2.20.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pygments/pygments/security/advisories",
+        "applicability": "No current path sends extracted document text or source code to Pygments.",
+        "remediation": "Remove if Rich no longer needs it or repeat review before highlighting untrusted content.",
+        "residualRisk": "Lexer complexity becomes relevant if attacker-controlled highlighting is later introduced."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pypdf@6.14.2",
+      "name": "pypdf",
+      "version": "6.14.2",
+      "kind": "runtime-python",
+      "profiles": ["full"],
+      "role": "Full-profile diagnostic import only; production operations are not permitted to fall back to pypdf.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/py-pdf/pypdf/6.14.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pypdf/6.14.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/py-pdf/pypdf/security/advisories",
+        "applicability": "The exact package is import-probed but untrusted PDFs are not passed to it in supported production operations.",
+        "remediation": "Keep it confined to the full diagnostic profile and re-review before enabling any parser fallback.",
+        "residualRisk": "Reachability would change immediately if a future fallback or operation opens documents with pypdf."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pypdfium2@5.12.1",
+      "name": "pypdfium2",
+      "version": "5.12.1",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Python wrapper and binary distributor for PDFium rendering.",
+      "license": {
+        "concluded": "Apache-2.0 OR BSD-3-Clause; documentation/examples CC-BY-4.0; bundled dependency licenses apply",
+        "status": "verified-upstream-multiple",
+        "upstreamText": "https://github.com/pypdfium2-team/pypdfium2/tree/5.12.1/LICENSES",
+        "exactReleaseMetadata": "https://pypi.org/project/pypdfium2/5.12.1/",
+        "exactVersionEvidence": "installed pypdfium2-5.12.1.dist-info/licenses contains Apache-2.0, BSD-3-Clause, CC-BY-4.0, and platform BUILD_LICENSES texts"
+      },
+      "security": {
+        "disposition": "contains-unknown-component",
+        "advisories": [],
+        "affectedVersionRanges": null,
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-oss-fuzz-exact"],
+        "upstream": "https://github.com/pypdfium2-team/pypdfium2/security/advisories",
+        "applicability": "Every PDF candidate rendered for validation and every PDF-to-image input reaches the bundled PDFium binary.",
+        "remediation": "Require pypdfium2/pdfium-binaries to publish an exact PDFium source commit, map it to Chromium/PDFium fixes, and rebuild/update from a vetted revision.",
+        "residualRisk": "The wrapper's exact-version queries were clear, but the bundled PDFium binary remains advisory-unknown and parses hostile PDFs."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/python-dotenv@1.2.2",
+      "name": "python-dotenv",
+      "version": "1.2.2",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Trusted local dotenv-file reader used by settings.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/theskumar/python-dotenv/v1.2.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/python-dotenv/1.2.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/theskumar/python-dotenv/security/advisories",
+        "applicability": "Requires attacker modification of local configuration; uploaded documents are not dotenv input.",
+        "remediation": "Protect configuration-file permissions and update on a matching advisory.",
+        "residualRisk": "Dotenv files can intentionally alter application behavior and remain trusted local input."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/python-multipart@0.0.32",
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "Streaming multipart/form-data parser for API uploads and fields.",
+      "license": {
+        "concluded": "Apache-2.0",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/Kludex/python-multipart/0.0.32/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/python-multipart/0.0.32/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/Kludex/python-multipart/security/advisories",
+        "applicability": "Directly parses attacker-controlled HTTP multipart framing before document processing in standard/full profiles.",
+        "remediation": "Preserve receive/body/file/field bounds and promptly update on parser advisories.",
+        "residualRisk": "Streaming parsers remain exposed to malformed boundaries and algorithmic denial of service."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/rich@15.0.0",
+      "name": "rich",
+      "version": "15.0.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Local CLI formatting and human-readable output.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/Textualize/rich/v15.0.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/rich/15.0.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/Textualize/rich/security/advisories",
+        "applicability": "Bounded filenames and report fields may be displayed, but document bodies and secrets are intentionally excluded.",
+        "remediation": "Continue sanitizing public/log output and repeat review on upgrade.",
+        "residualRisk": "Terminal escape or rendering-complexity issues remain possible for attacker-influenced display text."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/shellingham@1.5.4",
+      "name": "shellingham",
+      "version": "1.5.4",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Detects the user's surrounding shell for Typer completion behavior.",
+      "license": {
+        "concluded": "ISC",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/sarugaku/shellingham/1.5.4/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/shellingham/1.5.4/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/sarugaku/shellingham/security/advisories",
+        "applicability": "Interacts with trusted local process/shell state, not uploaded documents.",
+        "remediation": "Remove if no longer required and repeat review on upgrade.",
+        "residualRisk": "Same-user process inspection is not a security boundary."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/starlette@1.3.1",
+      "name": "starlette",
+      "version": "1.3.1",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "ASGI request, response, upload, and routing implementation beneath FastAPI.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/Kludex/starlette/1.3.1/LICENSE.md",
+        "exactReleaseMetadata": "https://pypi.org/project/starlette/1.3.1/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/Kludex/starlette/security/advisories",
+        "applicability": "Directly reachable by untrusted API requests, uploads, headers, and disconnect behavior when the web service is enabled.",
+        "remediation": "Keep Starlette/FastAPI compatible and preserve multipart, request-size, timeout, auth, Host, and cleanup controls.",
+        "residualRisk": "Historical advisories show upload/request parsing is security-sensitive; no exact match does not eliminate new defects."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/typer@0.27.0",
+      "name": "typer",
+      "version": "0.27.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Local command-line interface dispatcher and argument parser.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/fastapi/typer/0.27.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/typer/0.27.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/fastapi/typer/security/advisories",
+        "applicability": "Parses trusted local-user arguments; document bytes are passed only after application validation.",
+        "remediation": "Keep the hash lock and validate application arguments independently of framework defaults.",
+        "residualRisk": "Terminal/help formatting and parser edge cases can still affect local CLI behavior."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/typing-extensions@4.16.0",
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Typing backports consumed by runtime frameworks.",
+      "license": {
+        "concluded": "PSF-2.0",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/python/typing_extensions/4.16.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/typing-extensions/4.16.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/python/typing_extensions/security/advisories",
+        "applicability": "Provides application/framework type objects; it does not parse documents or requests.",
+        "remediation": "Keep the hash lock and repeat exact-version review on upgrade.",
+        "residualRisk": "Runtime behavior changes can affect frameworks even though no direct parser surface exists."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/typing-inspection@0.4.2",
+      "name": "typing-inspection",
+      "version": "0.4.2",
+      "kind": "runtime-python",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Type-introspection helper used by Pydantic/FastAPI.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pydantic/typing-inspection/v0.4.2/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/typing-inspection/0.4.2/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/pydantic/typing-inspection/security/advisories",
+        "applicability": "Inspects application-defined types rather than attacker-defined code.",
+        "remediation": "Keep aligned with Pydantic/FastAPI and repeat review on upgrade.",
+        "residualRisk": "Semantic introspection defects may cause validation differences without constituting a published vulnerability."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/uvicorn@0.51.0",
+      "name": "uvicorn",
+      "version": "0.51.0",
+      "kind": "runtime-python",
+      "profiles": ["standard", "full"],
+      "role": "ASGI server for `ldf web`.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/Kludex/uvicorn/0.51.0/LICENSE.md",
+        "exactReleaseMetadata": "https://pypi.org/project/uvicorn/0.51.0/"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "upstream": "https://github.com/Kludex/uvicorn/security/advisories",
+        "applicability": "Directly accepts untrusted socket/HTTP traffic when standard/full web mode is running; loopback is the default.",
+        "remediation": "Keep Uvicorn and h11 jointly current and preserve loopback default, Host/token controls, and admission/resource limits.",
+        "residualRisk": "Protocol handling, disconnect, and resource-exhaustion defects may be unpublished or interaction-specific."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/brotli@1.2.0",
+      "name": "brotli",
+      "version": "1.2.0",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native Brotli library present in the Pillow wheel; no declared LocalDocForge input format requires direct Brotli decoding.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/google/brotli/v1.2.0/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading brotli-1.2.0"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/google/brotli/security/advisories",
+        "applicability": "No direct accepted-format route was identified; reachability depends on Pillow codec internals.",
+        "remediation": "Keep Pillow's bundled native set current and remove unused codecs in a custom build if practical.",
+        "residualRisk": "Bundled native code can become reachable through plugin or format changes; empty databases are not a safety guarantee."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/freetype@2.14.3",
+      "name": "freetype",
+      "version": "2.14.3",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native font rasterizer bundled by Pillow; LocalDocForge does not accept attacker-supplied font files as an operation input.",
+      "license": {
+        "concluded": "FTL OR GPL-2.0-or-later",
+        "status": "verified-upstream-dual-license",
+        "upstreamText": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/LICENSE.TXT",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading freetype-2.14.3"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/freetype/freetype/security/advisories",
+        "applicability": "No direct font-input path is enabled, though Pillow may use FreeType for application-controlled rendering.",
+        "remediation": "Preserve the chosen FreeType license and update the bundled library with Pillow releases.",
+        "residualRisk": "Future document/font rendering features would materially expand reachability."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/harfbuzz@14.2.1",
+      "name": "harfbuzz",
+      "version": "14.2.1",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native text-shaping library bundled by Pillow; current conversions do not accept external fonts.",
+      "license": {
+        "concluded": "MIT with bundled notice terms",
+        "status": "verified-upstream-multiple-notices",
+        "upstreamText": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/harfbuzz/harfbuzz/security/advisories",
+        "applicability": "No attacker-supplied font/shaping path is enabled in current operations.",
+        "remediation": "Keep the Pillow wheel current and repeat review before adding text/font rendering.",
+        "residualRisk": "Published historical HarfBuzz advisories demonstrate a native font attack surface if reachability changes."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/lcms2@2.19.1",
+      "name": "lcms2",
+      "version": "2.19.1",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native color-management library bundled by Pillow.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/mm2/Little-CMS/lcms2.19.1/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading lcms2-2.19.1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/mm2/Little-CMS/security/advisories",
+        "applicability": "Attacker-controlled image ICC data may be retained or processed by Pillow paths, depending on operation and plugin behavior.",
+        "remediation": "Keep lcms2 current through Pillow and avoid unnecessary color-profile transforms on untrusted images.",
+        "residualRisk": "Native profile parsers can contain memory-safety defects even when no exact advisory is known."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libavif@1.4.2",
+      "name": "libavif",
+      "version": "1.4.2",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "AVIF/HEIF codec bundle present in Pillow; AVIF/HEIF is not an accepted images-to-PDF media type.",
+      "license": {
+        "concluded": "BSD-2-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/AOMediaCodec/libavif/v1.4.2/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading libavif-1.4.2"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/AOMediaCodec/libavif/security/advisories",
+        "applicability": "The current operation allowlist rejects AVIF/HEIF before Pillow decoding.",
+        "remediation": "Preserve the format rejection and repeat exact codec/dependency review before enabling AVIF/HEIF.",
+        "residualRisk": "libavif itself can include further codec libraries not separately versioned in this SBOM."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libjpeg-turbo@3.1.4.1",
+      "name": "libjpeg-turbo",
+      "version": "3.1.4.1",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native JPEG decoder/encoder directly used for accepted hostile JPEG inputs.",
+      "license": {
+        "concluded": "BSD-3-Clause AND IJG AND Zlib",
+        "status": "verified-upstream-multiple",
+        "upstreamText": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.4.1/LICENSE.md",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading libjpeg-turbo-3.1.4.1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/libjpeg-turbo/libjpeg-turbo/security/advisories",
+        "applicability": "Untrusted JPEG bytes directly reach this native codec during images-to-PDF and image validation.",
+        "remediation": "Keep Pillow/native codecs current and enforce byte, pixel, decompression, time, and worker limits.",
+        "residualRisk": "Native memory-corruption and algorithmic-complexity issues may be unpublished."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libpng@1.6.58",
+      "name": "libpng",
+      "version": "1.6.58",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native PNG decoder/encoder directly used for accepted hostile PNG inputs.",
+      "license": {
+        "concluded": "libpng-2.0",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.58/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading libpng-1.6.58"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/pnggroup/libpng/security/advisories",
+        "applicability": "Untrusted PNG bytes directly reach libpng through Pillow.",
+        "remediation": "Keep the exact native build current and retain pixel/decompression/worker limits.",
+        "residualRisk": "The upstream project has historical advisories; no exact match does not prove this build is defect-free."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libwebp@1.6.0",
+      "name": "libwebp",
+      "version": "1.6.0",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native WebP decoder/encoder directly used for accepted hostile WebP inputs.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/webmproject/libwebp/1.6.0/COPYING",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading libwebp-1.6.0"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/webmproject/libwebp/security/advisories",
+        "applicability": "Untrusted WebP bytes directly reach libwebp through Pillow.",
+        "remediation": "Keep the exact native build current and retain pixel/decompression/worker limits.",
+        "residualRisk": "Historical critical WebP defects show that native parser risk remains despite no exact-version match."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/openjpeg@2.5.4",
+      "name": "openjpeg",
+      "version": "2.5.4",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native JPEG2000 codec bundled by Pillow; JP2/J2K is rejected by current LocalDocForge media gates.",
+      "license": {
+        "concluded": "BSD-2-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/uclouvain/openjpeg/v2.5.4/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading openjpeg-2.5.4"
+      },
+      "security": {
+        "disposition": "affected",
+        "advisories": [
+          {
+            "id": "OSV-2025-219",
+            "summary": "Heap-buffer-overflow in OpenJPEG tile decoding",
+            "severity": "HIGH",
+            "affectedRanges": [
+              {
+                "type": "GIT",
+                "introduced": "954c6e3cb9d79aaa08c6666373d2bfa04f89ead1",
+                "fixed": "d33cbecc148d3affcdf403211fddc2cc5d442379"
+              },
+              {
+                "type": "enumerated-versions",
+                "versions": ["v2.*", "v2.5.3", "v2.5.4"]
+              }
+            ],
+        "sources": [
+          "https://osv.dev/vulnerability/OSV-2025-219",
+          "https://github.com/uclouvain/openjpeg/commit/d33cbecc148d3affcdf403211fddc2cc5d442379",
+          "https://github.com/python-pillow/Pillow/blob/12.3.0/depends/install_openjpeg.sh",
+          "https://github.com/python-pillow/Pillow/blob/12.3.0/winbuild/build_prepare.py"
+        ],
+        "provenanceConclusion": "The Pillow 12.3.0 tag selects OpenJPEG 2.5.4; the Windows build downloads the exact upstream v2.5.4 archive and declares no OpenJPEG patch. No checksum evidence establishes that a same-version pillow-depends archive is patched, so it is not credited as remediated."
+          }
+        ],
+        "affectedVersionRanges": ["GIT 954c6e3cb9d79aaa08c6666373d2bfa04f89ead1 to before d33cbecc148d3affcdf403211fddc2cc5d442379; OSV enumerates v2.5.4 as affected"],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/uclouvain/openjpeg/security/advisories",
+    "applicability": "The exact Windows-wheel nested component is affected. Direct exploitability currently requires reaching JPEG2000 decode, but sniff.py and images-to-PDF reject JP2/J2K; PDF JPEG2000 rendering uses PDFium rather than Pillow's OpenJPEG. Other target-platform wheels require equivalent native provenance review.",
+        "remediation": "Replace the Pillow native build with one containing fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed OpenJPEG release; keep JP2/J2K rejected and retain hard worker/resource isolation meanwhile.",
+        "residualRisk": "An allowlist bypass, plugin behavior change, or future JPEG2000 support would make hostile decoding reachable."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/pdfium@152.0.7947.0",
+      "name": "PDFium",
+      "version": "152.0.7947.0",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "pypdfium2",
+      "role": "Native PDF renderer used for candidate validation and PDF-to-image conversion.",
+      "license": {
+        "concluded": "BSD-3-Clause-style plus bundled dependency terms",
+        "status": "verified-upstream-multiple",
+        "upstreamText": "https://pdfium.googlesource.com/pdfium/+/refs/heads/main/LICENSE",
+        "localVersionEvidence": "pypdfium2_raw/version.json: 152.0.7947.0, origin=pdfium-binaries, n_commits=0, hash=null; wheel BUILD_LICENSES/pdfium.txt and related files",
+        "upstreamTextLimitation": "No exact PDFium source revision is recorded by the wheel, so the moving upstream license URL is paired with the exact wheel's bundled license texts; this does not resolve security provenance"
+      },
+      "security": {
+        "disposition": "unknown",
+        "advisories": [],
+        "affectedVersionRanges": null,
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://pdfium.googlesource.com/pdfium/",
+        "applicability": "Directly parses and renders every untrusted PDF candidate/input. Chromium/PDFium security reports may remain private until fixes ship.",
+        "remediation": "Obtain the exact source commit/build provenance from pdfium-binaries, map it to Chromium/PDFium security fixes, and rebuild or upgrade from a vetted revision.",
+        "residualRisk": "No source hash is recorded and public branch/build numbering does not establish which private security fixes are present; do not treat this component as safe."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
+      "name": "Microsoft Visual C++ Runtime (msvcp140.dll)",
+      "version": "14.44.35211.0",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "pikepdf",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "role": "C++ standard-library runtime DLL physically bundled beside qpdf in the inspected pikepdf Windows wheel.",
+      "license": {
+        "concluded": "Microsoft Visual C++ Runtime 2015-2022 Software License Terms",
+        "status": "verified-vendor-and-exact-wheel",
+        "upstreamText": "https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/",
+        "localVersionEvidence": "pikepdf.libs/msvcp140-0f885b509a685d2bbfa652fed26b5fb3.dll; FileVersion=14.44.35211.0; 557728 bytes; SHA256=0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9; pikepdf-10.10.0.dist-info/licenses/licenses-for-wheels.txt preserves Microsoft distributable-code terms",
+        "vendorLifecycleEvidence": "Microsoft identifies runtime 14.44.35211 with Visual Studio 2022 v17.14 final and support through 2032-01-13"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["microsoft-vc-runtime-exact"],
+        "upstream": "https://msrc.microsoft.com/update-guide/",
+        "applicability": "Loaded as a native dependency when the pikepdf/qpdf Windows wheel executes. It does not parse document bytes independently but supports native code that does.",
+        "remediation": "Ship the latest supported compatible pikepdf wheel/runtime, retain Microsoft's distributable-code terms, and repeat the Microsoft advisory review when the DLL changes.",
+        "residualRisk": "Microsoft does not expose a stable exact-DLL-version advisory mapping; no matching public advisory identified on 2026-07-19 is not a safety guarantee."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/pillow%20codec%20bundle@12.3.0",
+      "name": "Pillow codec bundle",
+      "version": "12.3.0",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow",
+      "role": "Aggregate SBOM record for the native libraries shipped in the inspected Pillow wheel.",
+      "license": {
+        "concluded": "Multiple licenses; child-component terms and the complete Pillow wheel license bundle apply",
+        "status": "verified-local-bundle-and-upstream-children",
+        "upstreamText": "https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE"
+      },
+      "security": {
+        "disposition": "contains-affected-component",
+        "advisories": [
+          {
+            "id": "OSV-2025-219",
+            "relationship": "contains OpenJPEG 2.5.4"
+          }
+        ],
+        "affectedVersionRanges": ["OpenJPEG v2.5.4 is enumerated as affected by OSV-2025-219"],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://pillow.readthedocs.io/en/stable/handbook/security.html",
+        "applicability": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF/HEIF remain rejected by the current operation allowlist.",
+        "remediation": "Ship a Pillow build with a fixed OpenJPEG and keep all native codec versions, licenses, and format reachability explicitly inventoried.",
+        "residualRisk": "The aggregate status cannot be clearer than its affected/unknown children; future wheel composition can change without a Python version change."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/qpdf@12.3.2",
+      "name": "qpdf",
+      "version": "12.3.2",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "pikepdf",
+      "role": "Native structural PDF parser/rewriter used through pikepdf.",
+      "license": {
+        "concluded": "Apache-2.0",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/qpdf/qpdf/v12.3.2/LICENSE.txt",
+        "localVersionEvidence": "pikepdf.__libqpdf_version__ == 12.3.2 and wheel licenses/licenses-for-wheels.txt"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/qpdf/qpdf/security/advisories",
+        "applicability": "Untrusted PDFs directly reach qpdf through pikepdf for inspection and structural operations.",
+        "remediation": "Keep pikepdf/qpdf current together, reject parser warnings, and retain hard worker/resource isolation.",
+        "residualRisk": "Native parser memory, CPU, and correctness defects can be unpublished; no exact-match result is not a safety verdict."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/tiff@4.7.1",
+      "name": "tiff",
+      "version": "4.7.1",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native TIFF decoder/encoder directly used for accepted hostile TIFF inputs.",
+      "license": {
+        "concluded": "libtiff",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.7.1/LICENSE.md",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading tiff-4.7.1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/libsdl-org/libtiff/security/advisories",
+        "applicability": "Untrusted single- and multi-frame TIFF data directly reaches libtiff through Pillow.",
+        "remediation": "Keep libtiff/Pillow current and enforce frame, pixel, decompression, disk, timeout, and worker limits.",
+        "residualRisk": "TIFF's complex IFD/compression surface has a long vulnerability history; no exact result is not proof of safety."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/xz@5.8.3",
+      "name": "xz",
+      "version": "5.8.3",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "XZ/liblzma code bundled by Pillow and available to nested codec paths such as TIFF compression support.",
+      "license": {
+        "concluded": "Multiple terms; liblzma is predominantly 0BSD and the upstream COPYING file governs the complete distribution",
+        "status": "verified-upstream-multiple",
+        "upstreamText": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.3/COPYING",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading xz-5.8.3"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/tukaani-project/xz/security/advisories",
+        "applicability": "Reachability depends on the enabled Pillow/libtiff compression path; there is no standalone archive/XZ operation.",
+        "remediation": "Keep exact wheel provenance and hashes, monitor upstream releases, and remove unused codec support in custom builds where practical.",
+        "residualRisk": "Historical XZ supply-chain compromise makes artifact provenance and hash verification essential even at an unaffected version."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/zlib-ng@2.3.3",
+      "name": "zlib-ng",
+      "version": "2.3.3",
+      "kind": "bundled-native",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "Pillow codec bundle",
+      "role": "Native zlib-compatible decompressor used by Pillow formats including accepted PNG inputs.",
+      "license": {
+        "concluded": "Zlib",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/zlib-ng/zlib-ng/2.3.3/LICENSE.md",
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading zlib-ng-2.3.3"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "upstream": "https://github.com/zlib-ng/zlib-ng/security/advisories",
+        "applicability": "Attacker-controlled compressed image data can reach zlib-ng through Pillow.",
+        "remediation": "Keep the exact native build current and enforce compressed/decompressed byte, pixel, timeout, and worker limits.",
+        "residualRisk": "Decompression bombs and native defects remain possible even without an exact published advisory."
+      }
+    }
+  ]
+}

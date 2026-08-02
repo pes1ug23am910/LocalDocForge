@@ -90,11 +90,11 @@ def test_strict_offline_mode_is_recorded_in_conversion_report(fixtures_dir, tmp_
         (
             False,
             "strict-offline mode is not enabled",
-            "processed locally; nothing leaves this machine",
+            "Python network guards are enabled as defense in depth",
         ),
         (
             True,
-            "processed locally; nothing leaves this machine",
+            "Python network guards are enabled as defense in depth",
             "strict-offline mode is not enabled",
         ),
     ],
@@ -110,6 +110,7 @@ def test_ui_privacy_wording_and_health_match_runtime_mode(
     assert index.status_code == 200
     assert expected_text in index.text
     assert forbidden_text not in index.text
+    assert "nothing leaves this machine" not in index.text
     assert health.status_code == 200
     assert health.json()["strict_offline"] is strict_offline
     assert health.json()["loopback_only"] is True
@@ -280,10 +281,14 @@ def test_chunked_multipart_without_content_length_hits_receive_cap(tmp_path):
     boundary = "privacy-audit-boundary"
     file_bytes = b"%PDF-1.7\n" + b"x" * (3 * 1024 * 1024)
     body = (
-        f"--{boundary}\r\n"
-        'Content-Disposition: form-data; name="files"; filename="oversized.pdf"\r\n'
-        "Content-Type: application/pdf\r\n\r\n"
-    ).encode("ascii") + file_bytes + f"\r\n--{boundary}--\r\n".encode("ascii")
+        (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="files"; filename="oversized.pdf"\r\n'
+            "Content-Type: application/pdf\r\n\r\n"
+        ).encode("ascii")
+        + file_bytes
+        + f"\r\n--{boundary}--\r\n".encode("ascii")
+    )
     jobs_root = tmp_path / "jobs"
     settings = Settings(
         jobs_root=jobs_root,
@@ -322,9 +327,7 @@ def test_current_api_session_is_removed_on_shutdown(fixtures_dir, tmp_path):
     assert not session_root.exists()
 
 
-def test_delete_cleanup_failure_returns_error_and_retains_job(
-    fixtures_dir, tmp_path, monkeypatch
-):
+def test_delete_cleanup_failure_returns_error_and_retains_job(fixtures_dir, tmp_path, monkeypatch):
     app = create_app(Settings(jobs_root=tmp_path / "jobs"), token=TOKEN)
     state = app.state.ldf
     with TestClient(app, base_url="http://127.0.0.1") as client:

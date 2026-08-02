@@ -49,6 +49,33 @@ redaction** — every report carries the `crop-is-not-redaction` security
 warning, and the CLI echoes it. Boxes are clamped to the page (`crop-clamped`
 warning) and non-intersecting boxes are refused.
 
+## compress (lossless preset)
+
+Rewrites the document container it opened — the same in-memory object model —
+so document-level structures travel with the file: outlines, form fields,
+attachments, XMP metadata, page labels, and annotations are preserved, unlike
+page-moving operations. What changes is representation only: generalized
+filters (Flate/LZW/RLE/ASCII) are decoded and recompressed, object streams are
+generated, and page resources qpdf proves unreferenced are pruned. DCT/JPX
+image data is never decoded, re-encoded, or downsampled.
+
+Verification beyond the standard floor: sampled pages of the candidate are
+rendered through PDFium and compared pixel-for-pixel against the source; any
+difference blocks publication (`render_compare` in the report records the
+compared pages and maximum channel delta, which is 0 on success).
+
+Codes:
+- `compress-no-reduction` (info) — the output is not smaller; the input was
+  already tightly compressed. Reported, never hidden.
+- `resource-cleanup-skipped` (info) — qpdf could not analyze resource usage
+  safely, so unused-resource pruning was skipped for that document.
+- `signature-invalidated` / `input-encryption-removed` — same critical
+  semantics as rotate/crop: the rewrite invalidates cryptographic signatures
+  and the output is not password protected.
+
+Lossy presets (`balanced`, `aggressive`, `archival`) do not exist in this
+build and are refused; nothing labelled "compress" silently degrades images.
+
 ## images-to-pdf
 - EXIF orientation honored; multipage TIFF expands to one page per frame.
 - Pages composed on a raster canvas at the configured `--dpi` (default 200),

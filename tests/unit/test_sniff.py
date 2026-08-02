@@ -7,6 +7,7 @@ from localdocforge.security.sniff import ContentTypeError, detect_media_type, re
 PNG_HEADER = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 JPEG_HEADER = b"\xff\xd8\xff\xe0" + b"\x00" * 32
 PDF_HEADER = b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n1 0 obj\n"
+JP2_HEADER = b"\x00\x00\x00\x0cjP  \r\n\x87\n\x00\x00\x00\x14ftypjp2 "
 
 
 class TestDetect:
@@ -22,6 +23,10 @@ class TestDetect:
             (b"RIFF\x00\x00\x00\x00WEBPVP8 ", "image/webp"),
             (b"PK\x03\x04office", "application/zip"),
             (b"{\\rtf1 hello}", "application/rtf"),
+            # JPEG2000 is deliberately not an enabled input type. Keep it at
+            # the sniff boundary so Pillow's bundled OpenJPEG decoder is not
+            # reachable through images-to-PDF.
+            (JP2_HEADER, None),
             (b"plain text, nothing else", None),
             (b"", None),
         ],

@@ -20,17 +20,21 @@ Security model (docs/THREAT_MODEL.md §T7):
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import hmac
 import json
+import logging
 import math
+import os
 import re
 import secrets
-import time
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import BinaryIO
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
@@ -38,8 +42,18 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 # Raw request.form() yields Starlette's UploadFile (FastAPI's subclasses it),
 # so containment/auth code must test against the Starlette base class.
 from starlette.datastructures import UploadFile
+from starlette.formparsers import MultiPartException, MultiPartParser
+from starlette.types import Receive, Scope, Send
 
 from localdocforge import __version__
+from localdocforge.api.worker import (
+    Admission,
+    AdmissionError,
+    WorkerJob,
+    WorkerJobStatus,
+    WorkerManager,
+    WorkerRequest,
+)
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import ConversionReport
 from localdocforge.domain.pages import PageRange, PageRangeError
@@ -51,6 +65,7 @@ from localdocforge.jobs.workspace import (
     remove_tree_with_retries,
 )
 from localdocforge.operations import images as image_ops
+from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.security.filenames import sanitize_filename
@@ -60,20 +75,36 @@ _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
 _TOKEN_HEADER = "X-LDF-Token"  # noqa: S105 - header name, not a credential
 _TOKEN_COOKIE = "ldf_token"  # noqa: S105 - cookie name, not a credential
 _API_SESSION_PREFIX = "ldf-api-"
+_API_SESSION_PATTERN = re.compile(r"^ldf-api-[0-9a-f]{32}$")
+_API_SESSION_LEASE_DIR = ".leases"
 _MULTIPART_OVERHEAD_BYTES = 2 * 1024 * 1024
+_MULTIPART_SPOOL_MEMORY_BYTES = 64 * 1024
 _MAX_MULTIPART_FILES = 256
 _MAX_FORM_FIELDS = 100
 _MAX_FORM_FIELD_BYTES = 64 * 1024
+_DISCONNECT_POLL_SECONDS = 0.05
+_DISCONNECT_FINALIZE_SECONDS = 5.0
 _LEGACY_API_JOB = re.compile(r"^[0-9a-f]{32}$")
+_LOG = logging.getLogger(__name__)
+_TERMINAL_JOB_STATUSES = frozenset(
+    {
+        WorkerJobStatus.SUCCESS,
+        WorkerJobStatus.FAILED,
+        WorkerJobStatus.CANCELLED,
+        WorkerJobStatus.TIMED_OUT,
+        WorkerJobStatus.CRASHED,
+        WorkerJobStatus.LIMIT_EXCEEDED,
+    }
+)
 
 
 @dataclass
-class ApiJob:
-    job_id: str
-    operation: str
-    report: ConversionReport
-    output_dir: Path
-    outputs: list[Path] = field(default_factory=list)
+class _SessionLease:
+    path: Path
+    stream: BinaryIO
+
+    def close(self) -> None:
+        self.stream.close()
 
 
 @dataclass
@@ -82,9 +113,27 @@ class ApiState:
     settings: Settings
     api_root: Path
     data_root: Path
+    manager: WorkerManager
     allow_nonlocal: bool = False
-    jobs: dict[str, ApiJob] = field(default_factory=dict)
+    jobs: dict[str, WorkerJob] = field(default_factory=dict)
     max_recent_jobs: int = 50
+    shutdown_diagnostics: dict[str, int | bool] = field(default_factory=dict)
+    session_lease: _SessionLease | None = None
+
+
+class _JobFileResponse(FileResponse):
+    """Keep a job output leased until streaming finishes or disconnects."""
+
+    def __init__(self, path: Path, *, filename: str, job: WorkerJob) -> None:
+        super().__init__(path, filename=filename)
+        self._job = job
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            with self._job.lock:
+                self._job.active_downloads = max(0, self._job.active_downloads - 1)
 
 
 def _hardening_headers(response: Response) -> None:
@@ -116,6 +165,46 @@ class _RequestTooLarge(OSError):
     pass
 
 
+class _ContainedMultiPartParser(MultiPartParser):
+    """Starlette multipart parser with request-scoped disk and aggregate bounds."""
+
+    spool_max_size = _MULTIPART_SPOOL_MEMORY_BYTES
+
+    def __init__(
+        self,
+        *args,
+        spool_directory: Path,
+        max_file_bytes: int | None,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._spool_directory = spool_directory
+        self._max_file_bytes = max_file_bytes
+        self._file_bytes = 0
+
+    def on_headers_finished(self) -> None:
+        super().on_headers_finished()
+        upload = self._current_part.file
+        if upload is None:
+            return
+        ambient_spool = self._files_to_close_on_error[-1]
+        contained_spool = tempfile.SpooledTemporaryFile(
+            max_size=self.spool_max_size,
+            mode="w+b",
+            dir=str(self._spool_directory),
+        )
+        upload.file = contained_spool
+        self._files_to_close_on_error[-1] = contained_spool
+        ambient_spool.close()
+
+    def on_part_data(self, data: bytes, start: int, end: int) -> None:
+        if self._current_part.file is not None:
+            self._file_bytes += end - start
+            if self._max_file_bytes is not None and self._file_bytes > self._max_file_bytes:
+                raise _RequestTooLarge
+        super().on_part_data(data, start, end)
+
+
 def _error_response(status: int, message: str) -> JSONResponse:
     response = JSONResponse({"detail": message}, status_code=status)
     _hardening_headers(response)
@@ -127,9 +216,7 @@ def _contains_request_too_large(exc: BaseException) -> bool:
         return True
     if isinstance(exc, BaseExceptionGroup):
         return any(_contains_request_too_large(child) for child in exc.exceptions)
-    return (
-        exc.__cause__ is not None and _contains_request_too_large(exc.__cause__)
-    ) or (
+    return (exc.__cause__ is not None and _contains_request_too_large(exc.__cause__)) or (
         exc.__context__ is not None and _contains_request_too_large(exc.__context__)
     )
 
@@ -177,28 +264,187 @@ def _public_error_message(
     return message
 
 
+def _session_lease_path(root: Path, session: Path) -> Path:
+    return root / _API_SESSION_LEASE_DIR / f"{session.name}.lock"
+
+
+def _try_acquire_session_lease(path: Path, *, create: bool = False) -> _SessionLease | None:
+    """Acquire an OS-released exclusive lease, or return ``None`` fail-closed."""
+    stream: BinaryIO | None = None
+    try:
+        if create:
+            make_private_dir(path.parent)
+            stream = path.open("a+b")
+        else:
+            if not path.is_file():
+                return None
+            stream = path.open("r+b")
+        stream.seek(0, os.SEEK_END)
+        if stream.tell() == 0:
+            stream.write(b"\0")
+            stream.flush()
+        stream.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return _SessionLease(path=path, stream=stream)
+    except (ImportError, OSError):
+        if stream is not None:
+            stream.close()
+        return None
+
+
 def _cleanup_stale_api_sessions(root: Path, current: Path, *, max_age: float = 24 * 3600) -> None:
-    """Best-effort cleanup of crashed API sessions, never unrelated directories."""
+    """Remove only sessions whose external lease proves that no owner remains."""
+    del max_age  # retained for call compatibility; age is not proof of owner death
     if not root.is_dir():
         return
-    cutoff = time.time() - max_age
     for entry in root.iterdir():
         if entry == current or not entry.is_dir():
             continue
-        if _LEGACY_API_JOB.fullmatch(entry.name):
-            # One-time migration cleanup for the pre-session-root API layout.
-            remove_tree_with_retries(entry)
+        if entry.name == _API_SESSION_LEASE_DIR:
             continue
-        if not entry.name.startswith(_API_SESSION_PREFIX):
+        if not _API_SESSION_PATTERN.fullmatch(entry.name):
             continue
-        with contextlib.suppress(OSError):
-            if entry.stat().st_mtime < cutoff:
-                remove_tree_with_retries(entry)
+        lease_path = _session_lease_path(root, entry)
+        lease = _try_acquire_session_lease(lease_path)
+        if lease is None:
+            # A locked lease means a live owner. A missing/unreadable lease has
+            # no liveness proof, so preserve the session rather than guessing.
+            continue
+        try:
+            removed = remove_tree_with_retries(entry)
+        finally:
+            lease.close()
+        if removed:
+            with contextlib.suppress(OSError):
+                lease_path.unlink()
 
 
 def _remove_private_job(path: Path) -> None:
     if not remove_tree_with_retries(path):
         raise _ApiError(500, "Unable to remove private job data; close open output files and retry")
+
+
+def _client_key(request: Request) -> str:
+    """Stable admission key without trusting proxy-controlled headers."""
+    return request.client.host if request.client is not None else "unknown-client"
+
+
+def _api_input_limit(settings: Settings) -> int:
+    job_limit = settings.limits.max_input_bytes
+    if job_limit is None:
+        return settings.api_max_upload_bytes
+    return min(job_limit, settings.api_max_upload_bytes)
+
+
+def _api_transport_limit(settings: Settings) -> int:
+    """Bound parent-process upload spooling by both input and temp budgets."""
+    limit = _api_input_limit(settings)
+    temporary_limit = settings.limits.max_temporary_bytes
+    return limit if temporary_limit is None else min(limit, temporary_limit)
+
+
+def _async_requested(request: Request) -> bool:
+    raw = request.query_params.get("async")
+    if raw is not None:
+        normalized = raw.strip().casefold()
+        if normalized in {"1", "true", "yes"}:
+            return True
+        if normalized not in {"0", "false", "no", ""}:
+            raise _ApiError(422, "'async' must be true or false")
+    preferences = {item.strip().casefold() for item in request.headers.get("prefer", "").split(",")}
+    return "respond-async" in preferences
+
+
+def _job_state_payload(job: WorkerJob, private_roots: tuple[Path, ...]) -> dict:
+    with job.lock:
+        if job.report is not None:
+            payload = _public_report(job.report, private_roots)
+            payload["report_status"] = payload.get("status")
+            payload["status"] = job.status.value
+            payload["api_status"] = job.status.value
+        else:
+            payload = {
+                "job_id": job.job_id,
+                "operation": job.operation,
+                "status": job.status.value,
+            }
+            if job.error:
+                payload["detail"] = (
+                    "Internal worker error" if job.error_status >= 500 else job.error
+                )
+        payload["created_at"] = job.created_at.isoformat()
+        payload["started_at"] = job.started_at.isoformat() if job.started_at else None
+        payload["finished_at"] = job.finished_at.isoformat() if job.finished_at else None
+        payload["containment"] = dict(job.containment)
+        if job.events:
+            payload["progress"] = dict(job.events[-1])
+        return payload
+
+
+def _submission_payload(job: WorkerJob, private_roots: tuple[Path, ...]) -> dict:
+    with job.lock:
+        payload = {
+            "job_id": job.job_id,
+            "operation": job.operation,
+            "status": job.status.value,
+            "status_url": f"/api/jobs/{job.job_id}",
+            "events_url": f"/api/jobs/{job.job_id}/events",
+            "cancel_url": f"/api/jobs/{job.job_id}/cancel",
+        }
+        if job.report is not None:
+            payload["report"] = _public_report(job.report, private_roots)
+        payload["containment"] = dict(job.containment)
+        payload["outputs"] = [
+            {"index": index, "name": path.name, "size_bytes": path.stat().st_size}
+            for index, path in enumerate(job.outputs)
+            if path.is_file()
+        ]
+        return payload
+
+
+def _sync_job_response(job: WorkerJob, private_roots: tuple[Path, ...]) -> JSONResponse:
+    if job.status is WorkerJobStatus.SUCCESS:
+        return JSONResponse(_submission_payload(job, private_roots), status_code=201)
+    detail = "Internal server error" if job.error_status >= 500 else job.error
+    payload: dict[str, object] = {"detail": detail or "Job failed"}
+    if job.report is not None:
+        payload["report"] = _public_report(job.report, private_roots)
+    return JSONResponse(payload, status_code=job.error_status)
+
+
+def _evict_completed_jobs(state: ApiState) -> None:
+    while len(state.jobs) > state.max_recent_jobs:
+        oldest = None
+        for candidate in state.jobs.values():
+            with candidate.lock:
+                completed = (
+                    candidate.done.is_set()
+                    and candidate.status in _TERMINAL_JOB_STATUSES
+                    and candidate.active_downloads == 0
+                    and not candidate.deleting
+                )
+                if completed:
+                    candidate.deleting = True
+                    oldest = candidate
+                    break
+        if oldest is None:
+            return
+        # Do not hold job.lock while taking the manager lock in forget().
+        try:
+            _remove_private_job(oldest.output_dir.parent)
+        except BaseException:
+            with oldest.lock:
+                oldest.deleting = False
+            raise
+        state.manager.forget(oldest)
+        state.jobs.pop(oldest.job_id, None)
 
 
 def _save_uploads(
@@ -312,24 +558,67 @@ def create_app(
         settings=settings,
         api_root=api_root,
         data_root=api_root / f"{_API_SESSION_PREFIX}{uuid.uuid4().hex}",
+        manager=WorkerManager(settings),
         allow_nonlocal=allow_nonlocal,
     )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         make_private_dir(state.api_root)
+        make_private_dir(state.api_root / _API_SESSION_LEASE_DIR)
         _cleanup_stale_api_sessions(state.api_root, state.data_root)
-        make_private_dir(state.data_root, exist_ok=False)
+        lease_path = _session_lease_path(state.api_root, state.data_root)
+        state.session_lease = _try_acquire_session_lease(lease_path, create=True)
+        if state.session_lease is None:
+            raise RuntimeError("Unable to establish the private API session lease")
+        try:
+            make_private_dir(state.data_root, exist_ok=False)
+            state.manager.start()
+        except BaseException:
+            state.session_lease.close()
+            state.session_lease = None
+            with contextlib.suppress(OSError):
+                lease_path.unlink()
+            raise
         try:
             yield
         finally:
-            state.jobs.clear()
-            remove_tree_with_retries(state.data_root)
-            with contextlib.suppress(OSError):
-                state.api_root.rmdir()
+            state.shutdown_diagnostics = state.manager.shutdown()
+            if not state.shutdown_diagnostics.get("shutdown_complete", False):
+                state.shutdown_diagnostics["session_cleanup_complete"] = False
+                state.shutdown_diagnostics["cleanup_failed_closed"] = True
+                _LOG.error("Worker shutdown incomplete; private session cleanup deferred")
+            else:
+                cleanup_complete = remove_tree_with_retries(state.data_root)
+                state.shutdown_diagnostics["session_cleanup_complete"] = cleanup_complete
+                state.shutdown_diagnostics["cleanup_failed_closed"] = not cleanup_complete
+                if cleanup_complete:
+                    state.jobs.clear()
+                    assert state.session_lease is not None
+                    state.session_lease.close()
+                    state.session_lease = None
+                    with contextlib.suppress(OSError):
+                        lease_path.unlink()
+                    with contextlib.suppress(OSError):
+                        (state.api_root / _API_SESSION_LEASE_DIR).rmdir()
+                    with contextlib.suppress(OSError):
+                        state.api_root.rmdir()
+                else:
+                    # The process no longer owns workers. Leave the unlocked
+                    # lease as proof that the next startup may retry cleanup.
+                    assert state.session_lease is not None
+                    state.session_lease.close()
+                    state.session_lease = None
+                    _LOG.error("Private API session cleanup failed and was deferred")
 
-    app = FastAPI(title="LocalDocForge", version=__version__, docs_url=None, redoc_url=None,
-                  openapi_url=None, lifespan=lifespan)
+    app = FastAPI(
+        title="LocalDocForge",
+        version=__version__,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        lifespan=lifespan,
+    )
     app.state.ldf = state
 
     # ------------------------------------------------------------- middleware
@@ -343,12 +632,8 @@ def create_app(
             if presented is None or not hmac.compare_digest(presented, state.token):
                 return _error_response(401, f"Missing or invalid {_TOKEN_HEADER} header")
 
-        body_limit = state.settings.limits.max_input_bytes
-        if (
-            request.method == "POST"
-            and request.url.path.startswith("/api/jobs/")
-            and body_limit is not None
-        ):
+        body_limit = _api_transport_limit(state.settings)
+        if request.method == "POST" and request.url.path.startswith("/api/jobs/"):
             request_limit = body_limit + _MULTIPART_OVERHEAD_BYTES
             content_length = request.headers.get("content-length")
             if content_length is not None:
@@ -389,12 +674,17 @@ def create_app(
     async def api_error_handler(_request: Request, exc: _ApiError):
         return _error_response(exc.status, exc.message)
 
+    @app.exception_handler(AdmissionError)
+    async def admission_error_handler(_request: Request, exc: AdmissionError):
+        response = _error_response(exc.status_code, exc.message)
+        if exc.retry_after is not None:
+            response.headers["Retry-After"] = str(max(1, math.ceil(exc.retry_after)))
+        return response
+
     @app.exception_handler(PipelineError)
     async def pipeline_error_handler(_request: Request, exc: PipelineError):
         private_roots = (state.api_root.parent,)
-        payload: dict = {
-            "detail": _public_error_message(str(exc), exc.report, private_roots)
-        }
+        payload: dict = {"detail": _public_error_message(str(exc), exc.report, private_roots)}
         if exc.report is not None:
             payload["report"] = _public_report(exc.report, private_roots)
         response = JSONResponse(payload, status_code=422)
@@ -417,7 +707,8 @@ def create_app(
         pending_items = "".join(f"<li>{c.title} — {c.notes or 'planned'}</li>" for c in pending)
         if state.settings.strict_offline and not state.allow_nonlocal:
             privacy_status = (
-                "Strict-offline mode active — processed locally; nothing leaves this machine."
+                "Strict-offline mode active — local application policy and Python network "
+                "guards are enabled as defense in depth; native code is not OS-sandboxed."
             )
         elif state.allow_nonlocal:
             privacy_status = "Non-loopback access is enabled; remote clients may reach this server."
@@ -440,7 +731,11 @@ printed when the server started. This page never runs remote code.</p>
 </body></html>"""
         response = HTMLResponse(body)
         response.set_cookie(
-            _TOKEN_COOKIE, state.token, httponly=True, samesite="strict", secure=False,
+            _TOKEN_COOKIE,
+            state.token,
+            httponly=True,
+            samesite="strict",
+            secure=False,
             path="/",
         )
         return response
@@ -449,11 +744,13 @@ printed when the server started. This page never runs remote code.</p>
 
     @app.get("/api/health")
     async def health():
+        workers = state.manager.diagnostics()
         return {
             "status": "ok",
             "version": __version__,
             "strict_offline": state.settings.strict_offline,
             "loopback_only": not state.allow_nonlocal,
+            "workers": workers,
         }
 
     @app.get("/api/capabilities")
@@ -470,65 +767,230 @@ printed when the server started. This page never runs remote code.</p>
 
     @app.get("/api/jobs")
     async def list_jobs():
-        return {
-            "jobs": [
-                {"job_id": job.job_id, "operation": job.operation,
-                 "status": job.report.status.value}
-                for job in state.jobs.values()
-            ]
-        }
+        _evict_completed_jobs(state)
+        jobs = []
+        for job in list(state.jobs.values()):
+            with job.lock:
+                jobs.append(
+                    {
+                        "job_id": job.job_id,
+                        "operation": job.operation,
+                        "status": job.status.value,
+                    }
+                )
+        return {"jobs": jobs}
 
     @app.get("/api/jobs/{job_id}")
     async def job_detail(job_id: str):
         job = state.jobs.get(job_id)
         if job is None:
             raise _ApiError(404, "Unknown job")
-        return JSONResponse(_public_report(job.report, (state.api_root.parent,)))
+        return JSONResponse(_job_state_payload(job, (state.api_root.parent,)))
+
+    @app.get("/api/jobs/{job_id}/events")
+    async def job_events(job_id: str, after: int = 0):
+        if after < 0:
+            raise _ApiError(422, "'after' cannot be negative")
+        job = state.jobs.get(job_id)
+        if job is None:
+            raise _ApiError(404, "Unknown job")
+        with job.lock:
+            return {
+                "job_id": job_id,
+                "status": job.status.value,
+                "events": job.event_snapshot(after),
+            }
 
     @app.get("/api/jobs/{job_id}/outputs/{index}")
     async def job_output(job_id: str, index: int):
         job = state.jobs.get(job_id)
         if job is None:
             raise _ApiError(404, "Unknown job")
-        if not 0 <= index < len(job.outputs):
-            raise _ApiError(404, "No such output")
-        path = ensure_contained(job.outputs[index], job.output_dir, what="job output")
-        if not path.is_file():
-            raise _ApiError(404, "Output no longer exists")
-        return FileResponse(path, filename=path.name)
+        with job.lock:
+            if job.deleting:
+                raise _ApiError(409, "Job output deletion is in progress")
+            if job.status is not WorkerJobStatus.SUCCESS:
+                raise _ApiError(409, "Job outputs are available only after success")
+            if not 0 <= index < len(job.outputs):
+                raise _ApiError(404, "No such output")
+            path = ensure_contained(job.outputs[index], job.output_dir, what="job output")
+            if not path.is_file():
+                raise _ApiError(404, "Output no longer exists")
+            job.active_downloads += 1
+        try:
+            return _JobFileResponse(path, filename=path.name, job=job)
+        except BaseException:
+            with job.lock:
+                job.active_downloads = max(0, job.active_downloads - 1)
+            raise
+
+    @app.post("/api/jobs/{job_id}/cancel")
+    async def job_cancel(job_id: str):
+        job = state.jobs.get(job_id)
+        if job is None:
+            raise _ApiError(404, "Unknown job")
+        if not state.manager.cancel(job):
+            raise _ApiError(409, "Job is already in a terminal state")
+        return JSONResponse(
+            {"job_id": job_id, "status": "cancelling"},
+            status_code=202,
+        )
 
     @app.delete("/api/jobs/{job_id}")
     async def job_delete(job_id: str):
         job = state.jobs.get(job_id)
         if job is None:
             raise _ApiError(404, "Unknown job")
-        _remove_private_job(job.output_dir.parent)
+        with job.lock:
+            completed = job.done.is_set() and job.status in _TERMINAL_JOB_STATUSES
+            if not completed:
+                raise _ApiError(409, "Cancel the active job before deleting it")
+            if job.active_downloads:
+                raise _ApiError(409, "Wait for active output downloads before deleting the job")
+            if job.deleting:
+                raise _ApiError(409, "Job deletion is already in progress")
+            job.deleting = True
+        try:
+            _remove_private_job(job.output_dir.parent)
+        except BaseException:
+            with job.lock:
+                job.deleting = False
+            raise
+        # job.lock is intentionally released before manager.forget().
+        state.manager.forget(job)
         state.jobs.pop(job_id, None)
         return {"deleted": job_id}
 
     @app.post("/api/jobs/{operation}")
     async def submit_job(operation: str, request: Request):
-        runner = _OPERATIONS.get(operation)
-        if runner is None:
+        if operation not in _OPERATIONS:
             raise _ApiError(
                 404,
                 f"Unknown or unavailable operation {operation!r}. "
                 f"Available: {', '.join(sorted(_OPERATIONS))}",
             )
-        form = await request.form(
-            max_files=_MAX_MULTIPART_FILES,
-            max_fields=_MAX_FORM_FIELDS,
-            max_part_size=_MAX_FORM_FIELD_BYTES,
+        admission = state.manager.reserve(_client_key(request))
+        form = None
+        form_close_state = [False]
+        transport_root = ensure_contained(
+            state.data_root / f".transport-{admission.token}",
+            state.data_root,
+            what="API transport spool",
         )
         try:
-            return _submit_job_form(operation, runner, form, state)
+            make_private_dir(transport_root, exist_ok=False)
+            if not request.headers.get("content-type", "").lower().startswith(
+                "multipart/form-data"
+            ):
+                raise _ApiError(422, "Job submissions require multipart/form-data")
+            parser = _ContainedMultiPartParser(
+                request.headers,
+                request.stream(),
+                max_files=_MAX_MULTIPART_FILES,
+                max_fields=_MAX_FORM_FIELDS,
+                max_part_size=_MAX_FORM_FIELD_BYTES,
+                spool_directory=transport_root,
+                max_file_bytes=_api_transport_limit(state.settings),
+            )
+            try:
+                form = await parser.parse()
+            except MultiPartException as exc:
+                raise _ApiError(400, "Malformed multipart form") from exc
+            try:
+                # The helper owns the form after parsing and closes it before
+                # enqueue. The route is only the failure-path fallback.
+                return await _submit_job_form(
+                    operation,
+                    form,
+                    state,
+                    admission,
+                    respond_async=_async_requested(request),
+                    _form_close_state=form_close_state,
+                    _disconnect_receive=request.receive,
+                    _transport_root=transport_root,
+                )
+            except BaseException:
+                # Suppress ordinary cleanup failures without swallowing task
+                # cancellation, which derives from BaseException.
+                if not form_close_state[0]:
+                    form_close_state[0] = True
+                    with contextlib.suppress(Exception):
+                        await form.close()
+                raise
         finally:
-            await form.close()
+            state.manager.release(admission)
+            if transport_root.exists():
+                _remove_private_job(transport_root)
+            if state.session_lease is None and not state.jobs:
+                # Some ASGI harnesses omit lifespan events. Do not leave the
+                # provisional transport hierarchy created for a rejected body.
+                for empty in (state.data_root, state.api_root, state.api_root.parent):
+                    with contextlib.suppress(OSError):
+                        empty.rmdir()
 
     return app
 
 
-def _submit_job_form(operation, runner, form, state: ApiState) -> JSONResponse:
+async def _wait_for_sync_job(
+    job: WorkerJob,
+    state: ApiState,
+    disconnect_receive: Receive | None,
+) -> None:
+    """Wait without losing ownership when a synchronous HTTP client disappears."""
+
+    async def receive_disconnect() -> None:
+        assert disconnect_receive is not None
+        while True:
+            message = await disconnect_receive()
+            if message["type"] == "http.disconnect":
+                return
+
+    disconnect_task = (
+        asyncio.create_task(receive_disconnect()) if disconnect_receive is not None else None
+    )
+    try:
+        while not job.done.is_set():
+            if disconnect_task is not None and disconnect_task.done():
+                # A receive failure after the complete form body is also treated
+                # as a lost client; either way no synchronous response is owned.
+                with contextlib.suppress(Exception):
+                    disconnect_task.result()
+                await asyncio.to_thread(state.manager.cancel, job)
+                finalized = await asyncio.to_thread(
+                    state.manager.wait,
+                    job,
+                    _DISCONNECT_FINALIZE_SECONDS,
+                )
+                if not finalized:
+                    with job.lock:
+                        controller = job._controller
+                    if controller is not None:
+                        controller.terminate()
+                    await asyncio.to_thread(state.manager.wait, job, 2.0)
+                return
+            await asyncio.sleep(_DISCONNECT_POLL_SECONDS)
+    finally:
+        if disconnect_task is not None:
+            if not disconnect_task.done():
+                disconnect_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await disconnect_task
+
+
+async def _submit_job_form(
+    operation: str,
+    form,
+    state: ApiState,
+    admission: Admission,
+    *,
+    respond_async: bool,
+    _form_close_state: list[bool] | None = None,
+    _disconnect_receive: Receive | None = None,
+    _transport_root: Path | None = None,
+) -> JSONResponse:
+    job: WorkerJob | None = None
+    enqueued = False
+    form_close_state = _form_close_state if _form_close_state is not None else [False]
     allowed_params = _OPERATION_PARAMS.get(operation, frozenset())
     unknown = sorted(set(form.keys()) - {"files"} - allowed_params)
     if unknown:
@@ -556,59 +1018,72 @@ def _submit_job_form(operation, runner, form, state: ApiState) -> JSONResponse:
         make_private_dir(job_root, exist_ok=False)
         make_private_dir(input_dir, exist_ok=False)
         make_private_dir(output_dir, exist_ok=False)
-        saved = _save_uploads(
-            uploads, input_dir, max_bytes=state.settings.limits.max_input_bytes
-        )
-        report = runner(saved, output_dir, params, state.settings)
-        _remove_private_job(input_dir)
-
-        outputs = [artifact.path for artifact in report.outputs]
-        job = ApiJob(
+        saved = _save_uploads(uploads, input_dir, max_bytes=_api_input_limit(state.settings))
+        # UploadFile handles are no longer needed after bounded transport.
+        # Close them before worker ownership begins so a close failure cannot
+        # leave an unreported queued/running job behind.
+        form_close_state[0] = True
+        await form.close()
+        if _transport_root is not None:
+            _remove_private_job(_transport_root)
+        request = WorkerRequest(
             job_id=job_id,
             operation=operation,
-            report=report,
+            job_root=str(job_root),
+            input_names=tuple(path.name for path in saved),
+            params=params,
+            settings_json=state.settings.model_dump_json(),
+        )
+        job = WorkerJob(
+            request=request,
+            client_key=admission.client_key,
             output_dir=output_dir,
-            outputs=outputs,
+            max_events=state.settings.api_max_progress_events,
         )
         state.jobs[job_id] = job
-        while len(state.jobs) > state.max_recent_jobs:
-            oldest_id = next(iter(state.jobs))
-            oldest = state.jobs[oldest_id]
-            _remove_private_job(oldest.output_dir.parent)
-            state.jobs.pop(oldest_id)
-        return JSONResponse(
-            {
-                "job_id": job_id,
-                "operation": operation,
-                "report": _public_report(report, (state.api_root.parent,)),
-                "outputs": [
-                    {"index": i, "name": path.name, "size_bytes": path.stat().st_size}
-                    for i, path in enumerate(outputs)
-                ],
-            },
-            status_code=201,
-        )
+        state.manager.enqueue(admission, job)
+        enqueued = True
+        _evict_completed_jobs(state)
+        if respond_async:
+            response = JSONResponse(
+                _submission_payload(job, (state.api_root.parent,)),
+                status_code=202,
+            )
+            response.headers["Preference-Applied"] = "respond-async"
+            return response
+        await _wait_for_sync_job(job, state, _disconnect_receive)
+        return _sync_job_response(job, (state.api_root.parent,))
     except BaseException:
-        state.jobs.pop(job_id, None)
-        _remove_private_job(job_root)
+        if enqueued and job is not None:
+            state.manager.cancel(job)
+            await asyncio.to_thread(state.manager.wait, job, 5.0)
+        else:
+            state.jobs.pop(job_id, None)
+            _remove_private_job(job_root)
         raise
 
 
 # ------------------------------------------------------------------ operations
-# Each runner: (input_paths, output_dir, form_params, settings) -> ConversionReport.
+# Each runner: (input_paths, output_dir, form_params, settings, progress)
+# -> ConversionReport.
 # Outputs always land inside the server-managed job output dir; browser
 # payloads never name filesystem paths.
 
 
-def _organize_options(settings: Settings, params: dict[str, str]) -> organize_ops.OrganizeOptions:
+def _organize_options(
+    settings: Settings,
+    params: dict[str, str],
+    progress=None,
+) -> organize_ops.OrganizeOptions:
     return organize_ops.OrganizeOptions(
         collision=CollisionPolicy.RENAME,
         settings=settings,
         password=params.get("password") or None,
+        progress=progress,
     )
 
 
-def _run_merge(paths, output_dir, params, settings):
+def _run_merge(paths, output_dir, params, settings, progress=None):
     if len(paths) < 2:
         raise _ApiError(422, "merge needs at least two files")
     ranges = None
@@ -623,48 +1098,56 @@ def _run_merge(paths, output_dir, params, settings):
             raise _ApiError(422, "Each 'pages' entry must be a string or null")
         ranges = [_range_or_none(spec, what="pages") for spec in specs]
     return organize_ops.merge_pdfs(
-        paths, output_dir / "merged.pdf", page_ranges=ranges,
-        options=_organize_options(settings, params),
+        paths,
+        output_dir / "merged.pdf",
+        page_ranges=ranges,
+        options=_organize_options(settings, params, progress),
     )
 
 
-def _run_split(paths, output_dir, params, settings):
+def _run_split(paths, output_dir, params, settings, progress=None):
     source = _one_input(paths, "split")
     every = _int_param(params, "every", minimum=1)
     return organize_ops.split_pdf(
-        source, output_dir,
+        source,
+        output_dir,
         pages=_range_or_none(params.get("pages"), what="pages"),
-        every=every, options=_organize_options(settings, params),
+        every=every,
+        options=_organize_options(settings, params, progress),
     )
 
 
 def _single_input_range_op(fn, key):
-    def runner(paths, output_dir, params, settings):
+    def runner(paths, output_dir, params, settings, progress=None):
         source = _one_input(paths, fn.__name__.replace("_", "-"))
         page_range = _range_or_none(params.get(key), what=key)
         if page_range is None:
             raise _ApiError(422, f"'{key}' is required")
         return fn(
-            source, output_dir / "result.pdf", page_range,
-            options=_organize_options(settings, params),
+            source,
+            output_dir / "result.pdf",
+            page_range,
+            options=_organize_options(settings, params, progress),
         )
 
     return runner
 
 
-def _run_rotate(paths, output_dir, params, settings):
+def _run_rotate(paths, output_dir, params, settings, progress=None):
     source = _one_input(paths, "rotate")
     degrees = _int_param(params, "degrees")
     if degrees is None:
         raise _ApiError(422, "'degrees' is required")
     return organize_ops.rotate_pages(
-        source, output_dir / "rotated.pdf", degrees=degrees,
+        source,
+        output_dir / "rotated.pdf",
+        degrees=degrees,
         pages=_range_or_none(params.get("pages"), what="pages"),
-        options=_organize_options(settings, params),
+        options=_organize_options(settings, params, progress),
     )
 
 
-def _run_crop(paths, output_dir, params, settings):
+def _run_crop(paths, output_dir, params, settings, progress=None):
     source = _one_input(paths, "crop")
     try:
         box = tuple(float(v) for v in params.get("box", "").split(","))
@@ -673,13 +1156,31 @@ def _run_crop(paths, output_dir, params, settings):
     except ValueError:
         raise _ApiError(422, "'box' must be 'x0,y0,x1,y1' in points") from None
     return organize_ops.crop_pages(
-        source, output_dir / "cropped.pdf", box=box,  # type: ignore[arg-type]
+        source,
+        output_dir / "cropped.pdf",
+        box=box,  # type: ignore[arg-type]
         pages=_range_or_none(params.get("pages"), what="pages"),
-        options=_organize_options(settings, params),
+        options=_organize_options(settings, params, progress),
     )
 
 
-def _run_images_to_pdf(paths, output_dir, params, settings):
+def _run_compress(paths, output_dir, params, settings, progress=None):
+    source = _one_input(paths, "compress")
+    preset = params.get("preset", "lossless")
+    if preset not in optimize_ops.COMPRESS_PRESETS:
+        raise _ApiError(
+            422,
+            "'preset' must be one of: " + ", ".join(optimize_ops.COMPRESS_PRESETS),
+        )
+    return optimize_ops.compress_pdf(
+        source,
+        output_dir / "compressed.pdf",
+        preset=preset,
+        options=_organize_options(settings, params, progress),
+    )
+
+
+def _run_images_to_pdf(paths, output_dir, params, settings, progress=None):
     margin = _float_param(params, "margin", default=24.0, minimum=0)
     dpi = _int_param(params, "dpi", default=200, minimum=36, maximum=600)
     quality = _int_param(params, "quality", default=95, minimum=1, maximum=100)
@@ -693,11 +1194,12 @@ def _run_images_to_pdf(paths, output_dir, params, settings):
         jpeg_quality=quality,
         collision=CollisionPolicy.RENAME,
         settings=settings,
+        progress=progress,
     )
     return image_ops.images_to_pdf(paths, output_dir / "images.pdf", options=options)
 
 
-def _run_pdf_to_images(paths, output_dir, params, settings):
+def _run_pdf_to_images(paths, output_dir, params, settings, progress=None):
     source = _one_input(paths, "pdf-to-images")
     dpi = _int_param(params, "dpi", default=150, minimum=18, maximum=1200)
     quality = _int_param(params, "quality", default=90, minimum=1, maximum=100)
@@ -710,6 +1212,7 @@ def _run_pdf_to_images(paths, output_dir, params, settings):
         collision=CollisionPolicy.RENAME,
         settings=settings,
         password=params.get("password") or None,
+        progress=progress,
     )
     return image_ops.pdf_to_images(source, output_dir, options=options)
 
@@ -722,6 +1225,7 @@ _OPERATIONS = {
     "organize": _single_input_range_op(organize_ops.organize_pdf, "order"),
     "rotate": _run_rotate,
     "crop": _run_crop,
+    "compress": _run_compress,
     "images-to-pdf": _run_images_to_pdf,
     "pdf-to-images": _run_pdf_to_images,
 }
@@ -734,8 +1238,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "organize": frozenset({"order", "password"}),
     "rotate": frozenset({"degrees", "pages", "password"}),
     "crop": frozenset({"box", "pages", "password"}),
-    "images-to-pdf": frozenset(
-        {"page_size", "fit", "margin", "background", "dpi", "quality"}
-    ),
+    "compress": frozenset({"preset", "password"}),
+    "images-to-pdf": frozenset({"page_size", "fit", "margin", "background", "dpi", "quality"}),
     "pdf-to-images": frozenset({"format", "dpi", "pages", "quality", "password"}),
 }

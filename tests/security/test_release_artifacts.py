@@ -4,14 +4,34 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import re
 import sys
 import tomllib
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GENERATOR_PATH = ROOT / "scripts" / "generate_release_artifacts.py"
-SBOM_PATH = ROOT / "docs" / "SBOM.cdx.json"
+REPORT_PATH = ROOT / "docs" / "ADVISORY_REPORT.json"
+PROFILES = ("lite", "standard", "full")
+PYTHON_COUNTS = {"lite": 20, "standard": 28, "full": 29}
+BASE_DIRECT = {
+    "pkg:pypi/pikepdf@10.10.0",
+    "pkg:pypi/pillow@12.3.0",
+    "pkg:pypi/pydantic@2.13.4",
+    "pkg:pypi/pydantic-settings@2.14.2",
+    "pkg:pypi/pypdfium2@5.12.1",
+    "pkg:pypi/typer@0.27.0",
+}
+STANDARD_DIRECT = BASE_DIRECT | {
+    "pkg:pypi/fastapi@0.139.2",
+    "pkg:pypi/python-multipart@0.0.32",
+    "pkg:pypi/uvicorn@0.51.0",
+}
+DIRECT_REFS = {
+    "lite": BASE_DIRECT,
+    "standard": STANDARD_DIRECT,
+    "full": STANDARD_DIRECT | {"pkg:pypi/pypdf@6.14.2"},
+}
 
 
 def _load_generator():
@@ -23,13 +43,8 @@ def _load_generator():
     return module
 
 
-def _locked_versions() -> dict[str, str]:
-    locked: dict[str, str] = {}
-    for line in (ROOT / "requirements-lock.txt").read_text(encoding="utf-8").splitlines():
-        if line and not line.startswith("#"):
-            name, version = line.split("==", 1)
-            locked[re.sub(r"[-_.]+", "-", name).lower()] = version
-    return locked
+def _properties(item: dict) -> dict[str, str]:
+    return {entry["name"]: entry["value"] for entry in item.get("properties", [])}
 
 
 def test_generator_is_deterministic_and_artifacts_are_current():
@@ -40,57 +55,290 @@ def test_generator_is_deterministic_and_artifacts_are_current():
     for path, expected in first.items():
         assert path.read_text(encoding="utf-8") == expected
     assert generator.main(["--check"]) == 0
+    assert generator.main(["--check", "--profile", "lite"]) == 0
 
 
-def test_cyclonedx_16_shape_and_locked_components():
-    sbom = json.loads(SBOM_PATH.read_text(encoding="utf-8"))
-    assert sbom["$schema"] == "http://cyclonedx.org/schema/bom-1.6.schema.json"
-    assert sbom["bomFormat"] == "CycloneDX"
-    assert sbom["specVersion"] == "1.6"
-    assert sbom["version"] == 1
-    assert sbom["metadata"]["component"]["name"] == "localdocforge"
-    assert sbom["metadata"]["tools"]["components"]
-
-    components = sbom["components"]
-    references = {component["bom-ref"] for component in components}
-    assert len(references) == len(components)
-    by_purl = {component.get("purl"): component for component in components}
-    for name, version in _locked_versions().items():
-        purl = f"pkg:pypi/{name}@{version}"
-        component = by_purl[purl]
-        assert component["version"] == version
-        assert component["licenses"]
-        properties = {item["name"]: item["value"] for item in component["properties"]}
-        assert properties["localdocforge:licenseEvidence"]
-        assert "no artifact hash" in properties["localdocforge:lockEvidence"]
-        assert properties["localdocforge:installedVersion"] == version
-
-    native_names = {component["name"] for component in components}
-    assert {"qpdf", "PDFium", "Pillow codec bundle", "libjpeg-turbo"} <= native_names
-    native_by_name = {component["name"]: component for component in components}
-    assert native_by_name["qpdf"]["version"] != "unknown"
-    assert native_by_name["PDFium"]["version"] != "unknown"
-
-    valid_dependency_refs = references | {sbom["metadata"]["component"]["bom-ref"]}
-    for relationship in sbom["dependencies"]:
-        assert relationship["ref"] in valid_dependency_refs
-        assert set(relationship["dependsOn"]) <= references
+def test_hash_locks_and_report_profile_membership_agree_exactly():
+    generator = _load_generator()
+    report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    reviewed = {
+        generator.canonicalize(component["name"]): set(component["profiles"])
+        for component in report["components"]
+        if component["kind"] == "runtime-python"
+    }
+    actual: dict[str, set[str]] = {name: set() for name in reviewed}
+    for profile in PROFILES:
+        lock = generator.load_lock(ROOT / "requirements" / "locks" / f"{profile}.txt")
+        assert len(lock) == PYTHON_COUNTS[profile]
+        assert all(requirement.hashes for requirement in lock.values())
+        assert all(
+            all(len(digest) == 64 for digest in requirement.hashes)
+            for requirement in lock.values()
+        )
+        for name in lock:
+            actual[name].add(profile)
+    assert actual == reviewed
+    assert actual["click"] == {"standard", "full"}
+    assert actual["annotated-doc"] == set(PROFILES)
 
 
-def test_notice_sections_and_required_uncertainty_disclosures():
-    notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-    for heading in (
-        "## Runtime Python distributions",
-        "## Development and test distributions",
-        "## Lock-only distributions",
-        "## Build requirements",
-        "## Native components bundled by installed wheels",
-        "## Optional external engines not bundled by LocalDocForge",
-    ):
-        assert heading in notices
-    assert "No vulnerability or security-advisory lookup was performed" in notices
-    assert "Lite, Standard, and Full installation profiles are not implemented" in notices
-    assert "Ghostscript" in notices and "commercial" in notices
+def test_cyclonedx_16_profile_shape_scope_and_findings():
+    for profile in PROFILES:
+        path = ROOT / "docs" / f"SBOM.{profile}.cdx.json"
+        sbom = json.loads(path.read_text(encoding="utf-8"))
+        assert sbom["$schema"] == "http://cyclonedx.org/schema/bom-1.6.schema.json"
+        assert sbom["bomFormat"] == "CycloneDX"
+        assert sbom["specVersion"] == "1.6"
+        assert sbom["version"] == 1
+        metadata_properties = _properties(sbom["metadata"])
+        assert metadata_properties["localdocforge:profile"] == profile
+        assert metadata_properties["localdocforge:advisoryAccessDate"] == "2026-07-19"
+        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-07-20"
+        assert sbom["metadata"]["timestamp"] == "2026-07-20T00:00:00Z"
+        assert "SHA-256 artifact hashes" in metadata_properties[
+            "localdocforge:lockEvidence"
+        ]
+        assert "universal-profile SBOM" in metadata_properties[
+            "localdocforge:wheelEvidencePlatform"
+        ]
+        assert "Windows x86-64" in metadata_properties[
+            "localdocforge:wheelEvidencePlatform"
+        ]
+        assert "incomplete" in metadata_properties[
+            "localdocforge:nativeComposition"
+        ]
+        assert sbom["compositions"] == [
+            {
+                "aggregate": "incomplete",
+                "assemblies": [sbom["metadata"]["component"]["bom-ref"]],
+            }
+        ]
+
+        components = sbom["components"]
+        assert len(components) == PYTHON_COUNTS[profile] + 16 + 18
+        references = {component["bom-ref"] for component in components}
+        assert len(references) == len(components)
+        python_components = [
+            component
+            for component in components
+            if _properties(component)["localdocforge:componentKind"]
+            == "runtime-python"
+        ]
+        assert len(python_components) == PYTHON_COUNTS[profile]
+        assert sum(
+            _properties(component)["localdocforge:componentKind"] == "bundled-native"
+            for component in components
+        ) == 16
+        assert sum(
+            _properties(component)["localdocforge:componentKind"]
+            == "bundled-native-unversioned"
+            for component in components
+        ) == 18
+        for component in components:
+            properties = _properties(component)
+            assert properties["localdocforge:advisoryDisposition"]
+            assert properties["localdocforge:advisoryReviewDate"] == "2026-07-19"
+            assert properties["localdocforge:licenseConclusion"]
+            assert properties["localdocforge:licenseVerification"]
+            if properties["localdocforge:componentKind"] == "runtime-python":
+                assert int(properties["localdocforge:lockHashCount"]) > 0
+                assert "sha256:" in properties["localdocforge:lockHashes"]
+
+        root_ref = sbom["metadata"]["component"]["bom-ref"]
+        valid_dependency_refs = references | {root_ref}
+        dependency_map = {
+            relationship["ref"]: set(relationship["dependsOn"])
+            for relationship in sbom["dependencies"]
+        }
+        assert dependency_map[root_ref] == DIRECT_REFS[profile]
+        for relationship in sbom["dependencies"]:
+            assert relationship["ref"] in valid_dependency_refs
+            assert set(relationship["dependsOn"]) <= references
+        assert dependency_map["pkg:pypi/pydantic@2.13.4"] == {
+            "pkg:pypi/annotated-types@0.7.0",
+            "pkg:pypi/pydantic-core@2.46.4",
+            "pkg:pypi/typing-extensions@4.16.0",
+            "pkg:pypi/typing-inspection@0.4.2",
+        }
+        assert {
+            "pkg:pypi/annotated-doc@0.0.4",
+            "pkg:pypi/rich@15.0.0",
+            "pkg:pypi/shellingham@1.5.4",
+        } <= dependency_map["pkg:pypi/typer@0.27.0"]
+        assert {
+            "pkg:pypi/lxml@6.1.1",
+            "pkg:pypi/packaging@26.2",
+            "pkg:pypi/pillow@12.3.0",
+            "pkg:generic/qpdf@12.3.2",
+            "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
+        } == dependency_map["pkg:pypi/pikepdf@10.10.0"]
+        assert dependency_map["pkg:pypi/pypdfium2@5.12.1"] == {
+            "pkg:generic/pdfium@152.0.7947.0"
+        }
+        assert len(dependency_map["pkg:generic/pdfium@152.0.7947.0"]) == 14
+        assert len(dependency_map["pkg:generic/libavif@1.4.2"]) == 4
+        assert dependency_map["pkg:pypi/pillow@12.3.0"] == {
+            "pkg:generic/pillow%20codec%20bundle@12.3.0"
+        }
+
+        assert len(sbom["vulnerabilities"]) == 1
+        vulnerability = sbom["vulnerabilities"][0]
+        assert vulnerability["id"] == "OSV-2025-219"
+        assert vulnerability["ratings"] == [{"severity": "high"}]
+        assert {item["ref"] for item in vulnerability["affects"]} == {
+            "pkg:generic/openjpeg@2.5.4",
+            "pkg:generic/pillow%20codec%20bundle@12.3.0",
+            "pkg:pypi/pillow@12.3.0",
+        }
+
+        by_ref = {component["bom-ref"]: component for component in components}
+        assert _properties(by_ref["pkg:generic/openjpeg@2.5.4"])[
+            "localdocforge:advisoryDisposition"
+        ] == "affected"
+        assert _properties(by_ref["pkg:generic/pdfium@152.0.7947.0"])[
+            "localdocforge:advisoryDisposition"
+        ] == "unknown"
+        msvc = by_ref[
+            "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0"
+        ]
+        assert msvc["version"] == "14.44.35211.0"
+        assert "msvcp140" in _properties(msvc)[
+            "localdocforge:licenseLocalVersionEvidence"
+        ]
+        for reference in dependency_map["pkg:generic/pdfium@152.0.7947.0"]:
+            properties = _properties(by_ref[reference])
+            assert properties["localdocforge:versionStatus"] == "unknown"
+            assert properties["localdocforge:advisoryDisposition"] == "unknown"
+
+    assert (ROOT / "docs" / "SBOM.cdx.json").read_bytes() == (
+        ROOT / "docs" / "SBOM.full.cdx.json"
+    ).read_bytes()
+
+
+def test_machine_readable_review_is_complete_precise_and_source_attributed():
+    report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    assert report["schemaVersion"] == 1
+    assert report["accessDate"] == "2026-07-19"
+    assert report["amendedDate"] == "2026-07-20"
+    refresh = report["verificationRuns"][-1]
+    assert refresh["accessDate"] == "2026-07-20"
+    assert refresh["releaseDisposition"] == "not-cleared"
+    assert all(source["url"].startswith("https://") for source in refresh["sources"])
+    assert all(source["exactVersions"] for source in refresh["sources"])
+    assert all(source["conclusion"] for source in refresh["sources"])
+    assert all(source["disposition"] for source in refresh["sources"])
+    assert report["scope"]["versionedReviewRecordCount"] == 45
+    assert report["scope"]["versionedBundledNativeComponents"] == 16
+    assert report["scope"]["unversionedNestedNativeComponents"] == 18
+    assert report["scope"]["optionalEngines"]["reviewed"] is False
+    components = report["components"]
+    assert len({component["bomRef"] for component in components}) == 45
+    assert Counter(component["kind"] for component in components) == {
+        "runtime-python": 29,
+        "bundled-native": 16,
+    }
+    assert Counter(
+        component["security"]["disposition"] for component in components
+    ) == report["summary"]["dispositionCounts"]
+
+    allowed_dispositions = set(report["method"]["conclusionVocabulary"])
+    for component in components:
+        assert component["version"] and component["version"] != "unknown"
+        assert component["license"]["concluded"]
+        assert component["license"]["status"].startswith("verified")
+        assert component["license"]["upstreamText"].startswith("https://")
+        security = component["security"]
+        assert security["disposition"] in allowed_dispositions
+        assert security["sourceRefs"]
+        assert security["upstream"].startswith("https://")
+        assert security["applicability"]
+        assert security["remediation"]
+        assert security["residualRisk"]
+
+    moving_license_sources = [
+        component
+        for component in components
+        if any(
+            token in component["license"]["upstreamText"]
+            for token in ("/blob/main/", "/blob/master/", "/refs/heads/main/")
+        )
+    ]
+    assert [component["name"] for component in moving_license_sources] == ["PDFium"]
+    assert moving_license_sources[0]["license"]["upstreamTextLimitation"]
+
+    by_ref = {component["bomRef"]: component for component in components}
+    openjpeg = by_ref["pkg:generic/openjpeg@2.5.4"]
+    assert openjpeg["security"]["disposition"] == "affected"
+    assert openjpeg["security"]["affectedVersionRanges"]
+    advisory = openjpeg["security"]["advisories"][0]
+    assert advisory["id"] == "OSV-2025-219"
+    assert advisory["severity"] == "HIGH"
+    assert "depends/install_openjpeg.sh" in " ".join(advisory["sources"])
+    assert "winbuild/build_prepare.py" in " ".join(advisory["sources"])
+    assert "No checksum evidence" in advisory["provenanceConclusion"]
+
+    pdfium = by_ref["pkg:generic/pdfium@152.0.7947.0"]
+    assert pdfium["security"]["disposition"] == "unknown"
+    assert pdfium["security"]["affectedVersionRanges"] is None
+    assert "hash=null" in pdfium["license"]["localVersionEvidence"]
+
+    msvc = by_ref["pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0"]
+    assert msvc["bundledBy"] == "pikepdf"
+    assert msvc["security"]["disposition"] == "no-known-applicable-advisory"
+    assert msvc["security"]["sourceRefs"] == ["microsoft-vc-runtime-exact"]
+    assert "0f885b509a685d2b" in msvc["license"]["localVersionEvidence"]
+    assert "vs2022-cruntime" in msvc["license"]["upstreamText"]
+
+    unversioned = report["unversionedNestedComponents"]
+    assert len({component["bomRef"] for component in unversioned}) == 18
+    assert sum(
+        component["parentBomRef"] == "pkg:generic/pdfium@152.0.7947.0"
+        for component in unversioned
+    ) == 14
+    assert sum(
+        component["parentBomRef"] == "pkg:generic/libavif@1.4.2"
+        for component in unversioned
+    ) == 4
+    assert all(
+        component["advisoryDisposition"] == "unknown"
+        and component["licenseNotice"]
+        and component["policyRef"] == "method.unversionedComponentPolicy"
+        for component in unversioned
+    )
+    assert {
+        component["name"]
+        for component in unversioned
+        if component["versionEvidence"] == "LOCAL"
+    } == {
+        "AOM (libavif child)",
+        "dav1d (libavif child)",
+        "libsharpyuv (libavif child)",
+        "libyuv (libavif child)",
+    }
+
+
+def test_notice_index_and_profile_notices_disclose_required_uncertainty():
+    index = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    for profile in PROFILES:
+        assert f"THIRD_PARTY_NOTICES.{profile}.md" in index
+        assert f"docs/SBOM.{profile}.cdx.json" in index
+        notices = (ROOT / f"THIRD_PARTY_NOTICES.{profile}.md").read_text(
+            encoding="utf-8"
+        )
+        assert f"# Third-Party Notices — {profile.title()} profile" in notices
+        assert "## Runtime Python distributions" in notices
+        assert "## Versioned native review records from inspected Windows wheels" in notices
+        assert "## Known version-unknown nested native children" in notices
+        assert "Microsoft Visual C++ Runtime (msvcp140.dll)" in notices
+        assert "AOM (libavif child)" in notices
+        assert "universal-profile SBOM" in notices
+        assert "CycloneDX composition is explicitly `incomplete`" in notices
+        assert "OpenJPEG 2.5.4 is affected" in notices
+        assert "PDFium 152.0.7947.0 is advisory-unknown" in notices
+        assert "not a safety guarantee" in notices
+        assert "No vulnerability or security-advisory lookup was performed" not in notices
+        assert "profiles are not implemented" not in notices
+    assert "byte-identical compatibility alias" in index
 
 
 def test_project_license_metadata_and_standard_mit_text():

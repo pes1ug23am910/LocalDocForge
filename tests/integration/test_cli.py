@@ -217,6 +217,33 @@ class TestImageCommands:
         assert len(list(out_dir.glob("*.jpg"))) == 1
 
 
+class TestCompressCommand:
+    def test_compress_via_cli(self, fixtures_dir, out_dir):
+        out = out_dir / "compressed.pdf"
+        result = runner.invoke(
+            app, ["compress", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out)]
+        )
+        assert result.exit_code == 0, result.output
+        assert "compress" in result.output
+        with pikepdf.open(out) as pdf:
+            assert len(pdf.pages) == 3
+
+    def test_compress_unavailable_preset_is_usage_error(self, fixtures_dir, out_dir):
+        result = runner.invoke(
+            app,
+            ["compress", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out_dir / "n.pdf"),
+             "--preset", "balanced"],
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert "not available in this build" in result.output
+
+    def test_compress_collision_exit_code(self, fixtures_dir, out_dir):
+        out = out_dir / "compressed-twice.pdf"
+        args = ["compress", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out)]
+        assert runner.invoke(app, args).exit_code == 0
+        assert runner.invoke(app, args).exit_code == EXIT_COLLISION
+
+
 class TestInspectCommand:
     def test_inspect_json(self, fixtures_dir):
         result = runner.invoke(

@@ -55,6 +55,14 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
     ),
     CapabilitySpec("inspect", "Inspect PDF", "Secure and inspect", adapters.OP_INSPECT, True),
     CapabilitySpec(
+        "compress",
+        "Compress PDF",
+        "Optimize PDF",
+        adapters.OP_COMPRESS,
+        True,
+        notes="Lossless structural optimization; image-downsampling presets are planned.",
+    ),
+    CapabilitySpec(
         "images-to-pdf",
         "Images to PDF",
         "Convert to PDF",
@@ -69,14 +77,6 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         True,
     ),
     # ---- Not yet implemented; listed so doctor can say exactly what is missing ----
-    CapabilitySpec(
-        "compress",
-        "Compress PDF",
-        "Optimize PDF",
-        None,
-        False,
-        notes="planned: Phase 2",
-    ),
     CapabilitySpec("repair", "Repair PDF", "Optimize PDF", None, False, notes="planned: Phase 2"),
     CapabilitySpec(
         "ocr",

@@ -7,6 +7,7 @@ to the private, local, bounded choice.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from pydantic import model_validator
@@ -14,15 +15,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from localdocforge.domain.models import ResourceLimits
 from localdocforge.jobs.workspace import CollisionPolicy, default_jobs_root
-from localdocforge.security.paths import is_remote_path
+from localdocforge.security.paths import (
+    PathSecurityError,
+    is_remote_path,
+    validate_path_before_access,
+)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LDF_", env_nested_delimiter="__")
 
-    #: Hard privacy switch. When on, every code path that could touch the
-    #: network (none exist today outside pip-installed engines) must refuse,
-    #: regardless of any other setting.
+    #: Application privacy policy. This rejects configured remote paths and
+    #: enables Python-level network guards as defense in depth; it is not an OS
+    #: network sandbox for native engines.
     strict_offline: bool = False
 
     #: Where per-job scratch directories live. None = system temp.
@@ -43,16 +48,51 @@ class Settings(BaseSettings):
     bind_host: str = "127.0.0.1"
     bind_port: int = 8477
 
+    #: Background worker admission controls. Every API conversion uses one
+    #: fresh spawned process; these values bound how many may run or wait.
+    api_max_concurrent_jobs: int = 2
+    api_max_queued_jobs: int = 16
+    api_max_active_jobs_per_client: int = 4
+    api_max_upload_bytes: int = 2 * 1024**3
+    api_rate_limit_jobs: int = 30
+    api_rate_limit_window_seconds: float = 60.0
+    api_max_progress_events: int = 256
+
     verbose: bool = False
 
     @model_validator(mode="after")
     def strict_offline_paths_are_local(self) -> Settings:
-        if not self.strict_offline:
-            return self
+        positive = {
+            "api_max_concurrent_jobs": self.api_max_concurrent_jobs,
+            "api_max_active_jobs_per_client": self.api_max_active_jobs_per_client,
+            "api_max_upload_bytes": self.api_max_upload_bytes,
+            "api_rate_limit_jobs": self.api_rate_limit_jobs,
+            "api_rate_limit_window_seconds": self.api_rate_limit_window_seconds,
+            "api_max_progress_events": self.api_max_progress_events,
+        }
+        invalid = [
+            name
+            for name, value in positive.items()
+            if value <= 0 or (isinstance(value, float) and not math.isfinite(value))
+        ]
+        if self.api_max_queued_jobs < 0:
+            invalid.append("api_max_queued_jobs")
+        if invalid:
+            raise ValueError(f"API admission settings must be positive: {', '.join(invalid)}")
         configured = [self.jobs_root or default_jobs_root()]
         configured.extend(self.allowed_output_roots or [])
-        if any(path is not None and is_remote_path(path) for path in configured):
-            raise ValueError("strict-offline mode forbids UNC and network-drive paths")
+        for path in configured:
+            if path is None:
+                continue
+            try:
+                validate_path_before_access(
+                    path,
+                    what="configured workspace or output root",
+                    require_local=self.strict_offline,
+                    reject_reparse=self.strict_offline or not is_remote_path(path),
+                )
+            except PathSecurityError as exc:
+                raise ValueError(str(exc)) from exc
         return self
 
 

@@ -7,24 +7,24 @@ Probed state on this machine is always visible via `ldf doctor`.
 
 | Engine | Version (this env) | License | Role | Why |
 |---|---|---|---|---|
-| pikepdf (libqpdf) | 10.10.0 / qpdf 12.3.2 | MPL-2.0 | Primary structural engine: merge/split/remove/extract/organize/rotate/crop/inspect | Mature, actively maintained, binds qpdf (the reference structural tool), preserves objects faithfully, handles encryption, robust against malformed files |
+| pikepdf (libqpdf) | 10.10.0 / qpdf 12.3.2 | MPL-2.0 (pikepdf) / Apache-2.0 (qpdf) | Primary structural engine: merge/split/remove/extract/organize/rotate/crop/inspect | Mature, actively maintained, binds qpdf (the reference structural tool), preserves objects faithfully, handles encryption, robust against malformed files |
 | pypdf | 6.14.2 | BSD-3-Clause | Installed library used for independent text assertions in tests; no production operation is wired to it | It remains probed for diagnostics but is not advertised or selected as a fallback |
-| pypdfium2 (PDFium) | 5.12.1 | Apache-2.0 OR BSD-3-Clause | Rendering: validation renders, pdf-to-images, future previews/thumbnails | Chrome's PDF renderer: fast, robust on hostile files, permissive license, abi3 wheels |
-| Pillow | 12.3.0 | MIT-CMU | Image decode/encode, images-to-pdf composition | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
+| pypdfium2 (PDFium) | 5.12.1 | Apache-2.0 OR BSD-3-Clause (wrapper); bundled PDFium uses BSD-style and `BUILD_LICENSES` notices | Rendering: validation renders, pdf-to-images, future previews/thumbnails | Chrome's PDF renderer: fast, robust on hostile files, permissive license, abi3 wheels |
+| Pillow | 12.3.0 | MIT-CMU; bundled codecs have per-component terms | Image decode/encode, images-to-pdf composition | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 
 Rationale for the split: structural edits (pikepdf) and rasterization
 (PDFium) are different failure domains; no single library is trusted for
 both. A pypdf production fallback remains a future implementation task; an
 installed library alone is not reported as an executable operation engine.
 
-## Probed but absent on this machine (adapters exist, features gated off)
+## Optional executable probes (features gated off; availability varies)
 
 | Engine | License | Planned role | Install hint (Windows) |
 |---|---|---|---|
 | qpdf CLI | Apache-2.0 | Repair second-opinion, JSON introspection | `winget install qpdf.qpdf` |
 | Tesseract | Apache-2.0 | OCR | `winget install UB-Mannheim.TesseractOCR` |
 | OCRmyPDF | MPL-2.0 | OCR orchestration, PDF/A-ish output | `pip install ocrmypdf` (+ Tesseract, Ghostscript) |
-| Ghostscript | AGPL-3.0 | PDF/A conversion, compression fallback | `winget install ArtifexSoftware.GhostScript` — external tool, invoked as subprocess, never bundled/linked; AGPL obligations do not attach to LocalDocForge for local invocation |
+| Ghostscript | AGPL-3.0 / commercial | PDF/A conversion, compression fallback | `winget install ArtifexSoftware.GhostScript` — exact upstream terms and the intended distribution/use model require review before enablement or redistribution |
 | LibreOffice | MPL-2.0 | Office↔PDF in isolated headless mode | `winget install TheDocumentFoundation.LibreOffice` |
 | Pandoc | GPL-2.0+ | Markdown/Office conversions (invoked, not linked) | `winget install JohnMacFarlane.Pandoc` |
 | Typst | Apache-2.0 | **Present on this machine** (0.15.1) — candidate Markdown→PDF renderer for Phase 3 | `winget install Typst.Typst` |

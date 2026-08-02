@@ -286,3 +286,183 @@ legacy API residue (`a6fa66ab7d9a439a931f7e08f1fc9642`, five fixture-marker
 pages, SHA-256
 `a1371505b2f898662b9d22e2ef8d7e0589437fcf95888a4710cbe523f9191883`) was
 removed by ordinary filesystem deletion after containment verification.
+
+## Release-hardening re-audit — 2026-07-20
+
+This section is an append-only re-audit of the release-hardening work. The
+historical audit above remains the evidence for the earlier checkpoint and has
+not been rewritten to make its then-current findings appear newer.
+
+### Scope, starting state, and evidence boundary
+
+- The run started on branch `main` at
+  `7e49624c4ad646f3998c4a204a4e8049c8748205`, tagged
+  `audit-checkpoint-2026-07-19`.
+- The starting working tree was already materially dirty. No claim of a clean
+  checkout, clean-room source tree, or audit commit is made, and unrelated
+  pre-existing work was preserved.
+- Windows 11 x64 is the primary and first verified release platform. The
+  evidence below was executed on Windows 11 build `10.0.26200`, AMD64. It does
+  not establish macOS or Linux support.
+- Phase 2 document features were explicitly out of scope and were not started.
+
+The first all-default release-gate invocation reached the clean profile smoke
+test and failed because `scripts/profile_smoke.py` read a nonexistent `pages`
+field instead of the inventory contract's `page_count` field. Lock checks,
+Ruff, mypy, diff checks, `pip check`, generated-artifact checks, the ordinary
+and blocked-network test runs, repeated package builds, Twine checks,
+reproducibility checks, and the sdist-to-wheel check had passed before that
+failure. The field access was corrected and the affected profile/build checks
+were rerun successfully.
+
+### Executed local evidence
+
+| Area | Evidence executed on 2026-07-20 | Result |
+| --- | --- | --- |
+| Local test gate | Lock validation, Ruff, mypy over 31 source files, diff checks, `pip check`, generated-artifact checks, ordinary tests, and blocked-network tests | PASS; 390 tests collected, with 388 passed and two expected platform skips in each test run |
+| Worker/API containment | Real spawned-worker cancellation, client disconnect, timeout, leader-orphan, resource-limit, shutdown, Ctrl+Break, parent-death/restart-residue, API queue/rate/concurrency, spool cleanup, lease, and active-download race tests | PASS, with one explicitly platform-inapplicable test skipped |
+| Windows path containment | Extended local paths, extended UNC rejection, device/ADS/reserved-name/trailing-dot-space rejection, reparse/junction ancestry, case variants, 8.3 aliases, long paths, and hard-link behavior | PASS |
+| Firewall harness contract | Six non-mutating contract tests for the opt-in PowerShell harness | PASS; the administrator firewall experiment itself was not executed |
+| Canonical package build | Hash-locked isolated PEP 517 wheel and sdist build, Twine checks, source-install and reproducibility checks | PASS |
+| Python 3.13 matrix | Clean uv-managed CPython 3.13.5 Lite/Standard/Full installs, source install, full tests, doctor, profile checks, manifest and checksum checks | PASS |
+| Python 3.14 matrix | Clean CPython 3.14.4 Lite/Standard/Full installs, source install, full tests, doctor, profile checks, manifest and checksum checks | PASS |
+| Strict-offline PDF exercise | Synthetic crop, images-to-PDF, merge, and rotate outputs; pikepdf reopen; complete PDFium rendering; visual contact-sheet inspection | PASS; four PDFs and all 16 pages inspected |
+| Advisory refresh | Exact-version OSV batch review plus focused authoritative source review | Completed; release blocker found |
+
+The canonical Windows artifacts are:
+
+- wheel: `localdocforge-0.1.0-py3-none-any.whl`, 92,228 bytes,
+  SHA-256
+  `392d0952313d89ee817139c90b388a79aa2d1c655126ee0876285e59f08176b2`;
+- sdist: `localdocforge-0.1.0.tar.gz`, 80,014 bytes, SHA-256
+  `4675fa04055353032a0ab55bb373f3d74068b46dad1b86bba82d7bd124582fef`;
+- recorded source digest:
+  `c39c91b599d1d8b050599a2e62bceaf5339818e613e56c6a4997be1021532f70`.
+
+The signed-off local evidence files are
+`packaging-evidence/windows-3.13.5.json`,
+`packaging-evidence/windows-3.14.4.json`,
+`packaging-evidence/windows-11-x64-SHA256SUMS.txt`, and
+`packaging-evidence/windows-pdf-render-2026-07-20.json`.
+
+### Worker, cancellation, and API findings
+
+The earlier in-process parser finding is materially addressed for document
+jobs. Each admitted job now uses a spawned worker process and a bounded IPC
+channel. On Windows, the parent places that worker in a kill-on-close Job
+Object before opening the document-processing gate. Cancellation, client
+disconnect, wall-clock expiry, API shutdown, and resource-limit failures use
+hard process-tree termination. If Job assignment or equivalent process-tree
+containment cannot be established, document processing never opens.
+
+Containment proof is fail-closed: a successful result requires verified-empty
+Job accounting after Windows termination. A leader that exits before Job
+assignment is recorded as a pre-gate leader exit rather than as proof that a
+descendant tree was contained. Tests exercised an actual grandchild process,
+leader-orphan behavior, assignment failure, worker-parent death, restart
+cleanup, Ctrl+Break shutdown, output and temporary-byte limits, and active
+download/deletion races.
+
+The API now reserves a bounded admission slot before request-body spooling,
+spools multipart bodies only into a request-scoped `.transport-*` directory,
+and enforces the smallest applicable upload, enabled-input, and enabled-temp
+budget. Rate, concurrency, and queue limits reject excess work before document
+processing. External OS session leases prevent live sessions from being
+treated as stale, and active-download leases prevent DELETE or eviction from
+racing a response stream.
+
+The POSIX process-group and resource-limit implementation was code-reviewed
+and has platform-gated tests, but it was not executed on Linux or macOS in this
+run. It is therefore not release evidence for those platforms.
+
+### Windows filesystem matrix
+
+| Case | Exercise | Evidence status |
+| --- | --- | --- |
+| Normal local drive and `\\?\\C:\\...` extended local syntax | Real filesystem tests | PASS |
+| UNC, extended UNC, device namespaces, ADS, reserved device names, trailing dots/spaces | Real validation tests | PASS: rejected before processing |
+| Existing junction/reparse ancestry and symlink-style escape handling | Real junction tests plus reparse-point validation | PASS for junctions; symbolic-link creation privilege was unavailable, so no real symlink case was claimed |
+| Hard links | Real filesystem test | PASS |
+| Case variants, 8.3 alias handling, and long local paths | Real filesystem tests | PASS |
+| Mapped network drive | Drive-type branch tested with a controlled API result | No mapped drive was mounted; not claimed as a live mapped-drive test |
+
+Strict-offline mode now requires a confirmed local Windows drive and rejects
+unsupported namespace syntax or existing reparse ancestry before document
+bytes are opened. This is path containment evidence, not proof of host-wide
+network isolation.
+
+### Windows firewall experiment
+
+`scripts/run_windows_firewall_gate.ps1` is an explicit, administrator-only,
+opt-in harness. Its contract verifies Windows 11 x64, PowerShell 7,
+administrator membership, the Windows Firewall service and active profiles;
+resolves one Python executable; installs a uniquely named outbound block rule
+scoped to that exact executable; checks the ActiveStore application filter;
+probes loopback and a self-hosted nonloopback endpoint; and removes and verifies
+absence of the rule in `finally`.
+
+No firewall rule was created or removed during this audit because explicit
+approval for the elevated firewall mutation was not provided. More
+importantly, the harness deliberately returns an incomplete result even after
+the socket probes because an executable-scoped rule cannot prove that Windows
+DNS Client-mediated `getaddrinfo` traffic is denied. Consequently the Windows
+strict-offline network gate is not complete.
+
+### Authorized dependency and advisory review
+
+Only public package/component names and exact public versions were sent to
+public services. No file name, file content, document hash, private path,
+environment value, hostname, or user data was submitted.
+
+| Source and access date | Exact-version coverage | Conclusion | Disposition |
+| --- | --- | --- | --- |
+| OSV batch API, 2026-07-20 | 29 Python distributions | Zero matches | No OSV match at query time; not a permanent no-vulnerability claim |
+| OSV batch API, 2026-07-20 | 16 versioned native components | One match: OpenJPEG 2.5.4 / `OSV-2025-219` | Affected; release blocker |
+| OSV vulnerability record, 2026-07-20 | OpenJPEG 2.5.4 | Version is in the affected range; fixed version is 2.5.4-1 in the tracked ecosystem record | Affected pending an upstream artifact that demonstrably contains the fix |
+| Pillow 12.3.0 tagged Windows build source, 2026-07-20 | Bundled OpenJPEG configuration | Pillow's Windows build pins OpenJPEG 2.5.4 | Containing component remains affected for this review |
+| PyPI JSON, 2026-07-20 | setuptools 83.0.0 build backend | Official wheel hash matches the new build-backend lock | Build input verified and hash-locked |
+
+The complete 45 versioned queries, 18 unversioned native records, evidence
+dates, source references, licenses, and dispositions are recorded in
+`docs/ADVISORY_REPORT.json` and the regenerated SBOM/notice artifacts.
+Unversioned or unprovenanced PDFium native children remain `unknown`; absence
+of a version-specific match is not presented as a clean bill of health.
+
+After this re-audit text was aligned, the all-default release gate was run once
+more on CPython 3.14.4 and exited successfully in 299 seconds. It repeated
+locks, Ruff, mypy, diff hygiene, `pip check`, generated-artifact checks, the
+ordinary and blocked-network 390-test runs, reproducible isolated builds,
+sdist-to-wheel equivalence, and the complete clean profile matrix. The
+supplemental record is
+`packaging-evidence/windows-3.14.4-final-gate.json`; the canonical
+checksum-authenticated matrix remains
+`packaging-evidence/windows-3.14.4.json`.
+
+### Re-audit decision
+
+**FAIL — do not designate this tree as a sensitive-document release.**
+
+Worker isolation, Job Object containment, hard cancellation, admission-before-
+spooling queue bounds, Windows path validation, hash-locked isolated builds,
+two clean Python profile matrices, and a full Windows render exercise are now
+backed by executed evidence. They resolve several of the earlier structural
+findings, but they do not override the following release blockers and evidence
+gaps:
+
+1. OpenJPEG 2.5.4 is affected by `OSV-2025-219`, and the reviewed Pillow
+   12.3.0 Windows build configuration pins that version.
+2. PDFium provenance and some bundled native child versions remain unknown.
+3. The administrator firewall experiment was not executed, and its exact-
+   executable rule cannot establish denial of Windows DNS Client-mediated
+   resolution.
+4. Windows Python 3.12, a live mapped-drive case, and a privilege-enabled real
+   symlink case were not exercised.
+5. No macOS or Linux build, test, packaging, filesystem, cancellation, or
+   render evidence was produced. No support claim for those platforms follows
+   from this Windows run.
+
+Phase 2 document features remain unstarted. The next release decision must be
+based on a fixed and re-inventoried OpenJPEG-containing artifact, closed
+PDFium/native provenance, a defensible Windows network-isolation result, and
+the explicitly claimed platform matrix—not on extrapolation from the Windows
+11 x64 results above.

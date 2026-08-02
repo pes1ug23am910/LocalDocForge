@@ -1,0 +1,2 @@
+540a36212cc2adbf21cb321ad0a684b806a26ef8fb7ddaae942d2fff0dccbff3  localdocforge-0.1.0-py3-none-any.whl
+7bd03dfbe3a817da05a26f490ededb67f8cd9482bfc190e7076be3222ca6ea91  localdocforge-0.1.0.tar.gz

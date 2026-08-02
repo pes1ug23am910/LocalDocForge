@@ -32,6 +32,7 @@ from localdocforge.jobs.workspace import (
     cleanup_stale_workspaces,
 )
 from localdocforge.operations import images as image_ops
+from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.reporting.writers import write_report_files
@@ -269,6 +270,18 @@ def web(
 ) -> None:
     """Serve the local web API (and UI shell) on localhost."""
     import secrets
+    import signal
+    from importlib.util import find_spec
+
+    required_modules = ("fastapi", "uvicorn", "python_multipart")
+    if any(find_spec(module) is None for module in required_modules):
+        typer.secho(
+            "The web command requires the Standard profile. Install it with: "
+            "pip install 'localdocforge[standard]'",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
 
     import uvicorn
 
@@ -306,16 +319,36 @@ def web(
         typer.echo("Press Ctrl+C to stop. Non-loopback clients can reach this server.")
     else:
         typer.echo("Press Ctrl+C to stop. The server is restricted to loopback.")
-    uvicorn.run(
-        create_app(
-            settings,
-            token=token,
-            allow_nonlocal=allow_nonlocal and host not in _LOOPBACK_BIND_HOSTS,
-        ),
-        host=host,
-        port=port,
-        log_level="warning",
-    )
+    # Uvicorn handles SIGBREAK for graceful Windows shutdown, then re-raises it
+    # through the handler that was installed before ``uvicorn.run``. Python's
+    # default SIGBREAK action terminates with status 3, which collides with this
+    # CLI's stable "engine unavailable" code. Translate that final re-raise to
+    # KeyboardInterrupt so Uvicorn/this wrapper complete the graceful path with
+    # a successful exit, matching ordinary Ctrl+C behavior.
+    sigbreak = getattr(signal, "SIGBREAK", None)
+    previous_sigbreak = signal.getsignal(sigbreak) if sigbreak is not None else None
+
+    def graceful_sigbreak(_signum: int, _frame: object) -> None:
+        raise KeyboardInterrupt
+
+    if sigbreak is not None:
+        signal.signal(sigbreak, graceful_sigbreak)
+    try:
+        uvicorn.run(
+            create_app(
+                settings,
+                token=token,
+                allow_nonlocal=allow_nonlocal and host not in _LOOPBACK_BIND_HOSTS,
+            ),
+            host=host,
+            port=port,
+            log_level="warning",
+        )
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if sigbreak is not None and previous_sigbreak is not None:
+            signal.signal(sigbreak, previous_sigbreak)
 
 
 # --------------------------------------------------------------------------- inspect
@@ -370,14 +403,16 @@ def inspect(
 def merge(
     inputs: Annotated[
         list[str],
-        typer.Argument(help="Input PDFs, in order. Append ::RANGE to select pages, "
-                            "e.g. report.pdf::1-5"),
+        typer.Argument(
+            help="Input PDFs, in order. Append ::RANGE to select pages, e.g. report.pdf::1-5"
+        ),
     ],
     output: Annotated[Path, typer.Option("--output", "-o")],
     pages: Annotated[
         list[str] | None,
-        typer.Option("--pages", help="Page range for the input at the same position; "
-                                     "repeat once per input."),
+        typer.Option(
+            "--pages", help="Page range for the input at the same position; repeat once per input."
+        ),
     ] = None,
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
@@ -544,6 +579,37 @@ def crop(
         pages=_parse_range(pages),
         options=options,
     )
+
+
+# --------------------------------------------------------------------------- optimize
+
+
+@app.command()
+def compress(
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    preset: Annotated[
+        str,
+        typer.Option(
+            "--preset",
+            help="Only 'lossless' is implemented; image-downsampling presets are planned.",
+        ),
+    ] = "lossless",
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Losslessly optimize PDF structure. Image data is never re-encoded."""
+    if preset not in optimize_ops.COMPRESS_PRESETS:
+        available = ", ".join(optimize_ops.COMPRESS_PRESETS)
+        planned = ", ".join(optimize_ops.PLANNED_COMPRESS_PRESETS)
+        typer.secho(
+            f"Error: --preset {preset!r} is not available in this build. "
+            f"Available: {available}. Planned (not implemented): {planned}.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    options = organize_ops.OrganizeOptions(collision=collision)
+    _run(optimize_ops.compress_pdf, input_file, output, preset=preset, options=options)
 
 
 # --------------------------------------------------------------------------- images

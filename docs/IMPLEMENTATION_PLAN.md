@@ -20,17 +20,20 @@ Live progress: `docs/STATUS.md`. Honest capability state: `docs/FEATURE_MATRIX.m
 - Pipeline runner: sniff → limits → workspace → execute → validate (reopen +
   render) → atomic publish → report → cleanup.
 
-### Phase 1 — Dependable core PDF tools ✅ core+CLI (this checkpoint), API/UI pending
+### Phase 1 — Dependable core PDF tools ✅ core + CLI + local API; React UI pending
 - merge (whole/ranges), split (ranges/every-N/pages), remove-pages,
   extract-pages, organize (reorder/duplicate), rotate, crop (with
   crop-is-not-redaction warning), images-to-pdf, pdf-to-images.
 - Unit + integration + security tests over generated synthetic fixtures.
-- Remaining for Phase 1 completeness: local HTTP API and browser UI for these
+- Remaining for Phase 1 completeness: the full React browser UI for these
   operations; n-up/booklet layouts; insert/interleave/blank-page operations;
   outline & form preservation during page moves; page labels.
 
-### Phase 2 — Optimize and convert
-- Compression presets with visual-quality floor and honest reporting.
+### Phase 2 — Optimize and convert (started 2026-08-03)
+- Compression: ✅ lossless structural preset (stream recompression, object
+  streams, unused-resource pruning, sampled render-identity verification
+  against the source). Lossy presets with a visual-quality floor, custom
+  DPI/quality, and target-size search remain pending.
 - Repair + inspect inventory; OCR via OCRmyPDF/Tesseract (optional engines);
   Office-to-PDF via isolated headless LibreOffice; HTML-to-PDF; PDF/A with
   veraPDF validation.
@@ -49,13 +52,17 @@ Live progress: `docs/STATUS.md`. Honest capability state: `docs/FEATURE_MATRIX.m
   adapters (WIA/TWAIN on Windows first).
 
 ### Phase 6 — Packaging and release hardening
-- Installers, SBOM, THIRD_PARTY_NOTICES, benchmarks, cross-platform CI,
-  container example with `--network none`.
+- Implemented in this sprint: Lite/Standard/Full dependency profiles,
+  universal hash locks, reproducible wheel/sdist gate, profile SBOM/notices,
+  and a Windows/Linux/macOS CI matrix definition.
+- Remaining: completed real-runner evidence on every claimed platform/Python,
+  installers, benchmarks, and a container example with `--network none`.
 
 ## Standing rules (from the spec, enforced in code and tests)
 - No placeholder features: `CAPABILITY_SPECS.implemented` flips only with the
   pipeline + tests in the same change; capability tests assert the honest set.
 - Every generated PDF is reopened; risky outputs render all pages.
 - Sources immutable; outputs atomic; collisions explicit.
-- No network code paths; `--strict-offline` pins the guarantee.
+- No shipped outbound client; `--strict-offline` enforces the documented
+  application boundary but is not represented as an OS network sandbox.
 - Reports never contain document text or secrets (tested).
