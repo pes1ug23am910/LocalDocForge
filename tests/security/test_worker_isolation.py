@@ -1309,6 +1309,11 @@ def test_aggregate_output_watchdog_terminates_real_worker_and_cleans(tmp_path):
 def test_os_resource_limits_stop_real_workers(probe, limit_updates, containment_key, tmp_path):
     if sys.platform == "darwin" and probe == "memory":
         pytest.skip("RLIMIT_AS is not a reliable memory ceiling on macOS")
+    if sys.platform == "darwin" and probe == "tree":
+        pytest.skip(
+            "macOS has no portable child-process count control (no /proc, no Job "
+            "Object); the containment record documents it as unsupported"
+        )
     manager = WorkerManager(
         Settings(
             jobs_root=tmp_path / "jobs",
