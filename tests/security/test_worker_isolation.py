@@ -110,6 +110,30 @@ def _wait_running(job: WorkerJob, timeout: float = 10.0) -> int:
     raise AssertionError("worker did not enter the running state")
 
 
+def _wait_marker_text(path: Path, timeout: float = 10.0) -> str:
+    """Wait for a marker file to carry content; bare existence races the write."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if path.is_file():
+            text = path.read_text(encoding="ascii")
+            if text:
+                return text
+        time.sleep(0.01)
+    raise AssertionError(f"marker {path.name} was not published")
+
+
+def _wait_child_pid(path: Path, timeout: float = 10.0) -> int:
+    """Poll the probe's pid marker until it parses; the write is not atomic."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if path.is_file():
+            text = path.read_text(encoding="ascii").strip()
+            if text.isdigit():
+                return int(text)
+        time.sleep(0.02)
+    raise AssertionError("synthetic descendant pid was not published")
+
+
 def _wait_absent(pid: int, timeout: float = 10.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -173,11 +197,7 @@ def _run_api_parent_with_hung_tree(jobs_root: str, evidence_connection) -> None:
             job = _probe_job(state.manager, state.data_root, "tree")
             worker_pid = await asyncio.to_thread(_wait_running, job)
             child_pid_path = job.output_dir.parent / "probe-child.pid"
-            deadline = time.monotonic() + 15
-            while not child_pid_path.is_file() and time.monotonic() < deadline:
-                await asyncio.sleep(0.01)
-            if not child_pid_path.is_file():
-                raise RuntimeError("synthetic descendant did not start")
+            child_pid = await asyncio.to_thread(_wait_child_pid, child_pid_path, 15.0)
             evidence_connection.send(
                 {
                     "session_root": str(state.data_root),
@@ -185,7 +205,7 @@ def _run_api_parent_with_hung_tree(jobs_root: str, evidence_connection) -> None:
                         api_module._session_lease_path(state.api_root, state.data_root)
                     ),
                     "worker_pid": worker_pid,
-                    "child_pid": int(child_pid_path.read_text(encoding="ascii")),
+                    "child_pid": child_pid,
                 }
             )
             evidence_connection.close()
@@ -604,11 +624,7 @@ def test_real_process_tree_is_killed_through_api_cancellation(tmp_path):
         state.jobs[job.job_id] = job
         worker_pid = _wait_running(job)
         child_pid_path = job.output_dir.parent / "probe-child.pid"
-        deadline = time.monotonic() + 10
-        while time.monotonic() < deadline and not child_pid_path.is_file():
-            time.sleep(0.02)
-        assert child_pid_path.is_file()
-        child_pid = int(child_pid_path.read_text(encoding="ascii"))
+        child_pid = _wait_child_pid(child_pid_path)
         assert _process_exists(worker_pid)
         assert _process_exists(child_pid)
 
@@ -688,15 +704,20 @@ def test_live_uvicorn_sync_disconnect_cancels_and_finalizes_job(
     started_marker = tmp_path / "live-worker-started.txt"
     cancelled_marker = tmp_path / "live-worker-cancelled.txt"
 
+    def publish_marker(path: Path, text: str) -> None:
+        staging = path.with_name(path.name + ".tmp")
+        staging.write_text(text, encoding="ascii")
+        os.replace(staging, path)
+
     def synthetic_disconnect_worker(controller, cancel_requested):
-        started_marker.write_text(controller.request.job_id, encoding="ascii")
+        publish_marker(started_marker, controller.request.job_id)
         if not cancel_requested.wait(15):
             return WorkerOutcome(
                 status=WorkerJobStatus.CRASHED,
                 error="Synthetic disconnect worker was not cancelled",
                 http_status=500,
             )
-        cancelled_marker.write_text(controller.request.job_id, encoding="ascii")
+        publish_marker(cancelled_marker, controller.request.job_id)
         return WorkerOutcome(
             status=WorkerJobStatus.CANCELLED,
             error="Synthetic disconnected job was cancelled",
@@ -765,20 +786,12 @@ def test_live_uvicorn_sync_disconnect_cancels_and_finalizes_job(
         client_socket = socket.create_connection(("127.0.0.1", port), timeout=5)
         client_socket.sendall(request_bytes)
 
-        deadline = time.monotonic() + 10
-        while not started_marker.is_file() and time.monotonic() < deadline:
-            time.sleep(0.01)
-        assert started_marker.is_file()
+        job_id = _wait_marker_text(started_marker)
         client_socket.shutdown(socket.SHUT_RDWR)
         client_socket.close()
         client_socket = None
 
-        deadline = time.monotonic() + 10
-        while not cancelled_marker.is_file() and time.monotonic() < deadline:
-            time.sleep(0.01)
-        assert cancelled_marker.is_file()
-        job_id = started_marker.read_text(encoding="ascii")
-        assert cancelled_marker.read_text(encoding="ascii") == job_id
+        assert _wait_marker_text(cancelled_marker) == job_id
         job = app.state.ldf.jobs[job_id]
         assert job.done.wait(5)
         assert job.status is WorkerJobStatus.CANCELLED
