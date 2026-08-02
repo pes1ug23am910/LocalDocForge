@@ -18,7 +18,7 @@
     "lite.txt": "4f13947125c052df6fc6cac6a433df0ccd09f49c4c8d1909e86788da5a5c4a5c",
     "standard.txt": "9ea1489ecd0bdebb5a7b475a31d6ebd6709908fecfbe681a6cc07d579343f057"
   },
-  "package_source_sha256": "32b645769366b28516860eb19c3e10859e7549dd94a03bf7b4a0dd83f634a4b8",
+  "package_source_sha256": "2b732915fd7e635359f52f9982db21a0b33a9bb5db7da7f37435d69edf19c8d8",
   "python_selector": "python.exe",
   "release_manifest_verified": true,
   "results": [
@@ -497,11 +497,11 @@
   ],
   "schema": 2,
   "source": {
-    "revision": "7e49624c4ad646f3998c4a204a4e8049c8748205",
+    "revision": "f1c02c6a2adf91757183443a9b0a578994100e18",
     "working_tree_changes": true
   },
   "source_install_syntax_tested": true,
   "uv": "0.11.26",
   "wheel": "localdocforge-0.1.0-py3-none-any.whl",
-  "wheel_sha256": "540a36212cc2adbf21cb321ad0a684b806a26ef8fb7ddaae942d2fff0dccbff3"
+  "wheel_sha256": "972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8"
 }

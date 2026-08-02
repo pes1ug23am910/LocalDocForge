@@ -243,11 +243,15 @@ inherit these controls automatically.
 
 ### T8. Unavailable security-sensitive capabilities
 
-Compression, repair, OCR, Office/HTML/Markdown conversion, PDF/A or PDF/UA
-validation/conversion, form editing, encryption/protection tools, secure
-redaction, signatures, compare, scanner/camera acquisition, and a full browser
-job UI are unavailable. UI capability lists and `ldf doctor` must keep them
-unavailable even if a related optional executable happens to be installed.
+Lossy compression presets, repair, OCR, Office/HTML/Markdown conversion,
+PDF/A or PDF/UA validation/conversion, form editing, encryption/protection
+tools, secure redaction, signatures, compare, scanner/camera acquisition, and
+a full browser job UI are unavailable. UI capability lists and `ldf doctor`
+must keep them unavailable even if a related optional executable happens to be
+installed. The implemented lossless compression preset inherits the standard
+pipeline controls plus a sampled pixel-comparison against the source
+(`docs/CONVERSION_FIDELITY.md`); presets that would degrade content are
+refused, never approximated.
 
 ## Residual risks
 

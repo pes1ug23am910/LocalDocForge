@@ -69,3 +69,7 @@ def test_compression_slice_is_documented_consistently() -> None:
     fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(encoding="utf-8")
     assert "compress-no-reduction" in fidelity
     assert "resource-cleanup-skipped" in fidelity
+
+    threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
+    assert "Compression, repair, OCR" not in threat  # stale unavailable-list form
+    assert "Lossy compression presets, repair" in threat
