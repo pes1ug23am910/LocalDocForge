@@ -24,6 +24,7 @@ prose that merely explains.
 
 | Doc | Answers |
 |---|---|
+| [`TECHNICAL_REFERENCE.md`](TECHNICAL_REFERENCE.md) | **The consolidated technical reference** — every subsystem, constant, contract, and invariant in one document |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Layering, the pipeline lifecycle, worker containment, and key contracts |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | Assets, trust boundaries, mitigations — and their stated limits |
 | [`CONVERSION_FIDELITY.md`](CONVERSION_FIDELITY.md) | Per-operation preservation/loss behavior and every `fidelity_warnings` / security-warning code |

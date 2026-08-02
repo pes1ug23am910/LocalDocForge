@@ -102,12 +102,30 @@ result applies only to the recorded OS, architecture, and interpreter.
   refresh, and clean Base/Lite/Standard/Full install/smoke/uninstall plus the
   dev full-test venv. Evidence: `packaging-evidence/windows-3.14.4.json`
   (`release_manifest_verified: true`).
-- Canonical package identity (2026-08-03): source
+- Compression-slice package identity (superseded the same day): source
   `32b645769366b28516860eb19c3e10859e7549dd94a03bf7b4a0dd83f634a4b8`;
   wheel `540a36212cc2adbf21cb321ad0a684b806a26ef8fb7ddaae942d2fff0dccbff3`
-  (96,696 bytes); sdist
-  `7bd03dfbe3a817da05a26f490ededb67f8cd9482bfc190e7076be3222ca6ea91`
-  (83,262 bytes). `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was
+  (96,696 bytes); archived with its checksum file in
+  `dist/windows-11-x64-2026-08-03-superseded/` after the portability fix
+  below.
+- The repository was published to GitHub
+  (`pes1ug23am910/LocalDocForge`, private) and the packaging workflow
+  executed for the first time. Its Linux release-gate job failed in mypy:
+  `security/paths.py` used `ctypes.WinDLL`, an attribute that exists only on
+  Windows — previously invisible because mypy had only ever run on Windows.
+  This is recorded as the first real cross-platform CI signal; CI remains
+  non-evidence until a green run's artifacts are retained.
+- The fix adds an explicit `sys.platform` guard (runtime behavior unchanged —
+  the non-Windows path already returned `None` via `AttributeError`), and the
+  local quality gate now also runs mypy with `--platform linux` and
+  `--platform darwin` so Windows-only attributes fail locally before CI. The
+  full gate then passed end-to-end again with a refreshed manifest.
+- Canonical package identity (2026-08-03, current): source
+  `2b732915fd7e635359f52f9982db21a0b33a9bb5db7da7f37435d69edf19c8d8`;
+  wheel `972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8`
+  (96,834 bytes); sdist
+  `faf90ac7df2461921ad9d3a372fc90abd553132718dcde63fcc9950e06cfe57b`
+  (83,397 bytes). `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was
   regenerated from the retained files and matches the manifest.
 - Live compression smokes: a deliberately bloated 5-page PDF compressed with
   pixel-identical sampled renders; `outline-6page.pdf` 5,777 → 2,953 bytes

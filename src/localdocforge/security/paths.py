@@ -7,6 +7,7 @@ import ntpath
 import os
 import re
 import stat
+import sys
 from pathlib import Path
 
 
@@ -26,6 +27,10 @@ _CONFIRMED_LOCAL_DRIVE_TYPES = frozenset({2, 3, 5, 6})
 
 def _windows_drive_type(root: str) -> int | None:
     """Return ``GetDriveTypeW`` for a drive root, or ``None`` if unavailable."""
+    if sys.platform != "win32":
+        # Same outcome the AttributeError branch below produced, but explicit:
+        # non-Windows mypy platforms must not analyze the WinDLL attribute.
+        return None
     try:
         import ctypes
 

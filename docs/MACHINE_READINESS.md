@@ -239,6 +239,10 @@ the documented Phase 2 requirement to begin with compression:
   (96,696 B), sdist `7bd03dfbe3a817da05a26f490ededb67f8cd9482bfc190e7076be3222ca6ea91`
   (83,262 B). The superseded 2026-07-20 artifacts are archived in
   `dist\windows-11-x64-2026-07-20\` with their original checksum file.
+  (This identity was itself superseded hours later by the Linux-mypy
+  portability fix found by the first CI run — current identity:
+  `docs/STATUS.md` and `docs/PACKAGING.md`; this set is archived in
+  `dist\windows-11-x64-2026-08-03-superseded\`.)
 - **Scope unchanged elsewhere:** the §5 blockers stand; Windows CPython
   3.13.5 was not re-run after the slice, and the release decision for
   sensitive documents remains FAIL.

@@ -484,6 +484,10 @@ def _build_gate(update_manifest: bool, dist_directory: Path | None = None) -> Pa
 def _quality_gate() -> None:
     _run([sys.executable, "-m", "ruff", "check", "src", "tests", "scripts"])
     _run([sys.executable, "-m", "mypy"])
+    # Static portability: analyze the same sources as the other supported
+    # platforms see them, so a Windows-only attribute cannot reach CI unseen.
+    _run([sys.executable, "-m", "mypy", "--platform", "linux"])
+    _run([sys.executable, "-m", "mypy", "--platform", "darwin"])
     _run(["git", "diff", "--check"])
     _run([sys.executable, "-m", "pip", "check"])
 

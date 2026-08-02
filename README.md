@@ -160,7 +160,9 @@ pipelines, operations, validation, reporting, config, cli) · `tests/`
 (unit, integration, security, fixtures) · `docs/` (architecture, threat
 model, engine decisions, feature matrix, status).
 
-Documentation index: [`docs/README.md`](docs/README.md). Developer
+Documentation index: [`docs/README.md`](docs/README.md). Consolidated
+technical reference:
+[`docs/TECHNICAL_REFERENCE.md`](docs/TECHNICAL_REFERENCE.md). Developer
 onboarding and the capability golden path:
 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Python library usage:
 [`docs/LIBRARY_API.md`](docs/LIBRARY_API.md).

@@ -65,7 +65,10 @@ Notes that save time:
 
 - mypy runs over `src/localdocforge` with per-module debt overrides listed in
   `pyproject.toml`; new modules get the strict baseline — don't add overrides
-  to make new code pass.
+  to make new code pass. The gate also re-runs mypy with `--platform linux`
+  and `--platform darwin`, so a Windows-only attribute (the first CI run
+  caught exactly one: `ctypes.WinDLL` in `security/paths.py`) fails locally
+  instead of only in CI.
 - Ruff enforces the `S` (bandit) rules outside tests; subprocess use outside
   `security/subproc.py` will (rightly) get flagged.
 - The full suite runs again with Python DNS/non-loopback sockets denied in
