@@ -392,7 +392,11 @@ Authoritative: `docs/PACKAGING.md`. In brief:
   rebuilt from the sdist must equal the direct wheel; Twine/metadata checks;
   then comparison against `packaging/release-artifact-manifest.json`
   (`--update-artifact-manifest` is the only legitimate refresh, for inspected
-  intentional changes — drift otherwise fails the gate).
+  intentional changes — drift otherwise fails the gate). The manifest is
+  platform-scoped (schema 3): METADATA newlines, zip attributes, and deflate
+  output differ across build hosts, so identities are recorded per
+  `System-Machine` key and `--allow-unrecorded-platform` lets CI build
+  platforms without a recorded identity skip only the comparison.
 - **Canonical identity (2026-08-03)**: source tree `150b4aeb…`; wheel
   `049345cb…` (98,083 B); sdist `531c4084…` (84,593 B); authenticated by
   `packaging-evidence/windows-11-x64-SHA256SUMS.txt`; superseded sets are

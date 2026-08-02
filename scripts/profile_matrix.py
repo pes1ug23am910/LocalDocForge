@@ -108,15 +108,43 @@ def _package_source_sha256() -> str:
     return digest.hexdigest()
 
 
-def _verify_release_manifest(wheel: Path, source_digest: str) -> None:
+def _verify_release_manifest(
+    wheel: Path,
+    source_digest: str,
+    *,
+    allow_unrecorded: bool = False,
+) -> str | None:
+    """Match the wheel against any recorded per-platform release identity.
+
+    Artifacts are byte-identical only per build platform, and this script may
+    verify a wheel built elsewhere (the CI matrix checks the Ubuntu-built
+    artifact on every OS), so the wheel is matched against every recorded
+    platform entry rather than the current host's. Returns the matched
+    platform key, or ``None`` when nothing is recorded for this artifact and
+    ``allow_unrecorded`` accepted that with a printed notice.
+    """
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    if manifest.get("schema") != 2:
+    if manifest.get("schema") != 3 or not isinstance(manifest.get("platforms"), dict):
         raise RuntimeError("release artifact manifest schema is stale")
-    if manifest.get("source_tree_sha256") != source_digest:
-        raise RuntimeError("package source inputs differ from the release artifact manifest")
-    artifact = manifest.get("artifacts", {}).get(wheel.name)
-    if not isinstance(artifact, dict) or artifact.get("sha256") != _sha256(wheel):
-        raise RuntimeError("selected wheel differs from the release artifact manifest")
+    wheel_digest = _sha256(wheel)
+    for key, recorded in sorted(manifest["platforms"].items()):
+        if not isinstance(recorded, dict):
+            continue
+        artifact = recorded.get("artifacts", {}).get(wheel.name)
+        if (
+            isinstance(artifact, dict)
+            and artifact.get("sha256") == wheel_digest
+            and recorded.get("source_tree_sha256") == source_digest
+        ):
+            return key
+    message = (
+        "wheel and source digest do not match any recorded per-platform release "
+        "identity (byte-identical artifacts are platform-scoped)"
+    )
+    if allow_unrecorded:
+        print(f"NOTICE: {message}; manifest comparison skipped (--allow-unrecorded-platform)")
+        return None
+    raise RuntimeError(message)
 
 
 def _verify_checksum_file(wheel: Path, checksum_file: Path) -> None:
@@ -342,6 +370,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--evidence", type=Path, help="optional sanitized JSON result path")
     parser.add_argument(
+        "--allow-unrecorded-platform",
+        action="store_true",
+        help="tolerate a wheel with no recorded per-platform release identity "
+        "(comparison is skipped with a printed notice and recorded in evidence)",
+    )
+    parser.add_argument(
         "--checksum-file",
         type=Path,
         help="optional SHA256SUMS file that must authenticate the selected wheel",
@@ -353,7 +387,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.checksum_file is not None:
         _verify_checksum_file(wheel, args.checksum_file.resolve())
     source_digest = _package_source_sha256()
-    _verify_release_manifest(wheel, source_digest)
+    manifest_platform = _verify_release_manifest(
+        wheel,
+        source_digest,
+        allow_unrecorded=args.allow_unrecorded_platform,
+    )
     results: list[dict[str, Any]] = []
     full_tests: dict[str, str] = {"status": "not-run"}
     with tempfile.TemporaryDirectory(prefix="ldf-profile-matrix-") as temp:
@@ -388,7 +426,10 @@ def main(argv: list[str] | None = None) -> int:
         "wheel": wheel.name,
         "wheel_sha256": _sha256(wheel),
         "package_source_sha256": source_digest,
-        "release_manifest_verified": True,
+        "release_manifest_verified": (
+            True if manifest_platform is not None else "skipped-no-recorded-platform-identity"
+        ),
+        "release_manifest_platform": manifest_platform,
         "lock_sha256": dict(sorted(lock_digests.items())),
         "checksum_file_verified": args.checksum_file is not None,
         "source": _source_state(),

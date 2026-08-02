@@ -46,9 +46,13 @@ jobs:
           uv pip install --python .release-venv/bin/python --no-deps ".[dev]"
 
       - name: Run the complete local release gate
+        # --allow-unrecorded-platform: canonical artifact identities are
+        # recorded per build platform (only Windows-AMD64 so far); the Linux
+        # build still proves reproducibility and uploads its own checksums.
         run: >
           .release-venv/bin/python scripts/release_gate.py
           --dist-dir dist
+          --allow-unrecorded-platform
           --profile-evidence packaging-evidence/linux-3.14-source.json
 
       - name: Record retained release checksums
@@ -122,7 +126,7 @@ jobs:
       - name: Verify lock drift, checksums, clean profiles, full tests, and blocked network
         run: |
           python scripts/lock_profiles.py --check
-          python scripts/profile_matrix.py --wheel-dir dist --checksum-file dist/SHA256SUMS --full-tests --evidence packaging-evidence/${{ matrix.os }}-py${{ matrix.python }}.json
+          python scripts/profile_matrix.py --wheel-dir dist --checksum-file dist/SHA256SUMS --full-tests --allow-unrecorded-platform --evidence packaging-evidence/${{ matrix.os }}-py${{ matrix.python }}.json
 
       - name: Upload runner evidence
         if: always()

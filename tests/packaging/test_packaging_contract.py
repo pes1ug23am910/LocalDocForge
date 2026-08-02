@@ -329,7 +329,7 @@ def test_build_gate_uses_two_distinct_staged_sources(monkeypatch, tmp_path):
     monkeypatch.setattr(
         release_gate,
         "_check_or_update_manifest",
-        lambda record, update: None,
+        lambda record, update, **_: None,
     )
 
     retained = tmp_path / "dist"
@@ -347,9 +347,14 @@ def test_build_only_gate_removes_retained_wheel_directory(monkeypatch, tmp_path)
     retained = tmp_path / "ldf-release-wheel-test"
     wheel = retained / "localdocforge-0.1.0-py3-none-any.whl"
 
-    def fake_build_gate(update_manifest: bool, dist_directory: Path | None) -> Path:
+    def fake_build_gate(
+        update_manifest: bool,
+        dist_directory: Path | None,
+        allow_unrecorded: bool = False,
+    ) -> Path:
         assert update_manifest is False
         assert dist_directory is None
+        assert allow_unrecorded is False
         retained.mkdir()
         wheel.write_bytes(b"wheel")
         return wheel
@@ -363,9 +368,14 @@ def test_explicit_release_dist_directory_is_retained(monkeypatch, tmp_path):
     retained = tmp_path / "dist"
     wheel = retained / "localdocforge-0.1.0-py3-none-any.whl"
 
-    def fake_build_gate(update_manifest: bool, dist_directory: Path | None) -> Path:
+    def fake_build_gate(
+        update_manifest: bool,
+        dist_directory: Path | None,
+        allow_unrecorded: bool = False,
+    ) -> Path:
         assert update_manifest is False
         assert dist_directory == retained
+        assert allow_unrecorded is False
         retained.mkdir()
         wheel.write_bytes(b"wheel")
         return wheel
@@ -381,10 +391,15 @@ def test_default_gate_runs_clean_full_tests_while_profile_only_stays_focused(
     commands: list[list[str]] = []
     build_count = 0
 
-    def fake_build_gate(update_manifest: bool, dist_directory: Path | None) -> Path:
+    def fake_build_gate(
+        update_manifest: bool,
+        dist_directory: Path | None,
+        allow_unrecorded: bool = False,
+    ) -> Path:
         nonlocal build_count
         assert update_manifest is False
         assert dist_directory is None
+        assert allow_unrecorded is False
         build_count += 1
         retained = tmp_path / f"retained-{build_count}"
         retained.mkdir()
@@ -498,7 +513,7 @@ def test_checksum_file_binds_selected_wheel(tmp_path):
         profile_matrix._verify_checksum_file(wheel, checksum)
 
 
-def test_release_manifest_binds_wheel_and_source_digest(monkeypatch, tmp_path):
+def test_release_manifest_matches_any_recorded_platform_identity(monkeypatch, tmp_path):
     wheel = tmp_path / "localdocforge-0.1.0-py3-none-any.whl"
     wheel.write_bytes(b"audited-wheel")
     manifest = tmp_path / "release-artifact-manifest.json"
@@ -506,18 +521,77 @@ def test_release_manifest_binds_wheel_and_source_digest(monkeypatch, tmp_path):
     manifest.write_text(
         json.dumps(
             {
-                "schema": 2,
-                "source_tree_sha256": source_digest,
-                "artifacts": {wheel.name: {"sha256": profile_matrix._sha256(wheel)}},
+                "schema": 3,
+                "platforms": {
+                    "Windows-AMD64": {
+                        "source_tree_sha256": source_digest,
+                        "artifacts": {wheel.name: {"sha256": profile_matrix._sha256(wheel)}},
+                    }
+                },
             }
         ),
         encoding="utf-8",
     )
     monkeypatch.setattr(profile_matrix, "MANIFEST_PATH", manifest)
 
-    profile_matrix._verify_release_manifest(wheel, source_digest)
-    with pytest.raises(RuntimeError, match="source inputs"):
+    matched = profile_matrix._verify_release_manifest(wheel, source_digest)
+    assert matched == "Windows-AMD64"
+    with pytest.raises(RuntimeError, match="do not match any recorded"):
         profile_matrix._verify_release_manifest(wheel, "2" * 64)
+    assert (
+        profile_matrix._verify_release_manifest(wheel, "2" * 64, allow_unrecorded=True)
+        is None
+    )
+
+
+def test_gate_manifest_is_platform_scoped(monkeypatch, tmp_path):
+    manifest = tmp_path / "release-artifact-manifest.json"
+    monkeypatch.setattr(release_gate, "MANIFEST_PATH", manifest)
+    monkeypatch.setattr(release_gate, "_platform_key", lambda: "Testing-x86")
+    record = {"source_date_epoch": 1, "source_tree_sha256": "a" * 64, "artifacts": {}}
+
+    release_gate._check_or_update_manifest(record, True)
+    stored = json.loads(manifest.read_text(encoding="utf-8"))
+    assert stored["schema"] == 3
+    assert stored["platforms"]["Testing-x86"] == record
+
+    release_gate._check_or_update_manifest(record, False)
+    with pytest.raises(RuntimeError, match="drift detected"):
+        release_gate._check_or_update_manifest(
+            {**record, "source_tree_sha256": "b" * 64}, False
+        )
+
+    monkeypatch.setattr(release_gate, "_platform_key", lambda: "Other-arm64")
+    with pytest.raises(RuntimeError, match="no recorded release identity"):
+        release_gate._check_or_update_manifest(record, False)
+    release_gate._check_or_update_manifest(record, False, allow_unrecorded=True)
+
+    release_gate._check_or_update_manifest(record, True)
+    stored = json.loads(manifest.read_text(encoding="utf-8"))
+    assert set(stored["platforms"]) == {"Testing-x86", "Other-arm64"}
+
+
+def test_gate_manifest_migrates_legacy_flat_schema_on_update(monkeypatch, tmp_path):
+    manifest = tmp_path / "release-artifact-manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema": 2,
+                "source_date_epoch": 1,
+                "source_tree_sha256": "c" * 64,
+                "artifacts": {"w.whl": {"sha256": "d" * 64}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(release_gate, "MANIFEST_PATH", manifest)
+    monkeypatch.setattr(release_gate, "_platform_key", lambda: "Linux-x86_64")
+    record = {"source_date_epoch": 1, "source_tree_sha256": "e" * 64, "artifacts": {}}
+
+    release_gate._check_or_update_manifest(record, True)
+    stored = json.loads(manifest.read_text(encoding="utf-8"))
+    assert stored["platforms"]["Windows-AMD64"]["source_tree_sha256"] == "c" * 64
+    assert stored["platforms"]["Linux-x86_64"] == record
 
 
 def test_source_digest_matches_profile_and_ignores_build_residue(monkeypatch, tmp_path):
