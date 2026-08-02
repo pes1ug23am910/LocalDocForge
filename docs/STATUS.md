@@ -147,6 +147,22 @@ result applies only to the recorded OS, architecture, and interpreter.
   `skipped-no-recorded-platform-identity` marker into evidence otherwise.
   The WSL2 Ubuntu simulation of the CI build gate then passed end-to-end
   with the printed unrecorded-platform notice.
+- **First executed CI matrix evidence** (GitHub Actions run 30771517389 on
+  commit `ee2de18`, artifacts retained per job): the Ubuntu 3.14 runner
+  passed the complete release gate — locks, quality, both full suites,
+  reproducible builds, and the clean profile matrix — and the
+  install/full-test matrix passed on ubuntu-latest, macos-latest, and
+  windows-latest across CPython 3.12, 3.13, and 3.14, including the first
+  execution anywhere of the suite on macOS and of CPython 3.12. macOS
+  surfaced one honest gap on first execution: it has no portable
+  child-process count control (containment already reported
+  `unsupported`), so that probe test now skips on darwin like the
+  documented memory-ceiling skip. The windows-latest 3.13 job failed once
+  on a test-side race (the tree probe's pid marker was read between file
+  creation and content write) and was rerun; the marker read is now
+  parse-until-integer in both polling sites. CI evidence is per-run and
+  retained for 30 days; it does not replace the local Windows release
+  evidence and the release decision is unchanged.
 - Live compression smokes: a deliberately bloated 5-page PDF compressed with
   pixel-identical sampled renders; `outline-6page.pdf` 5,777 → 2,953 bytes
   (48.9 % smaller) under `--strict-offline` with outlines preserved;
@@ -154,11 +170,13 @@ result applies only to the recorded OS, architecture, and interpreter.
 - Windows CPython 3.13.5 was **not** re-run after the compression slice; its
   retained evidence (`windows-3.13.5.json`) still describes the 2026-07-20
   package identity. The platform scope remains Windows 11 x64 only.
-- Known flake, recorded honestly: in one full-suite run,
-  `test_live_uvicorn_sync_disconnect_cancels_and_finalizes_job` failed on a
-  marker-file comparison, then passed 3/3 in isolation and in both complete
-  gate suite runs. Tracked as a timing-sensitivity issue in the live-server
-  test, not a shipped-code defect; it deserves hardening.
+- Flake root-caused and fixed: two worker-isolation tests intermittently
+  failed (one local full-suite run; twice on the windows-latest 3.13 CI
+  job) by reading synthetic marker files between creation and content write
+  — `write_text` is not atomic, so `read_text` could observe an empty file.
+  The test harness now publishes markers via temp-file + `os.replace` and
+  reads them with content-aware waits (`_wait_marker_text` /
+  `_wait_child_pid`). No shipped code was involved.
 - **First executed Linux evidence.** After the pip-seeding workflow fix, the
   CI Ubuntu release-gate job ran the full suite on Linux for the first time:
   405 of 407 outcomes were correct, including the POSIX process-group
@@ -258,7 +276,13 @@ are closed. Release remains blocked by:
 1. affected bundled OpenJPEG 2.5.4 (and Pillow aggregates that contain it);
 2. advisory-unknown PDFium 152.0.7947.0 and 18 unversioned native children;
 3. no complete Windows OS-enforced outbound-plus-DNS denial result;
-4. no executed Linux or macOS release matrix, and no Windows CPython 3.12 run;
+4. partially closed on 2026-08-03 by the first executed CI runs (see the
+   dated evidence section): the Ubuntu runner passed the complete release
+   gate, and the install/full-test matrix passed on ubuntu/windows/macos
+   runners across CPython 3.12–3.14 with retained evidence artifacts. Still
+   open: no native-runner *release gate* on macOS or Windows CI (the matrix
+   runs the profile/full-test verification, not the build gate), and no
+   local Windows 3.12 hardening run on the primary workstation;
 5. no real mounted mapped-drive regression and no symbolic-link privilege on
    this host.
 
