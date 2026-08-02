@@ -344,7 +344,11 @@ process never parses document bytes. Sequence:
    parent state at completion.
 5. The parent watchdog (50 ms cadence) enforces wall clock, Job-accounting
    CPU, sampled temporary and output directory sizes, and (Linux) descendant
-   count; violations terminate the tree with a specific terminal state.
+   count; violations terminate the tree with a specific terminal state. A
+   POSIX `RLIMIT_FSIZE` boundary that fires first is still classified as
+   `limit_exceeded`: via the `SIGXFSZ` exit signal, or — on hosts where that
+   signal is inherited-ignored — via the child reporting the `EFBIG` write
+   failure as a typed limit message.
 6. Finalization proves process-tree exit before any terminal event releases
    admission: Windows requires Job accounting to report zero active
    processes (`process_tree_exit=verified_empty`); a leader that exited
@@ -389,11 +393,11 @@ Authoritative: `docs/PACKAGING.md`. In brief:
   then comparison against `packaging/release-artifact-manifest.json`
   (`--update-artifact-manifest` is the only legitimate refresh, for inspected
   intentional changes — drift otherwise fails the gate).
-- **Canonical identity (2026-08-03)**: source tree `2b732915…`; wheel
-  `972a1e82…` (96,834 B); sdist `faf90ac7…` (83,397 B); authenticated by
+- **Canonical identity (2026-08-03)**: source tree `150b4aeb…`; wheel
+  `049345cb…` (98,083 B); sdist `531c4084…` (84,593 B); authenticated by
   `packaging-evidence/windows-11-x64-SHA256SUMS.txt`; superseded sets are
-  archived under `dist/windows-11-x64-2026-07-20/` and
-  `dist/windows-11-x64-2026-08-03-superseded/`.
+  archived under `dist/windows-11-x64-2026-07-20/` and the two
+  `dist/windows-11-x64-2026-08-03-superseded*/` directories.
 - **SBOMs/notices** per profile (CycloneDX 1.6) are generated and
   drift-checked; advisory review is dated in `docs/ADVISORY_REPORT.json`.
 

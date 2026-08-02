@@ -120,13 +120,20 @@ result applies only to the recorded OS, architecture, and interpreter.
   local quality gate now also runs mypy with `--platform linux` and
   `--platform darwin` so Windows-only attributes fail locally before CI. The
   full gate then passed end-to-end again with a refreshed manifest.
+- Portability-fix package identity (superseded the same day by the Linux
+  limit-classification fix): wheel
+  `972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8`
+  (96,834 bytes), archived with its checksum file in
+  `dist/windows-11-x64-2026-08-03-superseded-2/`.
 - Canonical package identity (2026-08-03, current): source
-  `2b732915fd7e635359f52f9982db21a0b33a9bb5db7da7f37435d69edf19c8d8`;
-  wheel `972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8`
-  (96,834 bytes); sdist
-  `faf90ac7df2461921ad9d3a372fc90abd553132718dcde63fcc9950e06cfe57b`
-  (83,397 bytes). `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was
-  regenerated from the retained files and matches the manifest.
+  `150b4aeb882d0b6c8b09787fed94d7df8d460ad2522aac61c37395f3fa504db2`;
+  wheel `049345cb2dd1f6d23da011a95984eede0e5d64e2d34a052f8e408132dee2b2b0`
+  (98,083 bytes); sdist
+  `531c4084dd8071cae8c66e2408c1ed388a1c419c48d3e12b799b32311e3d69ca`
+  (84,593 bytes). The complete gate passed with this identity after the
+  Linux limit-classification fix;
+  `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was regenerated from
+  the retained files and matches the manifest.
 - Live compression smokes: a deliberately bloated 5-page PDF compressed with
   pixel-identical sampled renders; `outline-6page.pdf` 5,777 → 2,953 bytes
   (48.9 % smaller) under `--strict-offline` with outlines preserved;
@@ -139,6 +146,25 @@ result applies only to the recorded OS, architecture, and interpreter.
   marker-file comparison, then passed 3/3 in isolation and in both complete
   gate suite runs. Tracked as a timing-sensitivity issue in the live-server
   test, not a shipped-code defect; it deserves hardening.
+- **First executed Linux evidence.** After the pip-seeding workflow fix, the
+  CI Ubuntu release-gate job ran the full suite on Linux for the first time:
+  405 of 407 outcomes were correct, including the POSIX process-group
+  containment tests. The two failures shared one root cause: the POSIX
+  `RLIMIT_FSIZE` boundary (derived from `max_output_bytes`) fired before the
+  parent's sampled monitor and surfaced as an unclassified crash. Reproduced
+  locally on WSL2 Ubuntu-24.04 (CPython 3.12.3), which also showed the host
+  variance: `SIGXFSZ` is inherited-ignored there and on GitHub's runners, so
+  the write fails with `OSError(EFBIG)` instead of a kill.
+- The classification fix landed with the evidence: a `SIGXFSZ`-killed worker
+  and a child-reported `EFBIG` failure both terminate as `limit_exceeded`
+  with the aggregate-output message (HTTP 422), matching the Windows monitor
+  path; forged or unrelated `EFBIG` cannot upgrade any state, and the typed
+  limit message carries no parser-derived text. After the fix, the complete
+  407-test suite passed on WSL2 Ubuntu-24.04 (Windows-only tests skipping)
+  and again on Windows. WSL execution is real Linux-kernel-interface
+  evidence but is not a native-Linux release gate; the CI runner remains the
+  designated Linux executor and its rows stay non-evidence until a green
+  run's artifacts are retained.
 
 ## Implemented hardening
 

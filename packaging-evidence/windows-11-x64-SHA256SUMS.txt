@@ -1,2 +1,2 @@
-972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8  localdocforge-0.1.0-py3-none-any.whl
-faf90ac7df2461921ad9d3a372fc90abd553132718dcde63fcc9950e06cfe57b  localdocforge-0.1.0.tar.gz
+049345cb2dd1f6d23da011a95984eede0e5d64e2d34a052f8e408132dee2b2b0  localdocforge-0.1.0-py3-none-any.whl
+531c4084dd8071cae8c66e2408c1ed388a1c419c48d3e12b799b32311e3d69ca  localdocforge-0.1.0.tar.gz

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import errno
 import json
 import math
 import multiprocessing
@@ -73,6 +74,32 @@ class _ProcessExitProof(StrEnum):
     BOUNDARY_EMPTY = "boundary_empty"
     PRE_GATE_LEADER_EXIT = "pre_gate_leader_exit"
     UNVERIFIED = "unverified"
+
+
+#: One message for every way the fsize/aggregate output boundary can fire:
+#: the parent monitor, a SIGXFSZ kill, or an EFBIG write failure in the child.
+_FSIZE_LIMIT_ERROR = (
+    "Job exceeded its configured aggregate output limit "
+    "(single-file size enforced by the operating system); "
+    "the worker tree was terminated"
+)
+
+
+def _efbig_in_chain(exc: BaseException | None) -> bool:
+    """True when the exception chain contains an ``EFBIG`` file-size failure.
+
+    On hosts where ``SIGXFSZ`` is inherited-ignored (observed on WSL and
+    GitHub's Ubuntu runners), exceeding ``RLIMIT_FSIZE`` surfaces as
+    ``OSError(EFBIG)`` instead of a kill; it must still classify as the
+    configured output limit, never as an anonymous crash.
+    """
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        if isinstance(exc, OSError) and exc.errno == errno.EFBIG:
+            return True
+        exc = exc.__cause__ or exc.__context__
+    return False
 
 
 _TERMINAL_STATES = frozenset(
@@ -920,8 +947,10 @@ def _run_probe(
 
 
 def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> None:
+    fsize_limit_active = False
     try:
         settings = Settings.model_validate_json(request.settings_json)
+        fsize_limit_active = os.name == "posix" and settings.limits.max_output_bytes is not None
         if os.name == "posix":
             containment = _prepare_posix(settings.limits, settings.strict_offline)
         else:
@@ -1008,6 +1037,17 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
             )
             return
         except PipelineError as exc:
+            if fsize_limit_active and _efbig_in_chain(exc):
+                _send_message(
+                    connection,
+                    {
+                        "kind": "failure",
+                        "error": _FSIZE_LIMIT_ERROR,
+                        "http_status": 422,
+                        "limit_exceeded": True,
+                    },
+                )
+                return
             public_error = _public_pipeline_error(str(exc))
             payload: dict[str, Any] = {
                 "kind": "failure",
@@ -1031,7 +1071,18 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                 payload["report"] = report_payload
             _send_message(connection, payload)
             return
-        except Exception:
+        except Exception as exc:
+            if fsize_limit_active and _efbig_in_chain(exc):
+                _send_message(
+                    connection,
+                    {
+                        "kind": "failure",
+                        "error": _FSIZE_LIMIT_ERROR,
+                        "http_status": 422,
+                        "limit_exceeded": True,
+                    },
+                )
+                return
             # Unexpected parser/runner values can contain document fragments,
             # passwords, or private paths. Keep them out of IPC and logs.
             _send_message(
@@ -1054,11 +1105,22 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                 "outputs": output_names,
             },
         )
-    except Exception:
-        _send_message(
-            connection,
-            {"kind": "fatal", "error": "Worker setup failed", "http_status": 500},
-        )
+    except Exception as exc:
+        if fsize_limit_active and _efbig_in_chain(exc):
+            _send_message(
+                connection,
+                {
+                    "kind": "failure",
+                    "error": _FSIZE_LIMIT_ERROR,
+                    "http_status": 422,
+                    "limit_exceeded": True,
+                },
+            )
+        else:
+            _send_message(
+                connection,
+                {"kind": "fatal", "error": "Worker setup failed", "http_status": 500},
+            )
     finally:
         with contextlib.suppress(OSError):
             connection.close()
@@ -1182,6 +1244,42 @@ class WorkerProcess:
             )
         return _ProcessExitProof.UNVERIFIED
 
+    def _rlimit_kill_outcome(
+        self,
+        process,
+        containment: dict[str, str | int | float | bool | None],
+    ) -> WorkerOutcome | None:
+        """Classify a POSIX ``RLIMIT_FSIZE`` (SIGXFSZ) kill as the output limit.
+
+        The kernel limit is derived from ``max_output_bytes`` and can fire
+        before the sampled directory monitor; the terminal state must match
+        the monitor path instead of reading as an unexplained crash. Returns
+        ``None`` for every other exit so ordinary crash handling proceeds.
+        """
+        if os.name != "posix":
+            return None
+        sigxfsz = getattr(signal, "SIGXFSZ", None)
+        if sigxfsz is None:
+            return None
+        with contextlib.suppress(AssertionError, OSError, ValueError):
+            process.join(timeout=1.0)
+        try:
+            exitcode = process.exitcode
+        except ValueError:
+            return None
+        if self._process_is_alive(process) or exitcode != -int(sigxfsz):
+            return None
+        return WorkerOutcome(
+            status=WorkerJobStatus.LIMIT_EXCEEDED,
+            error=(
+                "Job exceeded its configured aggregate output limit "
+                "(single-file size enforced by the operating system); "
+                "the worker tree was terminated"
+            ),
+            http_status=422,
+            containment=containment,
+        )
+
     @staticmethod
     def _fail_closed_unverified_tree(outcome: WorkerOutcome) -> None:
         outcome.status = WorkerJobStatus.CRASHED
@@ -1238,6 +1336,16 @@ class WorkerProcess:
             status = payload.get("http_status", 422)
             if not isinstance(status, int) or not 400 <= status <= 599:
                 raise ValueError("Worker failure status was invalid")
+            if payload.get("limit_exceeded") is True:
+                # The child hit the OS-enforced file-size boundary derived
+                # from max_output_bytes (EFBIG); same terminal state as the
+                # parent monitor path. Any attached report is ignored.
+                return WorkerOutcome(
+                    status=WorkerJobStatus.LIMIT_EXCEEDED,
+                    error=_bounded_text(payload.get("error", _FSIZE_LIMIT_ERROR)),
+                    http_status=status,
+                    containment=containment,
+                )
             report_payload = payload.get("report")
             report = (
                 ConversionReport.model_validate(report_payload)
@@ -1476,7 +1584,13 @@ class WorkerProcess:
                     if message is not None:
                         outcome = self._terminal_message(message, containment)
                 except ValueError:
+                    # A kernel RLIMIT_FSIZE kill usually surfaces here first
+                    # as a pipe EOF, before the exitcode branch below runs.
+                    limit_outcome = self._rlimit_kill_outcome(process, containment)
                     self.terminate()
+                    if limit_outcome is not None:
+                        outcome = limit_outcome
+                        break
                     if cancel_requested.is_set():
                         outcome = WorkerOutcome(
                             status=WorkerJobStatus.CANCELLED,
@@ -1499,6 +1613,8 @@ class WorkerProcess:
                         message = _receive_message(receive_connection, 0.1)
                         if message is not None:
                             outcome = self._terminal_message(message, containment)
+                    if outcome is None:
+                        outcome = self._rlimit_kill_outcome(process, containment)
                     if outcome is None:
                         outcome = WorkerOutcome(
                             status=WorkerJobStatus.CRASHED,
