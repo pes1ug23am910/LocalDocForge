@@ -134,6 +134,19 @@ result applies only to the recorded OS, architecture, and interpreter.
   Linux limit-classification fix;
   `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was regenerated from
   the retained files and matches the manifest.
+- Cross-platform artifact identity is now honestly platform-scoped. The CI
+  Ubuntu gate reached the artifact-manifest comparison and failed
+  byte-identity against the Windows-recorded manifest; measurement showed
+  three structural causes (package `METADATA` CRLF vs LF, zip external
+  attributes with platform modes, and differing deflate streams). The
+  manifest moved to a per-platform schema 3 — only `Windows-AMD64` is
+  recorded at this checkpoint, with the identity above unchanged — the gate
+  gained `--allow-unrecorded-platform` (CI uses it; reproducibility, Twine,
+  and sdist-to-wheel checks still run everywhere), and `profile_matrix.py`
+  now matches a wheel against any recorded identity, writing an explicit
+  `skipped-no-recorded-platform-identity` marker into evidence otherwise.
+  The WSL2 Ubuntu simulation of the CI build gate then passed end-to-end
+  with the printed unrecorded-platform notice.
 - Live compression smokes: a deliberately bloated 5-page PDF compressed with
   pixel-identical sampled renders; `outline-6page.pdf` 5,777 → 2,953 bytes
   (48.9 % smaller) under `--strict-offline` with outlines preserved;

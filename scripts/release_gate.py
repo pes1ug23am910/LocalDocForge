@@ -14,6 +14,7 @@ import hashlib
 import io
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -359,10 +360,19 @@ def _sdist_members(sdist: Path) -> list[str]:
         return sorted(member.name for member in archive.getmembers() if member.isfile())
 
 
+def _platform_key() -> str:
+    """Identity key for artifacts built on this host.
+
+    Byte-identical artifacts are platform-scoped: package METADATA newlines,
+    zip external attributes, and deflate output all legitimately differ
+    between build hosts, so each platform records its own canonical hashes.
+    """
+    return f"{platform.system()}-{platform.machine()}"
+
+
 def _artifact_record(wheel: Path, sdist: Path, source: Path) -> dict[str, Any]:
     _, wheel_members = _wheel_metadata(wheel)
     return {
-        "schema": 2,
         "source_date_epoch": int(SOURCE_DATE_EPOCH),
         "source_tree_sha256": _source_tree_sha256(source),
         "artifacts": {
@@ -380,18 +390,68 @@ def _artifact_record(wheel: Path, sdist: Path, source: Path) -> dict[str, Any]:
     }
 
 
-def _check_or_update_manifest(record: dict[str, Any], update: bool) -> None:
-    rendered = json.dumps(record, indent=2, sort_keys=True) + "\n"
+def _check_or_update_manifest(
+    record: dict[str, Any],
+    update: bool,
+    *,
+    allow_unrecorded: bool = False,
+) -> None:
+    key = _platform_key()
     if update:
+        platforms: dict[str, Any] = {}
+        if MANIFEST_PATH.is_file():
+            loaded = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+            if loaded.get("schema") == 3 and isinstance(loaded.get("platforms"), dict):
+                platforms = loaded["platforms"]
+            elif loaded.get("schema") == 2:
+                # The flat schema-2 manifest was only ever generated on the
+                # Windows x64 release workstation; carry it under that key.
+                platforms = {
+                    "Windows-AMD64": {
+                        field: loaded[field]
+                        for field in ("source_date_epoch", "source_tree_sha256", "artifacts")
+                        if field in loaded
+                    }
+                }
+        platforms[key] = record
+        rendered = (
+            json.dumps({"schema": 3, "platforms": platforms}, indent=2, sort_keys=True) + "\n"
+        )
         MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
         MANIFEST_PATH.write_text(rendered, encoding="utf-8")
-        print(f"updated {MANIFEST_PATH.relative_to(ROOT)}")
+        try:
+            shown = MANIFEST_PATH.relative_to(ROOT)
+        except ValueError:  # tests point MANIFEST_PATH outside the repository
+            shown = MANIFEST_PATH
+        print(f"updated {shown} for {key}")
         return
     if not MANIFEST_PATH.is_file():
         raise RuntimeError(
             f"{MANIFEST_PATH} is missing; run the gate once with --update-artifact-manifest"
         )
-    expected = MANIFEST_PATH.read_text(encoding="utf-8")
+    loaded = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    if loaded.get("schema") != 3 or not isinstance(loaded.get("platforms"), dict):
+        raise RuntimeError(
+            "release artifact manifest schema is stale; regenerate it with "
+            "--update-artifact-manifest"
+        )
+    recorded = loaded["platforms"].get(key)
+    if recorded is None:
+        message = (
+            f"no recorded release identity for platform {key}; byte-identical artifacts "
+            "are platform-scoped (package metadata newlines, archive attributes, and "
+            "deflate output differ across build hosts)"
+        )
+        if allow_unrecorded:
+            print(f"NOTICE: {message}; comparison skipped (--allow-unrecorded-platform)")
+            return
+        raise RuntimeError(
+            message
+            + "; run --update-artifact-manifest on this platform or pass "
+            "--allow-unrecorded-platform"
+        )
+    expected = json.dumps(recorded, indent=2, sort_keys=True)
+    rendered = json.dumps(record, indent=2, sort_keys=True)
     if expected != rendered:
         raise RuntimeError(
             "release artifact drift detected; inspect the package changes and, if intentional, "
@@ -434,7 +494,11 @@ def _rebuild_sdist(
     return wheels[0]
 
 
-def _build_gate(update_manifest: bool, dist_directory: Path | None = None) -> Path:
+def _build_gate(
+    update_manifest: bool,
+    dist_directory: Path | None = None,
+    allow_unrecorded: bool = False,
+) -> Path:
     with tempfile.TemporaryDirectory(prefix="ldf-release-build-") as temp:
         root = Path(temp)
         build_backend_wheelhouse = root / "build-backend-wheelhouse"
@@ -464,7 +528,9 @@ def _build_gate(update_manifest: bool, dist_directory: Path | None = None) -> Pa
             raise RuntimeError("wheel rebuilt from the sdist differs from the direct clean wheel")
         _validate_metadata(first_wheel)
         _check_or_update_manifest(
-            _artifact_record(first_wheel, first_sdist, first_source), update_manifest
+            _artifact_record(first_wheel, first_sdist, first_source),
+            update_manifest,
+            allow_unrecorded=allow_unrecorded,
         )
 
         if dist_directory is None:
@@ -496,6 +562,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--steps", nargs="+", choices=ALL_STEPS, default=list(ALL_STEPS))
     parser.add_argument("--update-artifact-manifest", action="store_true")
+    parser.add_argument(
+        "--allow-unrecorded-platform",
+        action="store_true",
+        help="Tolerate a manifest with no identity recorded for this build platform "
+        "(comparison is skipped with a printed notice; reproducibility checks still run).",
+    )
     parser.add_argument("--profile-evidence", type=Path)
     parser.add_argument(
         "--dist-dir",
@@ -522,7 +594,11 @@ def main(argv: list[str] | None = None) -> int:
     wheel: Path | None = None
     try:
         if "build" in steps or "profiles" in steps:
-            wheel = _build_gate(args.update_artifact_manifest, args.dist_dir)
+            wheel = _build_gate(
+                args.update_artifact_manifest,
+                args.dist_dir,
+                args.allow_unrecorded_platform,
+            )
         if "profiles" in steps:
             if wheel is None:
                 raise AssertionError("profile step requires a built wheel")
@@ -533,6 +609,8 @@ def main(argv: list[str] | None = None) -> int:
                 str(wheel.parent),
                 "--install-source",
             ]
+            if args.allow_unrecorded_platform:
+                command.append("--allow-unrecorded-platform")
             if full_release_gate:
                 command.append("--full-tests")
             if args.profile_evidence:
