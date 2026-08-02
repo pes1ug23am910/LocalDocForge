@@ -121,7 +121,13 @@ never an empty-Job claim. Any other unverifiable exit fails closed.
 
 The portable implementation creates a POSIX session/process group and applies
 available `RLIMIT_AS`, `RLIMIT_CPU`, and `RLIMIT_FSIZE`; Linux additionally
-monitors descendant count through `/proc`. Repository-launched external tools
+monitors descendant count through `/proc`. Because `RLIMIT_FSIZE` (derived
+from `max_output_bytes`) can fire before the sampled parent monitor, both of
+its surfaces are classified as the output limit rather than an anonymous
+crash: a `SIGXFSZ`-killed worker is recognized by its exit signal, and on
+hosts where `SIGXFSZ` is inherited-ignored (observed on WSL and GitHub's
+Ubuntu runners) the child reports the resulting `EFBIG` write failure as a
+typed limit message over IPC. Repository-launched external tools
 remain in that group, but arbitrary same-user code can call `setsid()` and
 escape it. These POSIX/macOS paths were not executed in the Windows-only
 2026-07-20 checkpoint and are not cross-platform pass evidence.
