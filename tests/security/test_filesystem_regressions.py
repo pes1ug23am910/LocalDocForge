@@ -5,10 +5,12 @@ Every path and process is synthetic and local to pytest's temporary directory.
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import io
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +18,7 @@ import pytest
 
 import localdocforge.config.settings as settings_module
 import localdocforge.jobs.workspace as workspace_module
+import localdocforge.security.paths as paths_module
 import localdocforge.security.subproc as subproc_module
 from localdocforge.config.settings import Settings
 from localdocforge.domain.pages import PageRange
@@ -29,7 +32,7 @@ from localdocforge.jobs.workspace import (
 from localdocforge.operations.organize import OrganizeOptions, extract_pages, merge_pdfs, split_pdf
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.security.filenames import sanitize_filename
-from localdocforge.security.paths import PathSecurityError
+from localdocforge.security.paths import PathSecurityError, is_remote_path
 from localdocforge.security.subproc import ToolError, find_executable, minimal_env, run_tool
 
 
@@ -45,6 +48,37 @@ def _settings(root: Path, **overrides) -> Settings:
     }
     values.update(overrides)
     return Settings(**values)
+
+
+def _extended_windows_path(path: Path) -> Path:
+    return Path(f"\\\\?\\{path.resolve()}")
+
+
+def _short_windows_path(path: Path) -> Path | None:
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetShortPathNameW.argtypes = (
+        ctypes.c_wchar_p,
+        ctypes.c_wchar_p,
+        ctypes.c_uint,
+    )
+    kernel32.GetShortPathNameW.restype = ctypes.c_uint
+    buffer = ctypes.create_unicode_buffer(32768)
+    length = kernel32.GetShortPathNameW(str(path), buffer, len(buffer))
+    if not length or length >= len(buffer):
+        return None
+    return Path(buffer.value)
+
+
+def _make_windows_junction(link: Path, target: Path) -> None:
+    command = os.environ.get("COMSPEC", r"C:\Windows\System32\cmd.exe")
+    result = subprocess.run(  # noqa: S603 - fixed Windows shell and mklink builtin
+        [command, "/d", "/c", "mklink", "/J", str(link), str(target)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        pytest.skip(f"directory junction creation unavailable: {result.stderr.strip()}")
 
 
 def test_current_directory_executable_is_not_discovered(tmp_path: Path, monkeypatch) -> None:
@@ -230,6 +264,201 @@ def test_strict_offline_rejects_unc_output_without_touching_it(
             Path(r"\\synthetic.invalid\share\output.pdf"),
             options=OrganizeOptions(settings=_settings(tmp_path)),
         )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path-form regression")
+def test_windows_extended_drive_is_local_and_extended_unc_or_device_is_rejected(
+    tmp_path: Path,
+) -> None:
+    extended_jobs = _extended_windows_path(tmp_path / "extended-jobs")
+    assert not is_remote_path(extended_jobs)
+    Settings(strict_offline=True, jobs_root=extended_jobs)
+
+    with pytest.raises(ValueError, match="UNC|network-drive"):
+        Settings(
+            strict_offline=True,
+            jobs_root=Path(r"\\?\UNC\synthetic.invalid\share\jobs"),
+        )
+    with pytest.raises(ValueError, match="device path"):
+        Settings(strict_offline=False, jobs_root=Path(r"\\.\NUL"))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows mapped-drive API regression")
+def test_windows_mapped_drive_detection_uses_mocked_drive_type(monkeypatch) -> None:
+    queried: list[str] = []
+
+    def mapped(root: str) -> int:
+        queried.append(root)
+        return 4  # DRIVE_REMOTE; mocked because this host has no mapped drive.
+
+    monkeypatch.setattr(paths_module, "_windows_drive_type", mapped)
+
+    assert is_remote_path(Path(r"Z:\synthetic\input.pdf"))
+    with pytest.raises(ValueError, match="UNC|network-drive"):
+        Settings(strict_offline=True, jobs_root=Path(r"Z:\synthetic\jobs"))
+    assert queried and set(queried) == {"Z:\\"}
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows filename-alias regression")
+@pytest.mark.parametrize(
+    ("name", "message"),
+    [
+        ("file.pdf:stream", "alternate-data-stream"),
+        ("CON.pdf", "reserved Windows device"),
+        ("NUL .txt", "reserved Windows device"),
+        ("normal.pdf.", "trailing-dot"),
+        ("normal.pdf ", "trailing-dot|trailing-space"),
+    ],
+)
+def test_windows_unsafe_output_forms_are_rejected_before_publication(
+    tmp_path: Path,
+    name: str,
+    message: str,
+) -> None:
+    source = tmp_path / "validated-output.bin"
+    source.write_bytes(b"validated output")
+    destination = tmp_path / name
+
+    with pytest.raises(PathSecurityError, match=message):
+        contained_output_path(destination, [tmp_path])
+    with pytest.raises(PathSecurityError, match=message):
+        atomic_publish(source, destination, collision=CollisionPolicy.OVERWRITE)
+
+    assert source.read_bytes() == b"validated output"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows input path-form regression")
+@pytest.mark.parametrize(
+    "hostile",
+    [
+        lambda root: root / "source.pdf:stream",
+        lambda _root: Path(r"\\.\NUL"),
+    ],
+)
+def test_windows_unsafe_input_form_is_rejected_before_parser(
+    fixtures_dir: Path,
+    tmp_path: Path,
+    hostile,
+) -> None:
+    with pytest.raises(PipelineError, match="alternate-data-stream|device path"):
+        merge_pdfs(
+            [hostile(tmp_path), fixtures_dir / "simple-3page.pdf"],
+            tmp_path / "never.pdf",
+            options=OrganizeOptions(settings=_settings(tmp_path)),
+        )
+    assert not (tmp_path / "never.pdf").exists()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows junction/reparse regression")
+def test_windows_junction_is_rejected_at_containment_and_publication(
+    tmp_path: Path,
+) -> None:
+    allowed = tmp_path / "allowed"
+    outside = tmp_path / "outside"
+    allowed.mkdir()
+    outside.mkdir()
+    junction = allowed / "redirect"
+    _make_windows_junction(junction, outside)
+    source = tmp_path / "validated-output.bin"
+    source.write_bytes(b"validated output")
+    try:
+        with pytest.raises(ValueError, match="reparse point"):
+            Settings(strict_offline=True, jobs_root=junction)
+        with pytest.raises(PathSecurityError, match="reparse point"):
+            JobWorkspace("junction-root", root=junction)
+        with pytest.raises(PathSecurityError, match="reparse point"):
+            contained_output_path(junction / "escaped.bin", [allowed])
+        with pytest.raises(PathSecurityError, match="reparse point"):
+            atomic_publish(
+                source,
+                junction / "escaped.bin",
+                collision=CollisionPolicy.OVERWRITE,
+            )
+        assert not (outside / "escaped.bin").exists()
+    finally:
+        if junction.exists():
+            junction.rmdir()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows case-insensitive alias regression")
+def test_windows_case_alias_never_modifies_source(fixtures_dir: Path, tmp_path: Path) -> None:
+    source = tmp_path / "Case-Alias.pdf"
+    shutil.copy2(fixtures_dir / "simple-3page.pdf", source)
+    destination = tmp_path / "case-alias.PDF"
+    if not destination.exists():
+        pytest.skip("temporary filesystem is case-sensitive")
+    before = _sha256(source)
+
+    with pytest.raises(PipelineError, match="aliases an input"):
+        extract_pages(
+            source,
+            destination,
+            PageRange(spec="1"),
+            options=OrganizeOptions(
+                collision=CollisionPolicy.OVERWRITE,
+                settings=_settings(tmp_path),
+            ),
+        )
+
+    assert _sha256(source) == before
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows 8.3 alias regression")
+def test_windows_short_path_alias_never_modifies_source(
+    fixtures_dir: Path,
+    tmp_path: Path,
+) -> None:
+    source = fixtures_dir / "simple-3page.pdf"
+    short_source = _short_windows_path(source)
+    if short_source is None or os.path.normcase(str(short_source)) == os.path.normcase(str(source)):
+        pytest.skip("8.3 alias unavailable for the synthetic fixture path")
+    before = _sha256(source)
+    settings = Settings(
+        strict_offline=True,
+        jobs_root=tmp_path / "jobs",
+        allowed_output_roots=[fixtures_dir],
+    )
+
+    with pytest.raises(PipelineError, match="aliases an input"):
+        extract_pages(
+            source,
+            short_source,
+            PageRange(spec="1"),
+            options=OrganizeOptions(
+                collision=CollisionPolicy.OVERWRITE,
+                settings=settings,
+            ),
+        )
+
+    assert _sha256(source) == before
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows long-path regression")
+def test_windows_extended_and_long_publication_paths(tmp_path: Path) -> None:
+    source = tmp_path / "validated-output.bin"
+    source.write_bytes(b"validated output")
+    extended_normal = tmp_path / "extended-result.bin"
+    extended_result = atomic_publish(
+        source,
+        _extended_windows_path(extended_normal),
+        collision=CollisionPolicy.FAIL,
+    )
+    assert extended_result.read_bytes() == b"validated output"
+    assert extended_normal.read_bytes() == b"validated output"
+
+    second_source = tmp_path / "second-validated-output.bin"
+    second_source.write_bytes(b"second validated output")
+    deep = tmp_path
+    while len(str(deep)) <= 280:
+        deep /= "long-path-segment-0123456789abcdef"
+    try:
+        deep.mkdir(parents=True)
+    except OSError as exc:
+        pytest.skip(f"Windows long paths unavailable: {exc}")
+    long_result = atomic_publish(second_source, deep / "result.bin")
+
+    assert len(str(long_result)) > 260
+    assert long_result.read_bytes() == b"second validated output"
 
 
 def test_long_astral_and_bidi_filename_is_bounded_and_keeps_extension() -> None:

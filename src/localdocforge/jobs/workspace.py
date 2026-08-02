@@ -19,7 +19,11 @@ import uuid
 from enum import StrEnum
 from pathlib import Path
 
-from localdocforge.security.paths import PathSecurityError, ensure_contained
+from localdocforge.security.paths import (
+    PathSecurityError,
+    ensure_contained,
+    validate_path_before_access,
+)
 
 _WORKSPACE_PREFIX = "ldf-job-"
 _SAFE_JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
@@ -43,6 +47,7 @@ def default_jobs_root() -> Path:
 
 def make_private_dir(path: Path, *, exist_ok: bool = True) -> None:
     """Create a private directory without chmodding a pre-existing parent."""
+    path = validate_path_before_access(path, what="private directory")
     created = False
     try:
         path.mkdir(parents=True, exist_ok=False)
@@ -138,7 +143,10 @@ def _next_free_path(destination: Path) -> Path:
     base_stem = match.group("stem") if match else stem
     counter = int(match.group("n")) + 1 if match else 1
     while True:
-        candidate = destination.with_name(f"{base_stem} ({counter}){suffix}")
+        candidate = validate_path_before_access(
+            destination.with_name(f"{base_stem} ({counter}){suffix}"),
+            what="renamed output path",
+        )
         if not candidate.exists():
             return candidate
         counter += 1
@@ -157,14 +165,23 @@ def atomic_publish(
     crash can never leave a half-written output at the final name. Returns the
     actual path written (which differs from ``destination`` under ``rename``).
     """
+    source = validate_path_before_access(source, what="publication source")
     if not source.is_file():
         raise FileNotFoundError(f"Nothing to publish: {source}")
-    destination = destination.expanduser()
+    destination = validate_path_before_access(destination, what="publication destination")
     if destination.exists() and destination.is_dir():
         raise IsADirectoryError(f"Destination is a directory: {destination}")
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    parent = validate_path_before_access(destination.parent, what="publication directory")
+    parent.mkdir(parents=True, exist_ok=True)
+    # Repeat after creation so a pre-existing/missing boundary is checked at
+    # the point immediately before staging and final publication.
+    parent = validate_path_before_access(parent, what="publication directory")
+    destination = validate_path_before_access(destination, what="publication destination")
 
-    staging = destination.parent / f".ldf-staging-{uuid.uuid4().hex}{destination.suffix}"
+    staging = validate_path_before_access(
+        parent / f".ldf-staging-{uuid.uuid4().hex}{destination.suffix}",
+        what="publication staging path",
+    )
     try:
         with source.open("rb") as src, staging.open("wb") as dst:
             shutil.copyfileobj(src, dst, length=1024 * 1024)
@@ -199,7 +216,9 @@ def atomic_publish(
 
 def contained_output_path(destination: Path, allowed_roots: list[Path] | None) -> Path:
     """Validate a user-requested output path against configured allowed roots."""
-    resolved = destination.expanduser().resolve(strict=False)
+    checked = validate_path_before_access(destination, what="output path")
+    resolved = checked.resolve(strict=False)
+    resolved = validate_path_before_access(resolved, what="resolved output path")
     if allowed_roots is not None:
         for root in allowed_roots:
             try:

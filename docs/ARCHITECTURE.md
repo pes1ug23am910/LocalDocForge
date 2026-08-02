@@ -5,11 +5,11 @@
 ```text
 ┌────────────────────────────────────────────────────────────┐
 │ interfaces: cli/ (Typer, shipped)                          │
-│             api/ (FastAPI, shipped; synchronous jobs)      │
+│             api/ (FastAPI, shipped; worker-backed jobs)    │
 │             minimal HTML status shell (shipped)            │
 │             full browser job UI (planned)                  │
 ├────────────────────────────────────────────────────────────┤
-│ operations/  merge, split, rotate, crop, image conversion  │
+│ operations/  organize, edit, compress, image conversion    │
 │   build an execute() closure and hand it to the runner     │
 ├────────────────────────────────────────────────────────────┤
 │ pipelines/runner.py — shared job lifecycle                 │
@@ -66,8 +66,10 @@ engines and planned capabilities remain data, not placeholder actions.
    beneath it.
 4. **Execution.** The operation writes candidate files only to the workspace,
    emits progress events, and calls cooperative cancellation/timeout checks
-   between meaningful units of work. This is not preemptive interruption of a
-   native parser call.
+   between meaningful units of work. CLI operations currently execute this
+   lifecycle in-process. API operations execute it in a fresh spawned worker,
+   so the parent can preempt a native parser by terminating the contained
+   process tree.
 5. **Pre-publication boundaries.** Candidate paths and destinations are
    canonicalized once; strict network-output policy, output-root containment,
    duplicate destinations, and input/output aliases are checked. Aggregate
@@ -100,14 +102,40 @@ engines and planned capabilities remain data, not placeholder actions.
 Implemented operations wire aggregate input/output bytes, PDF page counts,
 image pixels, decompressed image bytes, and cooperative timeout checks.
 PDF-to-image export also checks rendered pixels and output bytes incrementally.
-The API caps the received multipart body, cumulative uploaded bytes, file
-count, field count, and field size.
+The API admits a request before multipart parsing, creates a random
+`.transport-*` spool beneath the private API session, and applies cumulative
+upload/file/field bounds. The aggregate transport limit is the lower of the
+non-disableable API upload ceiling, the enabled job input limit, and the enabled
+temporary-byte limit. Upload handles are closed and the transport root is
+removed before worker ownership begins. A parent wall-clock watchdog surrounds
+every spawned job.
 
-`max_archive_entries`, `max_archive_expansion_ratio`, and
-`max_subprocesses` are model fields reserved for future pipelines; they are not
-evidence that archive/Office processing or subprocess concurrency control is
-implemented. There is currently no hard per-job memory quota or preemptive
-timeout for in-process native libraries.
+On Windows each worker is assigned to a fail-closed Job Object before the
+document-processing gate opens. The object applies kill-on-close, job memory,
+job CPU time, and active-process limits. Once that boundary exists, termination
+checks `TerminateJobObject` and queries Job accounting until `ActiveProcesses`
+is zero; only then is `process_tree_exit=verified_empty` published. If the
+bootstrap leader exits before Job assignment, the document gate remains
+`never_opened` and the narrower `pre_gate_leader_verified` proof is reported,
+never an empty-Job claim. Any other unverifiable exit fails closed.
+
+The portable implementation creates a POSIX session/process group and applies
+available `RLIMIT_AS`, `RLIMIT_CPU`, and `RLIMIT_FSIZE`; Linux additionally
+monitors descendant count through `/proc`. Repository-launched external tools
+remain in that group, but arbitrary same-user code can call `setsid()` and
+escape it. These POSIX/macOS paths were not executed in the Windows-only
+2026-07-20 checkpoint and are not cross-platform pass evidence.
+
+The parent also samples the contained job tree for aggregate temporary and
+output bytes. Those directory monitors can overshoot between samples, macOS has
+no portable child-count control here, and `RLIMIT_AS` is not claimed as a
+reliable macOS memory ceiling. None of these limits turns the worker into a
+filesystem or network sandbox.
+
+`max_archive_entries` and `max_archive_expansion_ratio` remain reserved for
+future archive/Office pipelines. `max_subprocesses` is now enforced for API
+workers where the platform mechanism above supports it. CLI native parsing
+remains in-process and its timeout checkpoints remain cooperative.
 
 ### API lifecycle (`api/app.py`)
 
@@ -117,13 +145,15 @@ application additionally checks the request Host unless nonlocal mode was
 explicitly selected.
 
 At process startup the API creates a private `api-data/ldf-api-<uuid>` session
-root. Each request job receives contained `in/` and `out/` directories beneath
-a random job id. Upload inputs are removed after success. Failed/cancelled jobs
-remove their whole job root. Successful outputs remain available by job id and
-artifact index until DELETE, eviction above 50 remembered jobs, or graceful
-shutdown. A later startup best-effort removes crashed API sessions older than
-24 hours. Cleanup failure is surfaced rather than silently dropping the only
-reference to retained files.
+root and holds an external OS-released exclusive lease for its lifetime. Each
+request job receives contained `in/` and `out/` directories beneath a random job
+id. Upload inputs are removed after success. Failed/cancelled jobs remove their
+whole job root. Successful outputs remain available by job id and artifact index
+until DELETE, eviction above 50 remembered jobs, or graceful shutdown. A later
+startup removes crash residue only when it can acquire the corresponding
+external lease; a held, missing, or unreadable lease is preserved fail-closed.
+Cleanup failure is surfaced rather than silently dropping the only reference to
+retained files.
 
 Every `/api` route requires the per-session `X-LDF-Token` header. A cookie is
 set for the status page but is insufficient for API authorization. The server
@@ -131,28 +161,59 @@ emits no CORS grant and adds CSP, no-store, frame, MIME-sniffing, referrer, and
 browser-permission restrictions. Public report serialization changes artifact
 paths to basenames and recursively scrubs the server-private root.
 
-Jobs execute synchronously inside the Uvicorn process. A background queue,
-worker isolation, concurrency/rate caps, progress streaming, and cancellation
-endpoints are planned rather than implied by the job-shaped API.
+Every conversion is dispatched to a fresh multiprocessing `spawn` child; the
+long-lived API process performs only admission, request-contained bounded
+multipart transport, filename/form validation, and result serving. The child
+cannot start document
+parsing until the parent has established Windows Job Object or POSIX process-
+group containment. Its inherited environment is reduced, temporary/home paths
+are redirected into the job tree, Python and native stdout/stderr are discarded,
+and IPC is JSON-framed and capped. Passwords cross into the child only when an
+operation requires one and are cleared from the parent record at completion;
+they never cross back in IPC.
+
+The manager enforces a bounded queue, global worker count, per-client active-job
+cap, and sliding-window submission rate. The legacy request flow waits for the
+worker and returns `201`; `Prefer: respond-async` or `?async=true` returns `202`.
+Job detail, bounded progress events, output download, cancellation, and delete
+endpoints are available. Cancellation, parent wall timeout, worker crash, IPC
+failure, and shutdown terminate the contained tree. The manager does not set
+the terminal event or release admission accounting until tree-exit verification
+and finalization complete. Generated paths are validated and private inputs,
+scratch, and worker temp are removed before outputs and `success` are published
+together under the job lock. A successful download acquires an active-download
+lease before `FileResponse` opens the file and releases it only after streaming
+closes; DELETE and eviction refuse or defer while that lease is active. Running,
+failed, or cancelled output is not exposed. Failed/cancelled jobs remove their
+whole root. Incomplete containment, output validation, or cleanup becomes a
+generic terminal failure and a critical report warning rather than being
+silently ignored.
 
 ### Error model
 
 Operations raise `PipelineError` with the failed `ConversionReport` where one
 exists. `EncryptedInputError` allows an interactive CLI password prompt and a
 single retry. Interfaces map documented cases to stable exit codes or bounded
-HTTP error responses. Unexpected API exceptions return a generic 500 response
-without exception values, private paths, or parser details.
+HTTP error responses. The worker boundary generalizes parser-derived errors,
+scrubs paths/passwords from reports and progress, and validates every IPC
+message. Unexpected API exceptions return a generic 500 response without
+exception values, private paths, document fragments, or parser details.
 
 ## Runtime and state characteristics
 
-- Current structural and image work runs in-process through
-  pikepdf/libqpdf, PDFium, and Pillow. Those libraries execute with the user's
-  privileges. Optional executable probes and future pipelines must use the
-  allowlisted subprocess runner.
+- CLI structural and image work runs in-process through pikepdf/libqpdf,
+  PDFium, and Pillow. API work uses one contained process per job. Both still
+  execute with the user's filesystem authority: process/resource containment
+  limits crashes and denial of service but is not a restricted-token,
+  filesystem, or kernel sandbox. Optional executable probes and future
+  pipelines must use the allowlisted subprocess runner.
 - The package has no shipped outbound network client, telemetry, update check,
   or remote browser asset. Strict mode adds application-level rejection of
   recognizable network filesystem paths and non-loopback serving; it is not an
   OS network sandbox.
+- Windows 11 x64 is the only locally executed release-hardening platform for
+  the 2026-07-20 checkpoint. Portable/POSIX code and CI configuration do not
+  establish Linux or macOS support without their own retained runner evidence.
 - CLI state is ephemeral except user-requested outputs and optional report
   files. API job history is memory-only, while successful output bytes occupy
   the private session directory for the lifecycle described above.

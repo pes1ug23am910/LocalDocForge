@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools==83.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "localdocforge"
 version = "0.1.0"
-description = "Privacy-first, fully local document-processing workbench: core library, CLI, and localhost web UI."
+description = "Privacy-first local document processing: core library, CLI, localhost API, and status page."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "LocalDocForge contributors" }]
@@ -16,34 +16,52 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
-    "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business",
 ]
 
-# Version floors are intentionally conservative; exact pins live in
-# requirements-lock.txt (generated from the working environment).
+# These are compatibility ranges for the published package. Reproducible
+# application installs use the hash-bearing universal lock and profile exports
+# documented in docs/PACKAGING.md.
 dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
     "typer>=0.12",
     "pikepdf>=9.0",
-    "pypdf>=5.0",
     "pypdfium2>=4.30",
     "pillow>=10.4",
+]
+
+[project.optional-dependencies]
+# Base installs and the explicit lite extra intentionally have the same
+# dependency closure: the shipped local CLI/core PDF and image operations.
+lite = []
+standard = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "python-multipart>=0.0.9",
 ]
-
-[project.optional-dependencies]
+full = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+    "pypdf>=5.0",
+]
 dev = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+    "pypdf>=5.0",
     "pytest>=8.3",
     "reportlab>=4.2",
     "ruff>=0.6",
     "httpx>=0.27",
+    "mypy>=2.3",
+    "build>=1.5",
+    "twine>=6.2",
 ]
 
 [project.scripts]
@@ -82,3 +100,78 @@ ignore = [
 # S105 false positives: page-range grammar compares a variable named `token`
 # against grammar keywords like "odd"/"even"; nothing secret involved.
 "src/localdocforge/domain/pages.py" = ["S105"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/localdocforge"]
+check_untyped_defs = true
+disallow_any_generics = true
+# Gradual baseline: every body is analyzed, while legacy public callables can
+# be annotated incrementally without turning the release gate into a no-op.
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+no_implicit_optional = true
+show_error_codes = true
+warn_redundant_casts = true
+# Third-party boundaries and cross-platform guards still expose Any/dead-code
+# false positives; the narrower semantic checks below remain enabled.
+warn_return_any = false
+warn_unreachable = false
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "PIL.*",
+    "pikepdf.*",
+    "pypdf.*",
+    "pypdfium2.*",
+    "uvicorn.*",
+]
+ignore_missing_imports = true
+
+# These are explicit, module-scoped debts found when the type gate was first
+# introduced. All other mypy diagnostics remain release-gating.
+[[tool.mypy.overrides]]
+module = "localdocforge.api.*"
+disable_error_code = ["assignment", "attr-defined", "misc", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = "localdocforge.operations.*"
+disable_error_code = ["arg-type", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "localdocforge.security.subproc"
+disable_error_code = ["attr-defined", "call-overload"]
+
+[[tool.mypy.overrides]]
+module = "localdocforge.domain.models"
+disable_error_code = ["assignment", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "localdocforge.pipelines.runner"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "localdocforge.cli.main"
+disable_error_code = ["type-arg"]
+
+[tool.uv]
+required-version = "==0.11.26"
+default-groups = []
+exclude-newer = "2026-07-19T00:00:00Z"
+environments = [
+    "sys_platform == 'win32' and implementation_name == 'cpython'",
+    "sys_platform == 'linux' and implementation_name == 'cpython'",
+    "sys_platform == 'darwin' and implementation_name == 'cpython'",
+]
+required-environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true

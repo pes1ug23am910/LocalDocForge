@@ -1,0 +1,507 @@
+{
+  "checksum_file_verified": false,
+  "full_tests": {
+    "status": "passed"
+  },
+  "interpreter": {
+    "executable_name": "python.exe",
+    "implementation": "CPython",
+    "machine": "AMD64",
+    "platform_release": "11",
+    "platform_version": "10.0.26200",
+    "system": "Windows",
+    "version": "3.14.4"
+  },
+  "lock_sha256": {
+    "dev.txt": "2c0b3460a672ecf6f2cfb0802b2eb261d8a3cf81f590ccae5fc88c63af9a37b0",
+    "full.txt": "8320211ab33b6b65ee56d7a0a2938f53ee883fe268c84772b42df9ea27ef6dc5",
+    "lite.txt": "4f13947125c052df6fc6cac6a433df0ccd09f49c4c8d1909e86788da5a5c4a5c",
+    "standard.txt": "9ea1489ecd0bdebb5a7b475a31d6ebd6709908fecfbe681a6cc07d579343f057"
+  },
+  "package_source_sha256": "c39c91b599d1d8b050599a2e62bceaf5339818e613e56c6a4997be1021532f70",
+  "python_selector": "python.exe",
+  "release_manifest_verified": true,
+  "results": [
+    {
+      "interpreter": {
+        "executable_name": "python.exe",
+        "implementation": "CPython",
+        "machine": "AMD64",
+        "platform_release": "11",
+        "platform_version": "10.0.26200",
+        "system": "Windows",
+        "version": "3.14.4"
+      },
+      "lock": "lite.txt",
+      "lock_sha256": "4f13947125c052df6fc6cac6a433df0ccd09f49c4c8d1909e86788da5a5c4a5c",
+      "packages": [
+        [
+          "Pygments",
+          "2.20.0"
+        ],
+        [
+          "annotated-doc",
+          "0.0.4"
+        ],
+        [
+          "annotated-types",
+          "0.7.0"
+        ],
+        [
+          "colorama",
+          "0.4.6"
+        ],
+        [
+          "localdocforge",
+          "0.1.0"
+        ],
+        [
+          "lxml",
+          "6.1.1"
+        ],
+        [
+          "markdown-it-py",
+          "4.2.0"
+        ],
+        [
+          "mdurl",
+          "0.1.2"
+        ],
+        [
+          "packaging",
+          "26.2"
+        ],
+        [
+          "pikepdf",
+          "10.10.0"
+        ],
+        [
+          "pillow",
+          "12.3.0"
+        ],
+        [
+          "pydantic",
+          "2.13.4"
+        ],
+        [
+          "pydantic-settings",
+          "2.14.2"
+        ],
+        [
+          "pydantic_core",
+          "2.46.4"
+        ],
+        [
+          "pypdfium2",
+          "5.12.1"
+        ],
+        [
+          "python-dotenv",
+          "1.2.2"
+        ],
+        [
+          "rich",
+          "15.0.0"
+        ],
+        [
+          "shellingham",
+          "1.5.4"
+        ],
+        [
+          "typer",
+          "0.27.0"
+        ],
+        [
+          "typing-inspection",
+          "0.4.2"
+        ],
+        [
+          "typing_extensions",
+          "4.16.0"
+        ]
+      ],
+      "profile": "base",
+      "status": "passed"
+    },
+    {
+      "interpreter": {
+        "executable_name": "python.exe",
+        "implementation": "CPython",
+        "machine": "AMD64",
+        "platform_release": "11",
+        "platform_version": "10.0.26200",
+        "system": "Windows",
+        "version": "3.14.4"
+      },
+      "lock": "lite.txt",
+      "lock_sha256": "4f13947125c052df6fc6cac6a433df0ccd09f49c4c8d1909e86788da5a5c4a5c",
+      "packages": [
+        [
+          "Pygments",
+          "2.20.0"
+        ],
+        [
+          "annotated-doc",
+          "0.0.4"
+        ],
+        [
+          "annotated-types",
+          "0.7.0"
+        ],
+        [
+          "colorama",
+          "0.4.6"
+        ],
+        [
+          "localdocforge",
+          "0.1.0"
+        ],
+        [
+          "lxml",
+          "6.1.1"
+        ],
+        [
+          "markdown-it-py",
+          "4.2.0"
+        ],
+        [
+          "mdurl",
+          "0.1.2"
+        ],
+        [
+          "packaging",
+          "26.2"
+        ],
+        [
+          "pikepdf",
+          "10.10.0"
+        ],
+        [
+          "pillow",
+          "12.3.0"
+        ],
+        [
+          "pydantic",
+          "2.13.4"
+        ],
+        [
+          "pydantic-settings",
+          "2.14.2"
+        ],
+        [
+          "pydantic_core",
+          "2.46.4"
+        ],
+        [
+          "pypdfium2",
+          "5.12.1"
+        ],
+        [
+          "python-dotenv",
+          "1.2.2"
+        ],
+        [
+          "rich",
+          "15.0.0"
+        ],
+        [
+          "shellingham",
+          "1.5.4"
+        ],
+        [
+          "typer",
+          "0.27.0"
+        ],
+        [
+          "typing-inspection",
+          "0.4.2"
+        ],
+        [
+          "typing_extensions",
+          "4.16.0"
+        ]
+      ],
+      "profile": "lite",
+      "status": "passed"
+    },
+    {
+      "interpreter": {
+        "executable_name": "python.exe",
+        "implementation": "CPython",
+        "machine": "AMD64",
+        "platform_release": "11",
+        "platform_version": "10.0.26200",
+        "system": "Windows",
+        "version": "3.14.4"
+      },
+      "lock": "standard.txt",
+      "lock_sha256": "9ea1489ecd0bdebb5a7b475a31d6ebd6709908fecfbe681a6cc07d579343f057",
+      "packages": [
+        [
+          "Pygments",
+          "2.20.0"
+        ],
+        [
+          "annotated-doc",
+          "0.0.4"
+        ],
+        [
+          "annotated-types",
+          "0.7.0"
+        ],
+        [
+          "anyio",
+          "4.14.2"
+        ],
+        [
+          "click",
+          "8.4.2"
+        ],
+        [
+          "colorama",
+          "0.4.6"
+        ],
+        [
+          "fastapi",
+          "0.139.2"
+        ],
+        [
+          "h11",
+          "0.16.0"
+        ],
+        [
+          "idna",
+          "3.18"
+        ],
+        [
+          "localdocforge",
+          "0.1.0"
+        ],
+        [
+          "lxml",
+          "6.1.1"
+        ],
+        [
+          "markdown-it-py",
+          "4.2.0"
+        ],
+        [
+          "mdurl",
+          "0.1.2"
+        ],
+        [
+          "packaging",
+          "26.2"
+        ],
+        [
+          "pikepdf",
+          "10.10.0"
+        ],
+        [
+          "pillow",
+          "12.3.0"
+        ],
+        [
+          "pydantic",
+          "2.13.4"
+        ],
+        [
+          "pydantic-settings",
+          "2.14.2"
+        ],
+        [
+          "pydantic_core",
+          "2.46.4"
+        ],
+        [
+          "pypdfium2",
+          "5.12.1"
+        ],
+        [
+          "python-dotenv",
+          "1.2.2"
+        ],
+        [
+          "python-multipart",
+          "0.0.32"
+        ],
+        [
+          "rich",
+          "15.0.0"
+        ],
+        [
+          "shellingham",
+          "1.5.4"
+        ],
+        [
+          "starlette",
+          "1.3.1"
+        ],
+        [
+          "typer",
+          "0.27.0"
+        ],
+        [
+          "typing-inspection",
+          "0.4.2"
+        ],
+        [
+          "typing_extensions",
+          "4.16.0"
+        ],
+        [
+          "uvicorn",
+          "0.51.0"
+        ]
+      ],
+      "profile": "standard",
+      "status": "passed"
+    },
+    {
+      "interpreter": {
+        "executable_name": "python.exe",
+        "implementation": "CPython",
+        "machine": "AMD64",
+        "platform_release": "11",
+        "platform_version": "10.0.26200",
+        "system": "Windows",
+        "version": "3.14.4"
+      },
+      "lock": "full.txt",
+      "lock_sha256": "8320211ab33b6b65ee56d7a0a2938f53ee883fe268c84772b42df9ea27ef6dc5",
+      "packages": [
+        [
+          "Pygments",
+          "2.20.0"
+        ],
+        [
+          "annotated-doc",
+          "0.0.4"
+        ],
+        [
+          "annotated-types",
+          "0.7.0"
+        ],
+        [
+          "anyio",
+          "4.14.2"
+        ],
+        [
+          "click",
+          "8.4.2"
+        ],
+        [
+          "colorama",
+          "0.4.6"
+        ],
+        [
+          "fastapi",
+          "0.139.2"
+        ],
+        [
+          "h11",
+          "0.16.0"
+        ],
+        [
+          "idna",
+          "3.18"
+        ],
+        [
+          "localdocforge",
+          "0.1.0"
+        ],
+        [
+          "lxml",
+          "6.1.1"
+        ],
+        [
+          "markdown-it-py",
+          "4.2.0"
+        ],
+        [
+          "mdurl",
+          "0.1.2"
+        ],
+        [
+          "packaging",
+          "26.2"
+        ],
+        [
+          "pikepdf",
+          "10.10.0"
+        ],
+        [
+          "pillow",
+          "12.3.0"
+        ],
+        [
+          "pydantic",
+          "2.13.4"
+        ],
+        [
+          "pydantic-settings",
+          "2.14.2"
+        ],
+        [
+          "pydantic_core",
+          "2.46.4"
+        ],
+        [
+          "pypdf",
+          "6.14.2"
+        ],
+        [
+          "pypdfium2",
+          "5.12.1"
+        ],
+        [
+          "python-dotenv",
+          "1.2.2"
+        ],
+        [
+          "python-multipart",
+          "0.0.32"
+        ],
+        [
+          "rich",
+          "15.0.0"
+        ],
+        [
+          "shellingham",
+          "1.5.4"
+        ],
+        [
+          "starlette",
+          "1.3.1"
+        ],
+        [
+          "typer",
+          "0.27.0"
+        ],
+        [
+          "typing-inspection",
+          "0.4.2"
+        ],
+        [
+          "typing_extensions",
+          "4.16.0"
+        ],
+        [
+          "uvicorn",
+          "0.51.0"
+        ]
+      ],
+      "profile": "full",
+      "status": "passed"
+    }
+  ],
+  "schema": 2,
+  "source": {
+    "revision": "7e49624c4ad646f3998c4a204a4e8049c8748205",
+    "working_tree_changes": true
+  },
+  "source_install_syntax_tested": true,
+  "uv": "0.11.26",
+  "wheel": "localdocforge-0.1.0-py3-none-any.whl",
+  "wheel_sha256": "392d0952313d89ee817139c90b388a79aa2d1c655126ee0876285e59f08176b2"
+}

@@ -6,6 +6,9 @@ __pycache__/
 build/
 dist/
 .venv/
+.venv-*/
+tmp/linux-gate/
+.mypy_cache/
 .pytest_cache/
 .ruff_cache/
 .coverage

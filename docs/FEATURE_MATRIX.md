@@ -20,7 +20,7 @@ Interfaces legend: **Lib** Python API · **CLI** · **API** local HTTP · **UI**
 | Images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF) | ✅ | pillow | Lib, CLI, API | `test_image_ops.py::TestImagesToPdf`, `test_pdf_integrity_regressions.py` | Re-encodes images; alpha is composited onto the chosen background; impossible margins are refused; HEIC/auto-crop/deskew unavailable |
 | PDF → images (PNG/JPEG/WebP/TIFF, DPI, ranges) | ✅ | pdfium | Lib, CLI, API | `TestPdfToImages`, `test_api.py`, `test_pdf_integrity_regressions.py` | Raster output is inherently lossy in editability; JPEG/WebP quality is applied; syntax-damaged PDFs are refused rather than silently repaired |
 | Encrypted-input handling (open with password) | ✅ | pikepdf/PDFium | Lib, CLI, API | `TestMerge::test_merge_encrypted_*`, `test_pdf_integrity_regressions.py` | Passwords only unlock inputs for reading; generated PDFs/images are unprotected and every such conversion emits a critical warning; protect/unlock operations are unavailable |
-| Compress PDF | ❌ planned P2 | — | — | — | |
+| Compress PDF | ✅ lossless preset | pikepdf | Lib, CLI, API | `test_optimize_ops.py`, `test_cli.py::TestCompressCommand`, `test_api.py` | Lossless structural optimization only: streams recompressed (generalized filters), object streams generated, unused page resources pruned; image data is never re-encoded or downsampled. Sampled pages must render pixel-identical to the source or nothing is published. Already-optimized files may not shrink (`compress-no-reduction` is reported, never hidden). `balanced`/`aggressive`/`archival` presets are planned and refused |
 | Repair PDF | ❌ planned P2 | — | — | — | Syntax-damaged inputs are rejected; no automatic repair is performed |
 | OCR PDF | ❌ planned P2 | needs Tesseract+OCRmyPDF (not installed) | — | — | |
 | Office → PDF | ❌ planned P2 | needs LibreOffice (not installed) | — | — | |
@@ -39,15 +39,15 @@ Interfaces legend: **Lib** Python API · **CLI** · **API** local HTTP · **UI**
 | Validate (PDF/A, PDF/UA) | ❌ planned P5 | needs veraPDF | — | — | Output validation reopens with pikepdf/qpdf, rejects syntax warnings, checks expected page counts, and renders through PDFium; this is not PDF/A or PDF/UA conformance validation |
 | Scan to PDF (hardware) | ❌ planned P5 | — | — | — | |
 | Batch YAML/JSON jobs | ❌ planned P2 | — | — | — | |
-| Local web API (`ldf web`) | ✅ | FastAPI/uvicorn | API | `test_api.py`, `test_privacy_boundary.py` + live localhost verification | Loopback-only by default; strict-offline forbids non-loopback even with the exposure opt-in; token auth; jobs run in-request; queue/cancel unavailable; browser UI not built |
+| Local web API (`ldf web`) | ✅ | FastAPI/uvicorn + spawned workers | API | `test_api.py`, `test_privacy_boundary.py`, `test_worker_isolation.py` + live localhost verification | Loopback-only by default; strict-offline forbids non-loopback even with the exposure opt-in; token auth; bounded queue/rate/concurrency controls; synchronous compatibility or explicit async states/progress/cancel; workers retain user filesystem authority and are not an OS sandbox; browser UI not built |
 | Browser UI (React) | ❌ next slice | — | — | — | current index page is an honest capability listing, no fake tools |
 
 Rules: a ❌ capability is not visible as enabled anywhere (doctor lists it
 under "not implemented in this build"); flipping to ✅ requires pipeline +
 tests in the same change, enforced by `test_registry.py`.
 
-Explicitly unavailable in this checkpoint include compression, repair, OCR,
-HTML/Markdown and Office conversion, PDF/A/PDF/UA conformance, interactive
-editing/forms, cryptographic signatures, secure redaction, and scanner/camera
-acquisition. Installed executables alone do not make an unwired capability
+Explicitly unavailable in this checkpoint include lossy compression presets,
+repair, OCR, HTML/Markdown and Office conversion, PDF/A/PDF/UA conformance,
+interactive editing/forms, cryptographic signatures, secure redaction, and
+scanner/camera acquisition. Installed executables alone do not make an unwired capability
 available.

@@ -8,7 +8,7 @@ from localdocforge.engines.registry import CAPABILITY_SPECS, EngineRegistry
 
 IMPLEMENTED_IDS = {
     "merge", "split", "remove-pages", "extract-pages", "organize",
-    "rotate", "crop", "inspect", "images-to-pdf", "pdf-to-images",
+    "rotate", "crop", "inspect", "compress", "images-to-pdf", "pdf-to-images",
 }
 
 
@@ -73,7 +73,7 @@ class TestCapabilityHonesty:
 
     def test_unimplemented_capabilities_say_so(self, registry):
         capabilities = {c.id: c for c in registry.capabilities()}
-        for spec_id in ("ocr", "compress", "redact", "sign", "office-to-pdf"):
+        for spec_id in ("ocr", "repair", "redact", "sign", "office-to-pdf"):
             capability = capabilities[spec_id]
             assert not capability.available
             assert any("not implemented" in reason for reason in capability.missing_requirements)

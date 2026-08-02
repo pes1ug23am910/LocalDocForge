@@ -143,6 +143,34 @@ class TestJobFlow:
         image = client.get(f"/api/jobs/{job_id}/outputs/2", headers=auth())
         assert image.content[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_compress_job_reports_reduction_and_downloads(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/compress",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+        )
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        assert payload["report"]["status"] == "success"
+        stats = payload["report"]["details"]["compression"]
+        assert stats["input_bytes"] > 0 and stats["output_bytes"] > 0
+        assert payload["report"]["details"]["render_compare"]["identical"] is True
+
+        job_id = payload["job_id"]
+        downloaded = client.get(f"/api/jobs/{job_id}/outputs/0", headers=auth())
+        assert downloaded.status_code == 200
+        with pikepdf.open(io.BytesIO(downloaded.content)) as pdf:
+            assert len(pdf.pages) == 3
+
+    def test_compress_rejects_unimplemented_preset(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/compress",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data={"preset": "balanced"},
+        )
+        assert response.status_code == 422
+
     def test_jobs_listed_and_deleted(self, client, fixtures_dir):
         created = client.post(
             "/api/jobs/extract-pages",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -10,7 +11,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -45,6 +46,9 @@ class ResourceLimits(BaseModel):
 
     max_input_bytes: int | None = 2 * 1024**3  # 2 GiB
     max_output_bytes: int | None = 4 * 1024**3
+    max_temporary_bytes: int | None = 8 * 1024**3
+    max_memory_bytes: int | None = 2 * 1024**3
+    max_cpu_seconds: float | None = 600.0
     max_pages: int | None = 5000
     max_image_pixels: int | None = 200_000_000  # per decoded image
     max_decompressed_bytes: int | None = 4 * 1024**3
@@ -52,6 +56,34 @@ class ResourceLimits(BaseModel):
     max_archive_expansion_ratio: float | None = 200.0
     timeout_seconds: float | None = 600.0
     max_subprocesses: int | None = 8
+
+    @model_validator(mode="after")
+    def limits_are_non_negative_and_durations_positive(self) -> ResourceLimits:
+        non_negative = (
+            "max_input_bytes",
+            "max_output_bytes",
+            "max_temporary_bytes",
+            "max_memory_bytes",
+            "max_pages",
+            "max_image_pixels",
+            "max_decompressed_bytes",
+            "max_archive_entries",
+            "max_subprocesses",
+        )
+        for name in non_negative:
+            value = getattr(self, name)
+            if value is not None and value < 0:
+                raise ValueError(f"{name} cannot be negative")
+        positive = (
+            "max_cpu_seconds",
+            "max_archive_expansion_ratio",
+            "timeout_seconds",
+        )
+        for name in positive:
+            value = getattr(self, name)
+            if value is not None and (not math.isfinite(value) or value <= 0):
+                raise ValueError(f"{name} must be finite and greater than zero")
+        return self
 
 
 class ArtifactKind(StrEnum):

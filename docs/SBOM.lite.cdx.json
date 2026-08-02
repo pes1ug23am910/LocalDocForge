@@ -1,0 +1,4606 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "pkg:pypi/annotated-doc@0.0.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/fastapi/annotated-doc/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/annotated-doc/0.0.4/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/fastapi/annotated-doc/0.0.4/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "annotated-doc",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No direct untrusted-document or HTTP parsing path was identified."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat exact-version review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320,sha256:fbcda96e87e9c92ad167c2e53839e57503ecfda18804ea28102353485033faa4"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Unpublished issues and supply-chain compromise remain possible; no-finding is not a safety claim."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Annotation documentation helper used transitively by Typer and FastAPI; document bytes are not passed to it."
+        }
+      ],
+      "purl": "pkg:pypi/annotated-doc@0.0.4",
+      "type": "library",
+      "version": "0.0.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/annotated-types@0.7.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/annotated-types/annotated-types/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/annotated-types/0.7.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/annotated-types/annotated-types/v0.7.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "annotated-types",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Only application-declared type metadata is consumed; untrusted files do not define annotations."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat exact-version review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53,sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Pydantic behavior still depends on this metadata; unpublished semantic-validation defects remain possible."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Constraint metadata consumed by Pydantic."
+        }
+      ],
+      "purl": "pkg:pypi/annotated-types@0.7.0",
+      "type": "library",
+      "version": "0.7.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/colorama@0.4.6",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/tartley/colorama/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/colorama/0.4.6/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/tartley/colorama/0.4.6/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "colorama",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Used only on Windows for local terminal output; it does not parse document bodies."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep output escaping/bounds in higher layers and repeat review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44,sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "implementation_name == 'cpython' and sys_platform == 'win32'"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Unpublished terminal-control handling defects remain possible."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Windows terminal-color compatibility for CLI output."
+        }
+      ],
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "type": "library",
+      "version": "0.4.6"
+    },
+    {
+      "bom-ref": "pkg:pypi/lxml@6.1.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/lxml/lxml/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/lxml/6.1.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/lxml/lxml/lxml-6.1.1/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "lxml",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Malformed PDF XML/XMP metadata may reach native XML code through pikepdf; external-entity/network behavior is not intentionally invoked."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep lxml and its exact wheel current, reject malformed PDFs, and retain worker/resource containment."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "73"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:05a82eb6e1530a64f26225b55cbd178113bd0b5af1c2b625f25e5296742c26d2,sha256:0b7e8a14c8634bf6f7a568634cb395305a6d964aeb5b7ee32248094bed3a7e2c,sha256:104c09bda8d2a562824c0e319d0768ce26a779b7601e0931d33b09b53c392ef7,sha256:126c93f7f56f0eda92f6d8c619edc463a4f23d9252f1c9d0405a76f25fa9f11a,sha256:17e0e18d4ad8adbd0399291bc44845b69d9dd68439a3cdebdf35ff902ec05072,sha256:19607c6bbff2a44cf3fe8250abccd20942d3462473e0a721d01d379ed017e462,sha256:19b7ab10b210b0b3ad7985d9ac4eb66ab09a90b20fe6e2f7ba55d01a234345d0,sha256:1d4962d4c66bf830a7e59ed6cfc17d148149898a3aefa8ec6e59763e6e3ed085,sha256:1db753c9115ec7100d073b744d17e25e88a8f90f5c39b2f5dd878149af59671f,sha256:25c6997a9a534e016695a0ba06b2f07945de682731ff01065b6d5a4474179da1,sha256:26e6eda8d38c1fcab1090dd196ee87cbd13788e531937610e2589085de074e77,sha256:27acc820660aaffa4f7c087f29120e12980f7779d56d8492d263170111284740,sha256:2a0217714657e023ef4293500f65aa20fce6164c8fd6b08fa5bd4a859fb14b9b,sha256:2c8daa471358dc2d6fcf02165e80ec68f77871a286df95bc5cc3816153b0fd2c,sha256:3483644525531e1d5762b0c44a8e18b6efba321b6dcf8a8952de10b037618bca,sha256:3779def59032b81e44a5f70096ef6bf2082f8d901937dca354474ba09782e245,sha256:3ab541146f1f6968c462d6c2ac495148e8cdba2f8347700b2141b6ec5a75bf52,sha256:3fd9728a2735fda14f4e8235830c86b539e9661e849665bf926d3f867943b4bf,sha256:424aa57aca0897eb922aef34395bd1289b3b6f04e6bae20ea123c0c7e333cffc,sha256:47402e62c52ff5988c1e8c6c63177f5708bccf48e366dea4e3dcf1e645e04947,sha256:4f0dd2f01f9f8a89f565d000e03abcf0a13d692a346c8d22f628d49af098777a,sha256:54a7f95e4de5fb94e2f9f4b9055c6ba33bf3d628fd77a1d647c5923caa2cdcdc,sha256:581d4c8ae690a6609e64862dd6b7c2489635c2d13907fc2b20f2bc200ff1d21e,sha256:58bb955caba94e467d2a96da17660d2d704e0675894cba21ab8a775b8621fd1c,sha256:5ba186ad207446c65d3bb3d3e0412b032b1d9f595e59861e2354798c5703d955,sha256:62aeb7e85b5d60320b9d77eef2e773994e2c0ce10121b277e0a19804e1654a5a,sha256:63876be28efefa04a1df615b46770e82042cce445cfdce55160522f57b231ccb,sha256:649dda677cf3bd6ac9ae14007ba0c824ded8ce5808b53fc7431d9140399118c1,sha256:6540377fbd53fe1b629172288c464fb18db11ce1fa7dc15891da10aa9dcc3e7f,sha256:68a9198d0fc122d14bb76837de9aa80cf84caed990b5b237f532ed87d3706736,sha256:70cdfd80589d59e43e18005dd7244e8895e93db8ab6a620b7e23df5445a4e3d2,sha256:70ef8a7e102a1508f8121aae5b0867abd663f72c14f0a9c937e6554cb4587b7b,sha256:73bc2086f141224ebddb7fc5c6a36ca58b31b94b561e1dfe8e073e3270fad1e7,sha256:74a9717fd0d82effef5c2854f0d917231d5324b5a3eb7275c43ac9fa32f97a14,sha256:762ff394d5bd56da0cf034a23dcce4e13923f15321a2adfa2ac00201dc6d3fca,sha256:766b010012d59470072c1816b5b6c69f1d243e5db36ea5968e94accf430a4635,sha256:787b2496d0dbe8cd180984e8d29e3a6f76e7ea34db781cb3bd55e4ba1ef8b4ee,sha256:793033d6c5cdf33a573f910d9bea14ef8f5771820411d118da8e1182edb53d5e,sha256:7d47866cb32fb503450b6edc9df355d10dc49836af2e89901bd6ac6b0896d9d9,sha256:7f7a92e8583f06b1fd49d01158143b8461cfcd135dcb10ec807270a3051bd603,sha256:86281fbdd6a8162756f8d603f37e3435bfa38043adb79c6dc6a2dfee065e7525,sha256:86c89b9d55ebf820ad7c90bc533410f0d098054f293351f10603c0c46ff598f5,sha256:876e1ff5930ed8bf295ec5ef9a8155e9b6b1876bbf1deed8b3a8069311875a8f,sha256:88d8cb75b9d82858497a5393e3c63cfbf03035225e4b35a49ed7ccb151e4dc0e,sha256:9395002973c827b3ed67db77e6ec09f092919a587022174554096a269378fb13,sha256:96f2ec43df44b1f76249ee0a615334f9b5b060e1c8bd90e706dad2d14d02f383,sha256:9e36f163528fc50cbef305f02a5fd66d404edf7049cdaff211dbc2cba5a7013e,sha256:9eb9b5a968f6e0f6d640092a567e14529ff8cea2e29d00da6f78a79fa49f013c,sha256:a088f287f7d8275a33c07f2cac6c50b9319309a0200a39e7e75d80c707723099,sha256:a10bd2fd62e8ce916ececb342f348f190724a098c1faa056fdfb2a22ad5e8660,sha256:aa366a1e55b8ebfe8ca8ddc3cfe75c8ebade181aeb0f661d0cb05986b647f72a,sha256:aa49e06d94aba782c6a02eecb7e507969e7e7a41b267f1b359bb35585f295d5b,sha256:aad9aa39483ed8ec44d6d2e59e5b98a0d80676ef0d92f44bfc374836111f62f5,sha256:ac931cdc9442c1763b8a8f6cd62c0c938737eafc5be75eff88df55fc73bc0d00,sha256:acd7d70b64c0aae0c7922cca83d288a16f5f6da523637697872253415269baef,sha256:aee395f5d0927f947758b4ec119fd5fc8ec71f07a1c5c52077b30b04c0fa6955,sha256:b1b963fd8f5caa68e99dfae060d54de1fe9cba899b8718b44a00cdca53c3e590,sha256:b2d444f2e66624d68e9c6b211e28a76e22fff5fcabcfff4deac18b529b7d4137,sha256:b8d812c6011c08b8111a15e54dd990b8923692d80adf35488bee34026c35accf,sha256:ba96ae44888e0185281e937633a743ea90d5a196c6000f82565ebb0580012d40,sha256:c08e5c694306507275f2290073350c4f32e383db15213b2c69e7ff39c1193840,sha256:c4f469aebd783bb741c2ecb2a681008fd26bfe5c16a9a72ed5467f834e810df2,sha256:c5d7152ec39ca7c402d8fb9bad86140a15b9503bd0c54484e3f1bbe3dd37ceca,sha256:c6ed5141a5c7507cf3ee76bd363b0d6f801e3321adc35b5d825a23115faa5465,sha256:c921ba5c51e4e9f63b8b00267d06566e1f63407408a0496da2d1d0bfc819c7fc,sha256:d34bbf07dbc7ca5970671b1512e928991fb5e9d95365636c9b2d8b4f53af405e,sha256:d49514be2f28d895c38cf9d2b72d7b9a07d00314519f456c0b50b53cfcf4c785,sha256:e902da4b04e6b52e5893900d4b8ab46068f75f3561f01bf1080957f9fd932ed6,sha256:eb7c9811bfaa8b1ed5ed319f5d370dfbcaa59d52ea64be2a5a85e18195930354,sha256:ebe6af670449830d6d9b752c256a983291c766a1365ba5d5460048f9e33a7818,sha256:efe0374196335f93b53269acd811b944f2e6bdc88e8894f214bd636455484909,sha256:f64ec5397ea6a41fc1b4af0380d79b44a755b5531dcaccd9940fb260dca93038,sha256:fe0306bd29505a9177aac19f1877174b0e7422c222a59f70b2cd41633448c3dc"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The wheel contains native XML code whose lower-level library revisions are not separate records in this SBOM."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native XML library used by pikepdf, including document metadata paths."
+        }
+      ],
+      "purl": "pkg:pypi/lxml@6.1.1",
+      "type": "library",
+      "version": "6.1.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/markdown-it-py@4.2.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/executablebooks/markdown-it-py/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/markdown-it-py/4.2.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "markdown-it-py",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "User documents are not parsed as Markdown; only application-controlled CLI presentation uses this dependency."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat review before enabling Markdown conversion."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-with-bundled-notice"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49,sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future rendering of attacker-controlled Markdown would materially change reachability."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Rich Markdown rendering dependency for local CLI presentation; Markdown document conversion is not enabled."
+        }
+      ],
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/mdurl@0.1.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/executablebooks/mdurl/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/mdurl/0.1.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "mdurl",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No untrusted document URL is routed to mdurl in current capabilities."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve both MIT notices and repeat review before enabling Markdown input."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-with-derived-code-notice"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8,sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "URL normalization issues become relevant if attacker-controlled Markdown is later enabled."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "URL parser used by markdown-it-py; document Markdown conversion is disabled."
+        }
+      ],
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/packaging@26.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pypa/packaging/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/packaging/26.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pypa/packaging/26.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-2-Clause"
+        }
+      ],
+      "name": "packaging",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Only trusted installed-package metadata and application constraints are parsed."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve the chosen dual-license terms and repeat exact-version review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-2-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-dual-license"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e,sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Malformed local package metadata could still trigger parser defects."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Version and requirement parsing dependency of pikepdf."
+        }
+      ],
+      "purl": "pkg:pypi/packaging@26.2",
+      "type": "library",
+      "version": "26.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/pikepdf@10.10.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pikepdf/pikepdf/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pikepdf/10.10.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pikepdf/pikepdf/v10.10.0/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "name": "pikepdf",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly processes attacker-controlled PDFs; wrapper defects and bundled qpdf behavior are both relevant."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep pikepdf/qpdf current as a pair, reject parser warnings, and retain hard worker/resource isolation."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MPL-2.0"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "29"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:19c14b76a240f3cd067abc77b62843268d56dce45b7787ea70fd8cceb11cc5dc,sha256:2333431f739205de480e547fab5dcc512668ea4af8f3f02f0d620730413d3772,sha256:3056dbbac60d97529560d3baecd9450c03683f4d9e72e5fb4a0c5aa50f01f3cc,sha256:33adc935f6e0a195e1c1aa1e0c47047d6a29835d5643d07dac9c98996a619e05,sha256:3670a7eb6e1263750a50cbf01b947f0a5fefd1a43a1a7aa09e2752cc54c7f80d,sha256:3867848e8dcca701be50464ead7e06a43a8c064ac48fb6d26faee79336e86f95,sha256:425a76bb45ee713dbbee5b524f179f6797fd768f26d1bcf6049cc7181d479ec5,sha256:4851b2b5c80916c0b57b9928b7fd9d1565f68c5e9c75a6304876cbd103812eed,sha256:4dd93d81e77e67937d76592ae3438ad80b2b6c9619846fbc400dd9d3e71cc689,sha256:5b4460b6c610d89a1e3f52d2f48b811216b02cd18aee5c853e2cf2e8551b1ecd,sha256:616adec2b1e3e2cf0640c8dc0f479ed9a07db298e32166ee7b60fb8b33dc98af,sha256:66567891906906e8733f1ef19cd133f46f34349cb415c858ee64db807d82413c,sha256:6ab09282067a6e95cf0b997df020c38bb0474ed2af99edaa472ab90ef1f18929,sha256:7c2ba4bafdfbfcc417a38f817e317be905e749893104c5bfa02eb29010c3c8d5,sha256:81c938b33db9f32b7f419f06dbb97eca3e2629c57c0b18a7b719d81563c48d3f,sha256:84481f8768a9bcbd0bd490fa1b9d737bd50ef6e4c1651115b2df133c90ca229e,sha256:8a1d830217af7a179984f156bc6d2dee3b2f6662286f993554e53b4f73452932,sha256:9f134806b2fe608ccb21379a664ddcefeac3f6944100d343b350299d3c69754e,sha256:a094ce9636652f5aff8d62c004383f13cdb4312d2d854b6096bb6e15e3c0a269,sha256:c3e725ffe276b5ab86734b2a5f7025f3e1cb3b1d26063a39adc7490834846449,sha256:cc7812a9ac54442fed4cd370e61d9fc294fa05577d14c13087c310eb8cafa1c0,sha256:ccfa2288bbc206bfe7197f8614ee20de902e511ff968da86bebf814280124156,sha256:d1a781fca5ad09b6ee964e2971819f82f21218636b3a5bb62fb6c89816f2b88a,sha256:d29487188c9f4aa9dd6decd403f76b4cb23e886c701dcd4cac508c257dbeac0b,sha256:e19fdc44c2e71cb5a150b270f0602aecabcd2432e6f9eef6f24742ff4d498b20,sha256:e2eb3faee72fc74352e481fa174b4f0c7c2ed8516aed5bf73f9dfb7a57c3212f,sha256:e4845031acf29026a597a207c6a07b471577e8db3b30bac172ab4ac6b4ee4be7,sha256:ebfc8e36608c01271fdeec6c08e1c87148ac9c275766876e9ac1b2c91879a0db,sha256:feccd53d5620c908fbb79399b2daee9103dee27d744bc80946daca22500be90f"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "No exact-version advisory was found, but native parser memory-safety and denial-of-service defects may be unpublished."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Primary structural PDF wrapper; untrusted PDFs are opened through bundled qpdf."
+        }
+      ],
+      "purl": "pkg:pypi/pikepdf@10.10.0",
+      "type": "library",
+      "version": "10.10.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pillow@12.3.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pillow/12.3.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT-CMU"
+          }
+        }
+      ],
+      "name": "pillow",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Allowed JPEG/PNG/TIFF/BMP/WebP inputs reach Pillow. JP2/J2K is not recognized by sniff.py and is excluded from images-to-PDF accepted types, so the affected OpenJPEG codec is bundled but not directly reachable through declared formats."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "contains-affected-component"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Use a Pillow wheel whose OpenJPEG includes upstream fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed release; until then preserve JP2/J2K rejection and hard worker/resource isolation."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT-CMU"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "43"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0740a512dc522224c77d9aa5a8d70d8b7d73fb91f2c21125d8d025d3b8990e45,sha256:0847a763afefb695bc912d7c131e7e0632d4edc1d8698f58ddabec8e46b8b6d3,sha256:0dd2064cbc55aaec028ef5fbb60fa47bb6c3e7918e07ff17935284b227a9d2df,sha256:164b31cd1a0490ab6efae01aa5df49da7061be0af1b30e035b6e9a1bfe34ee6e,sha256:1cca606cd25738df4ed873d5ad46bbdb3d83b5cbca291f6b4ff13a4df6b0bbe8,sha256:21900ce7ba264168cd50defae43cd75d25c833ad4ad6e73ffc5596d12e25ac89,sha256:23aceaa007d6172b02c277f0cd359c79492bbb14f7072b4ede9fbcaf20648130,sha256:24870b09b224f7ae3c39ed07d10e819d06f8720bc551847b1d623832b5b0e28d,sha256:251bf95b67017e27b13d82f5b326234ca62d70f9cf4c2b9032de2358a3b12c7b,sha256:30f2aa603c41533cc25c05acd0da21636e84a315768feb631c937177db558931,sha256:331b624368d4f1d069149002f25f44bc61c8919ce8ddb3c45bdad8f6e2d89510,sha256:3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce,sha256:3edce1d53195db527e0191f84b71d02022de0540bf43a16ed734ed7537b07385,sha256:4b0a7fe987b14c31ebda6083f74f22b561fd3739bc0ac51e019622e3d72668c7,sha256:4e8c2a84d977f50b9daed6eeaf3baef67d00d5d74d932288f02cb94518ee3ace,sha256:571b9fcb07b97ef3a492028fb3d2dc0993ca23a06138b0315286566d29ef718a,sha256:5afb51d599ea772b8365ae807ae557f18bccfe46ab261fd1c2a9ed700fc6eb17,sha256:756c768d0c9c2955feb7a56c37ea24aea2e369f8d36a88da270b6a9f19e62b5e,sha256:78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91,sha256:7a743ff716f746fc19a9557f60dab1600d4613255f8a7aeb3cdde4db7eb15a66,sha256:8728f216dcdb6e6d555cf971cb34076139ad74b31fc2c14da4fafc741c5f6217,sha256:962864dc93511324d51ddbb5b9f8731bf71675b93ca612a07441896f4688fb8c,sha256:9cf95fe4d0f84c82d282745d9bb08ad9f926efa00be4697e767b814ce40d4330,sha256:a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09,sha256:a45650e8ce7fafffd731db8550230db6b0d306d181a90b67d3e6bca2f1990930,sha256:a876864214e136f0eb367788dbd7df045f4806801518e2cfe9e13229cfe06d8f,sha256:ae26d61dfa7a47befdc7572b521024e8745f3d809bd95ca9505a7bba9ef849ec,sha256:af8d94b0db561cf68b88a267c5c44b49e134f525d0dc2cb7ed413a66bc23559a,sha256:b629de27fda84b42cde7edef0d85f13b958b47f6e9bbcbba9b673c562a89bd8b,sha256:ba09209fbe443b4acccebe845d8a138b89a8f4fbaeedd44953490b5315d5e965,sha256:ba54cfebe86920a559a7c4d6b9050791c20513650a1952ebe3368c7dc70306f8,sha256:bf16ba1b4d0b6b7c8e534936632270cf70eb00dbe09005bc345b2677b726855c,sha256:d69141514cc30b774ceea5e3ed3a6635c8d8a96edf664689b890f4089111fb35,sha256:d9c7f76c0673154f044e9d78c8655fb4213f6ca31a836df48b40fe5d187717b9,sha256:dbce0b29841537a2fa4a214c2bbf14de3587c9680caa9b4e217568472490b28f,sha256:e158cb00350dc278f3b91551101aa7d12415a66ebf2c91d8d5ac14e56ddd3ad0,sha256:e491916b378fba47242221bb9ead245211b70d504f495d105d17b14a24b4907c,sha256:e91206ee562682b51b98ef4b26a6ef48fd84e15fd4c4bc5ec768eb641d206838,sha256:e9aeb04d6aef139de265b29683e119b638208f88cf73cdd1658aa07221165321,sha256:f7401aebd7f581d7f83a439d87d474999317ee099218e5ad25d125290990ba65,sha256:fdafc9cce40277e0f7a0feabce0ee50dd2fa1800f3b38015e51296b5e814048d,sha256:fe3cca2e4e8a592be0f269a1ca4835c25199d9f3ce815c8491048f785b0a0198,sha256:ffd0c5368496f41b0944be820fcb7a838aa6e623d250b01acf2643939c3f99d7"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Format confusion, plugin changes, or future JPEG2000 enablement could expose the affected codec; other native codecs still process hostile bytes."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Primary image decoder/encoder and owner of the bundled native codec set."
+        }
+      ],
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "type": "library",
+      "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic@2.13.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pydantic/pydantic/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pydantic/2.13.4/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pydantic",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled API form parameters and local CLI values reach application Pydantic models; raw document bodies do not."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Pydantic and pydantic-core aligned and retain explicit application bounds."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:45a282cde31d808236fd7ea9d919b128653c8b38b393d1c4ab335c62924d9aba,sha256:c40756b57adaa8b1efeeced5c196f3f3b7c435f90e84ea7f443901bec8099ef6"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Validation bypass or algorithmic-complexity defects can exist without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Domain, configuration, report, and API parameter validation."
+        }
+      ],
+      "purl": "pkg:pypi/pydantic@2.13.4",
+      "type": "library",
+      "version": "2.13.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic-core@2.46.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pydantic/pydantic/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pydantic-core/2.46.4/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/pydantic-core/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pydantic-core",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled API parameters reach native validation code under application schemas."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Update only with a compatible Pydantic release and retain explicit size/range limits before expensive validation."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseExactVersionEvidence",
+          "value": "pydantic 2.13.4 pins pydantic-core 2.46.4; the installed pydantic_core-2.46.4.dist-info/licenses/LICENSE matches the tag-pinned text"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "65"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:00c603d540afdd6b80eb39f078f33ebd46211f02f33e34a32d9f053bba711de0,sha256:0186750b482eefa11d7f435892b09c5c606193ef3375bcf94aa00ae6bfb66262,sha256:0cbe8b01f948de4286c74cdd6c667aceb38f5c1e26f0693b3983d9d74887c65e,sha256:184c081504d17f1c1066e430e117142b2c77d9448a97f7b65c6ac9fd9aee238d,sha256:1a7dd0b3ee80d90150e3495a3a13ac34dbcbfd4f012996a6a1d8900e91b5c0fb,sha256:1d8ba486450b14f3b1d63bc521d410ec7565e52f887b9fb671791886436a42f7,sha256:2108ba5c1c1eca18030634489dc544844144ee36357f2f9f780b93e7ddbb44b5,sha256:23ace664830ee0bfe014a0c7bc248b1f7f25ed7ad103852c317624a1083af462,sha256:2412e734dcb48da14d4e4006b82b46b74f2518b8a26ee7e58c6844a6cd6d03c4,sha256:29c61fc04a3d840155ff08e475a04809278972fe6aef51e2720554e96367e34b,sha256:3009f12e4e90b7f88b4f9adb1b0c4a3d58fe7820f3238c190047209d148026df,sha256:3245406455a5d98187ec35530fd772b1d799b26667980872c8d4614991e2c4a2,sha256:372429a130e469c9cd698925ce5fc50940b7a1336b0d82038e63d5bbc4edc519,sha256:3a233125ac121aa3ffba9a2b59edfc4a985a76092dc8279586ab4b71390875e7,sha256:3bf92c5d0e00fefaab325a4d27828fe6b6e2a21848686b5b60d2d9eeb09d76c6,sha256:3ecbc122d18468d06ca279dc26a8c2e2d5acb10943bb35e36ae92096dc3b5565,sha256:3fb702cd90b0446a3a1c5e470bfa0dd23c0233b676a9099ddcc964fa6ca13898,sha256:428e04521a40150c85216fc8b85e8d39fece235a9cf5e383761238c7fa9b96fb,sha256:4fc73cb559bdb54b1134a706a2802a4cddd27a0633f5abb7e53056268751ac6a,sha256:4fcbe087dbc2068af7eda3aa87634eba216dbda64d1ae73c8684b621d33f6596,sha256:56cb4851bcaf3d117eddcef4fe66afd750a50274b0da8e22be256d10e5611987,sha256:5855698a4856556d86e8e6cd8434bc3ac0314ee8e12089ae0e143f64c6256e4e,sha256:5a4330cdbc57162e4b3aa303f588ba752257694c9c9be3e7ebb11b4aca659b5d,sha256:5b712b53160b79a5850310b912a5ef8e57e56947c8ad690c227f5c9d7e561712,sha256:5d5902252db0d3cedf8d4a1bc68f70eeb430f7e4c7104c8c476753519b423008,sha256:617d7e2ca7dcb8c5cf6bcb8c59b8832c94b36196bbf1cbd1bfb56ed341905edd,sha256:62f875393d7f270851f20523dd2e29f082bcc82292d66db2b64ea71f64b6e1c1,sha256:633147d34cf4550417f12e2b1a0383973bdf5cdfde212cb09e9a581cf10820be,sha256:6b3ace8194b0e5204818c92802dcdca7fc6d88aabbb799d7c795540d9cd6d292,sha256:7027560ee92211647d0d34e3f7cd6f50da56399d26a9c8ad0da286d3869a53f3,sha256:7283d57845ecf5a163403eb0702dfc220cc4fbdd18919cb5ccea4f95ee1cdab4,sha256:7a5f930472650a82629163023e630d160863fce524c616f4e5186e5de9d9a49b,sha256:811ff8e9c313ab425368bcbb36e5c4ebd7108c2bbf4e4089cfbb0b01eff63fac,sha256:8233f2947cf85404441fd7e0085f53b10c93e0ee78611099b5c7237e36aacbf7,sha256:82cf5301172168103724d49a1444d3378cb20cdee30b116a1bd6031236298a5d,sha256:85bb3611ff1802f3ee7fdd7dbff26b56f343fb432d57a4728fdd49b6ef35e2f4,sha256:8d0820e8192167f80d88d64038e609c31452eeca865b4e1d9950a27a4609b00b,sha256:8daafc69c93ee8a0204506a3b6b30f586ef54028f52aeeeb5c4cfc5184fd5914,sha256:926c9541b14b12b1681dca8a0b75feb510b06c6341b70a8e500c2fdcff837cce,sha256:9401557acd873c3a7f3eb9383edef8ac4968f9510e340f4808d427e75667e7b4,sha256:9551187363ffc0de2a00b2e47c25aeaeb1020b69b668762966df15fc5659dd5a,sha256:962ccbab7b642487b1d8b7df90ef677e03134cf1fd8880bf698649b22a69371f,sha256:97e7cf2be5c77b7d1a9713a05605d49460d02c6078d38d8bef3cbe323c548424,sha256:9aa768456404a8bf48a4406685ac2bec8e72b62c69313734fa3b73cf33b3a894,sha256:9d56801be94b86a9da183e5f3766e6310752b99ff647e38b09a9500d88e46e76,sha256:9fa8ae11da9e2b3126c6426f147e0fba88d96d65921799bb30c6abd1cb2c97fb,sha256:ad785e92e6dc634c21555edc8bd6b64957ab844541bcb96a1366c202951ae526,sha256:af8244b2bef6aaad6d92cda81372de7f8c8d36c9f0c3ea36e827c60e7d9467a0,sha256:b2f69dec1725e79a012d920df1707de5caf7ed5e08f3be4435e25803efc47458,sha256:b8458003118a712e66286df6a707db01c52c0f52f7db8e4a38f0da1d3b94fc4e,sha256:bfec22eab3c8cc2ceec0248aec886624116dc079afa027ecc8ad4a7e62010f8a,sha256:c1b3f518abeca3aa13c712fd202306e145abf59a18b094a6bafb2d2bbf59192c,sha256:c50f2528cf200c5eed56faf3f4e22fcd5f38c157a8b78576e6ba3168ec35f000,sha256:c68fcd102d71ea85c5b2dfac3f4f8476eff42a9e078fd5faefff6d145063536b,sha256:c94f0688e7b8d0a67abf40e57a7eaaecd17cc9586706a31b76c031f63df052b4,sha256:cbaf13819775b7f769bf4a1f066cb6df7a28d4480081a589828ef190226881cd,sha256:cd2213145bcc2ba85884d0ac63d222fece9209678f77b9b4d76f054c561adb28,sha256:ce5c1d2a8b27468f433ca974829c44060b8097eedc39933e3c206a90ee49c4a9,sha256:e739fee756ba1010f8bcccb534252e85a35fe45ae92c295a06059ce58b74ccd3,sha256:e846ae7835bf0703ae43f534ab79a867146dadd59dc9ca5c8b53d5c8f7c9ef02,sha256:e9c26f834c65f5752f3f06cb08cb86a913ceb7274d0db6e267808a708b46bc89,sha256:f027324c56cd5406ca49c124b0db10e56c69064fec039acc571c29020cc87c76,sha256:f99626688942fb746e545232e7726926f3be91b5975f8b55327665fafda991c7,sha256:fbdb89b3e1c94a30cc5edfce477c6e6a5dc4d8f84665b455c27582f211a1c72c,sha256:fc3e9034a63de20e15e8ade85358bc6efc614008cab72898b4b4952bea0509ff"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The Rust extension is native code and is not a sandbox; unpublished panics or resource-exhaustion defects remain possible."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native Rust validation engine used by Pydantic."
+        }
+      ],
+      "purl": "pkg:pypi/pydantic-core@2.46.4",
+      "type": "library",
+      "version": "2.46.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic-settings@2.14.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pydantic/pydantic-settings/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pydantic-settings/2.14.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pydantic/pydantic-settings/v2.14.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pydantic-settings",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Requires attacker influence over the process environment or local configuration files, outside the untrusted-document boundary."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Protect local configuration permissions and repeat review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:a20c97b37910b6550d5ea50fbcc2d4187defe58cd57070b73863d069419c9440,sha256:c19dd64b19097f1de80184f0cc7b0272a13ae6e170cbf240a3e27e381ed14a5f"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "A same-user local attacker can already influence broader application state; this package is not a trust boundary."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Loads LocalDocForge configuration from trusted local environment and dotenv sources."
+        }
+      ],
+      "purl": "pkg:pypi/pydantic-settings@2.14.2",
+      "type": "library",
+      "version": "2.14.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/pygments@2.20.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pygments/pygments/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pygments/2.20.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pygments/pygments/2.20.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "name": "pygments",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No current path sends extracted document text or source code to Pygments."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Remove if Rich no longer needs it or repeat review before highlighting untrusted content."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-2-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f,sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Lexer complexity becomes relevant if attacker-controlled highlighting is later introduced."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Syntax-highlighting dependency of Rich; document text is not highlighted by current capabilities."
+        }
+      ],
+      "purl": "pkg:pypi/pygments@2.20.0",
+      "type": "library",
+      "version": "2.20.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pypdfium2@5.12.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pypdfium2-team/pypdfium2/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pypdfium2/5.12.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://github.com/pypdfium2-team/pypdfium2/tree/5.12.1/LICENSES"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0 OR BSD-3-Clause; documentation/examples CC-BY-4.0; bundled dependency licenses apply"
+          }
+        }
+      ],
+      "name": "pypdfium2",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Every PDF candidate rendered for validation and every PDF-to-image input reaches the bundled PDFium binary."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "contains-unknown-component"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Require pypdfium2/pdfium-binaries to publish an exact PDFium source commit, map it to Chromium/PDFium fixes, and rebuild/update from a vetted revision."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause; documentation/examples CC-BY-4.0; bundled dependency licenses apply"
+        },
+        {
+          "name": "localdocforge:licenseExactVersionEvidence",
+          "value": "installed pypdfium2-5.12.1.dist-info/licenses contains Apache-2.0, BSD-3-Clause, CC-BY-4.0, and platform BUILD_LICENSES texts"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-multiple"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "20"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:05bfa20a08a96584253bbe38b60e13f81a037eac31c5579e607ec1480ad25dbf,sha256:07eeebb2784f4cd38d386b924235df43217a397442796673296bb6efbdaad1d0,sha256:236dbdc88aa54f14b27937ccb2ebe3dcf08c10dbb8652f432ea982dc9af39732,sha256:4648f0905441bcb141687ca2263bbf38a1aa056b943eef06019f91cff3e1da4a,sha256:5c3e6cbe43581af79526184643920ab03a9401a0c79f2226bea9d4d1e3d34008,sha256:5f257bb40fa44ce9ba18d2c919777dbd3f16bf22548b1d68fd56c7c92f1de530,sha256:66a9ed40d70a5d728cd42148fecb9d7a0917c6161d6bb67c844093a4ed1df089,sha256:6eabf028ad8e7bc7811c9acf3a72718c180569b624b844d2c6cc974609784275,sha256:715ae16b34ea1d64884d58800155179ba700e9ea65a2f583b020666acd2bfb12,sha256:7857cfa6642ec5a09db12ff8f5cf6b6494585b5e3a605399fddc4fb862837b63,sha256:847378a5ab41332998b2621b21bab2e96dc8c3eff36a08bce26695b964163983,sha256:9609be73a6701a68f29dffe0335f7a2e4b3ba581542ed65d35d49f761a4600ca,sha256:974082344172da76a5c3c0782eaedfe6069dbe88db77d8c671ef36b61e9b14e2,sha256:9c8856ce7dd77a7827476c7d75afe1197d6cd505f5cb4167b6aacf661f3f8ea5,sha256:9f059f7bdbdf4352eb83691071096940d769d6ae5930b8734237fdb1bd78fbc2,sha256:afc0b7e0c975a429abc75875209ce17b66d749f6ac5cbe8ba72470e83901e304,sha256:bdff622181fab64f32328591c9c8287cdc745c9a1f2afc26ca3feba39e3e6645,sha256:d0e0648fb2e28f50efcd1ec0a5a18ced9f4d66b2c227fae9b603f0a883b2d13f,sha256:e10cbf41b21233ec5e20adfc170cf60edd77abead86a97dc708fff55a8a886c7,sha256:e5358d2ce4ebc5c899aab1df9ca5d215357244e9168aa443225d3c1e649c7eac"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The wrapper's exact-version queries were clear, but the bundled PDFium binary remains advisory-unknown and parses hostile PDFs."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Python wrapper and binary distributor for PDFium rendering."
+        }
+      ],
+      "purl": "pkg:pypi/pypdfium2@5.12.1",
+      "type": "library",
+      "version": "5.12.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/python-dotenv@1.2.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/theskumar/python-dotenv/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/python-dotenv/1.2.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/theskumar/python-dotenv/v1.2.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "python-dotenv",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Requires attacker modification of local configuration; uploaded documents are not dotenv input."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Protect configuration-file permissions and update on a matching advisory."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a,sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Dotenv files can intentionally alter application behavior and remain trusted local input."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Trusted local dotenv-file reader used by settings."
+        }
+      ],
+      "purl": "pkg:pypi/python-dotenv@1.2.2",
+      "type": "library",
+      "version": "1.2.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/rich@15.0.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/Textualize/rich/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/rich/15.0.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/Textualize/rich/v15.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "rich",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Bounded filenames and report fields may be displayed, but document bodies and secrets are intentionally excluded."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Continue sanitizing public/log output and repeat review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb,sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Terminal escape or rendering-complexity issues remain possible for attacker-influenced display text."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Local CLI formatting and human-readable output."
+        }
+      ],
+      "purl": "pkg:pypi/rich@15.0.0",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/shellingham@1.5.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/sarugaku/shellingham/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/shellingham/1.5.4/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/sarugaku/shellingham/1.5.4/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "name": "shellingham",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Interacts with trusted local process/shell state, not uploaded documents."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Remove if no longer required and repeat review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "ISC"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686,sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Same-user process inspection is not a security boundary."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Detects the user's surrounding shell for Typer completion behavior."
+        }
+      ],
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/typer@0.27.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/fastapi/typer/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/typer/0.27.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/fastapi/typer/0.27.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "typer",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Parses trusted local-user arguments; document bytes are passed only after application validation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and validate application arguments independently of framework defaults."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:629bd12ea5d13a17148125d9a264f949eb171fb3f120f9b04d85873cab054fa5,sha256:6f4b27631e47f077871b7dc30e933ec0131c1390fbe0e387ea5574b5bac9ccf1"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Terminal/help formatting and parser edge cases can still affect local CLI behavior."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Local command-line interface dispatcher and argument parser."
+        }
+      ],
+      "purl": "pkg:pypi/typer@0.27.0",
+      "type": "library",
+      "version": "0.27.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python/typing_extensions/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/typing-extensions/4.16.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python/typing_extensions/4.16.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "PSF-2.0"
+          }
+        }
+      ],
+      "name": "typing-extensions",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Provides application/framework type objects; it does not parse documents or requests."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat exact-version review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "PSF-2.0"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8,sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Runtime behavior changes can affect frameworks even though no direct parser surface exists."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Typing backports consumed by runtime frameworks."
+        }
+      ],
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/typing-inspection@0.4.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pydantic/typing-inspection/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/typing-inspection/0.4.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pydantic/typing-inspection/v0.4.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "typing-inspection",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Inspects application-defined types rather than attacker-defined code."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep aligned with Pydantic/FastAPI and repeat review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7,sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Semantic introspection defects may cause validation differences without constituting a published vulnerability."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Type-introspection helper used by Pydantic/FastAPI."
+        }
+      ],
+      "purl": "pkg:pypi/typing-inspection@0.4.2",
+      "type": "library",
+      "version": "0.4.2"
+    },
+    {
+      "bom-ref": "pkg:generic/brotli@1.2.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/google/brotli/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/google/brotli/v1.2.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "brotli",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No direct accepted-format route was identified; reachability depends on Pillow codec internals."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Pillow's bundled native set current and remove unused codecs in a custom build if practical."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading brotli-1.2.0"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Bundled native code can become reachable through plugin or format changes; empty databases are not a safety guarantee."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native Brotli library present in the Pillow wheel; no declared LocalDocForge input format requires direct Brotli decoding."
+        }
+      ],
+      "purl": "pkg:generic/brotli@1.2.0",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "bom-ref": "pkg:generic/freetype@2.14.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/freetype/freetype/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/LICENSE.TXT"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "FTL OR GPL-2.0-or-later"
+        }
+      ],
+      "name": "freetype",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No direct font-input path is enabled, though Pillow may use FreeType for application-controlled rendering."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve the chosen FreeType license and update the bundled library with Pillow releases."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "FTL OR GPL-2.0-or-later"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading freetype-2.14.3"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-dual-license"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future document/font rendering features would materially expand reachability."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native font rasterizer bundled by Pillow; LocalDocForge does not accept attacker-supplied font files as an operation input."
+        }
+      ],
+      "purl": "pkg:generic/freetype@2.14.3",
+      "type": "library",
+      "version": "2.14.3"
+    },
+    {
+      "bom-ref": "pkg:generic/harfbuzz@14.2.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/harfbuzz/harfbuzz/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT with bundled notice terms"
+          }
+        }
+      ],
+      "name": "harfbuzz",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No attacker-supplied font/shaping path is enabled in current operations."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the Pillow wheel current and repeat review before adding text/font rendering."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT with bundled notice terms"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-multiple-notices"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Published historical HarfBuzz advisories demonstrate a native font attack surface if reachability changes."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native text-shaping library bundled by Pillow; current conversions do not accept external fonts."
+        }
+      ],
+      "purl": "pkg:generic/harfbuzz@14.2.1",
+      "type": "library",
+      "version": "14.2.1"
+    },
+    {
+      "bom-ref": "pkg:generic/lcms2@2.19.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/mm2/Little-CMS/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/mm2/Little-CMS/lcms2.19.1/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "lcms2",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled image ICC data may be retained or processed by Pillow paths, depending on operation and plugin behavior."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep lcms2 current through Pillow and avoid unnecessary color-profile transforms on untrusted images."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading lcms2-2.19.1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native profile parsers can contain memory-safety defects even when no exact advisory is known."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native color-management library bundled by Pillow."
+        }
+      ],
+      "purl": "pkg:generic/lcms2@2.19.1",
+      "type": "library",
+      "version": "2.19.1"
+    },
+    {
+      "bom-ref": "pkg:generic/libavif@1.4.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/AOMediaCodec/libavif/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/AOMediaCodec/libavif/v1.4.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "name": "libavif",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The current operation allowlist rejects AVIF/HEIF before Pillow decoding."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve the format rejection and repeat exact codec/dependency review before enabling AVIF/HEIF."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-2-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading libavif-1.4.2"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "libavif itself can include further codec libraries not separately versioned in this SBOM."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "AVIF/HEIF codec bundle present in Pillow; AVIF/HEIF is not an accepted images-to-PDF media type."
+        }
+      ],
+      "purl": "pkg:generic/libavif@1.4.2",
+      "type": "library",
+      "version": "1.4.2"
+    },
+    {
+      "bom-ref": "pkg:generic/libjpeg-turbo@3.1.4.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/libjpeg-turbo/libjpeg-turbo/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.4.1/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause AND IJG AND Zlib"
+          }
+        }
+      ],
+      "name": "libjpeg-turbo",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted JPEG bytes directly reach this native codec during images-to-PDF and image validation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Pillow/native codecs current and enforce byte, pixel, decompression, time, and worker limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause AND IJG AND Zlib"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading libjpeg-turbo-3.1.4.1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-multiple"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native memory-corruption and algorithmic-complexity issues may be unpublished."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native JPEG decoder/encoder directly used for accepted hostile JPEG inputs."
+        }
+      ],
+      "purl": "pkg:generic/libjpeg-turbo@3.1.4.1",
+      "type": "library",
+      "version": "3.1.4.1"
+    },
+    {
+      "bom-ref": "pkg:generic/libpng@1.6.58",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pnggroup/libpng/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.58/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "libpng-2.0"
+          }
+        }
+      ],
+      "name": "libpng",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted PNG bytes directly reach libpng through Pillow."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact native build current and retain pixel/decompression/worker limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "libpng-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading libpng-1.6.58"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The upstream project has historical advisories; no exact match does not prove this build is defect-free."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native PNG decoder/encoder directly used for accepted hostile PNG inputs."
+        }
+      ],
+      "purl": "pkg:generic/libpng@1.6.58",
+      "type": "library",
+      "version": "1.6.58"
+    },
+    {
+      "bom-ref": "pkg:generic/libwebp@1.6.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/webmproject/libwebp/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/webmproject/libwebp/1.6.0/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "libwebp",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted WebP bytes directly reach libwebp through Pillow."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact native build current and retain pixel/decompression/worker limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading libwebp-1.6.0"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Historical critical WebP defects show that native parser risk remains despite no exact-version match."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native WebP decoder/encoder directly used for accepted hostile WebP inputs."
+        }
+      ],
+      "purl": "pkg:generic/libwebp@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://msrc.microsoft.com/update-guide/"
+        },
+        {
+          "type": "license",
+          "url": "https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Microsoft Visual C++ Runtime 2015-2022 Software License Terms"
+          }
+        }
+      ],
+      "name": "Microsoft Visual C++ Runtime (msvcp140.dll)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Loaded as a native dependency when the pikepdf/qpdf Windows wheel executes. It does not parse document bytes independently but supports native code that does."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Ship the latest supported compatible pikepdf wheel/runtime, retain Microsoft's distributable-code terms, and repeat the Microsoft advisory review when the DLL changes."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pikepdf"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Microsoft Visual C++ Runtime 2015-2022 Software License Terms"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pikepdf.libs/msvcp140-0f885b509a685d2bbfa652fed26b5fb3.dll; FileVersion=14.44.35211.0; 557728 bytes; SHA256=0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9; pikepdf-10.10.0.dist-info/licenses/licenses-for-wheels.txt preserves Microsoft distributable-code terms"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-vendor-and-exact-wheel"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Microsoft does not expose a stable exact-DLL-version advisory mapping; no matching public advisory identified on 2026-07-19 is not a safety guarantee."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "C++ standard-library runtime DLL physically bundled beside qpdf in the inspected pikepdf Windows wheel."
+        },
+        {
+          "name": "localdocforge:vendorLifecycleEvidence",
+          "value": "Microsoft identifies runtime 14.44.35211 with Visual Studio 2022 v17.14 final and support through 2032-01-13"
+        }
+      ],
+      "purl": "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
+      "type": "library",
+      "version": "14.44.35211.0"
+    },
+    {
+      "bom-ref": "pkg:generic/openjpeg@2.5.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-pillow/Pillow/blob/12.3.0/depends/install_openjpeg.sh"
+        },
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-pillow/Pillow/blob/12.3.0/winbuild/build_prepare.py"
+        },
+        {
+          "type": "advisories",
+          "url": "https://github.com/uclouvain/openjpeg/commit/d33cbecc148d3affcdf403211fddc2cc5d442379"
+        },
+        {
+          "type": "advisories",
+          "url": "https://github.com/uclouvain/openjpeg/security/advisories"
+        },
+        {
+          "type": "advisories",
+          "url": "https://osv.dev/vulnerability/OSV-2025-219"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/uclouvain/openjpeg/v2.5.4/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "name": "openjpeg",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The exact Windows-wheel nested component is affected. Direct exploitability currently requires reaching JPEG2000 decode, but sniff.py and images-to-PDF reject JP2/J2K; PDF JPEG2000 rendering uses PDFium rather than Pillow's OpenJPEG. Other target-platform wheels require equivalent native provenance review."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "affected"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Replace the Pillow native build with one containing fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed OpenJPEG release; keep JP2/J2K rejected and retain hard worker/resource isolation meanwhile."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-2-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading openjpeg-2.5.4"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "An allowlist bypass, plugin behavior change, or future JPEG2000 support would make hostile decoding reachable."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native JPEG2000 codec bundled by Pillow; JP2/J2K is rejected by current LocalDocForge media gates."
+        }
+      ],
+      "purl": "pkg:generic/openjpeg@2.5.4",
+      "type": "library",
+      "version": "2.5.4"
+    },
+    {
+      "bom-ref": "pkg:generic/pdfium@152.0.7947.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://pdfium.googlesource.com/pdfium/"
+        },
+        {
+          "type": "license",
+          "url": "https://pdfium.googlesource.com/pdfium/+/refs/heads/main/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause-style plus bundled dependency terms"
+          }
+        }
+      ],
+      "name": "PDFium",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly parses and renders every untrusted PDF candidate/input. Chromium/PDFium security reports may remain private until fixes ship."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain the exact source commit/build provenance from pdfium-binaries, map it to Chromium/PDFium security fixes, and rebuild or upgrade from a vetted revision."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pypdfium2"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause-style plus bundled dependency terms"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pypdfium2_raw/version.json: 152.0.7947.0, origin=pdfium-binaries, n_commits=0, hash=null; wheel BUILD_LICENSES/pdfium.txt and related files"
+        },
+        {
+          "name": "localdocforge:licenseSourceLimitation",
+          "value": "No exact PDFium source revision is recorded by the wheel, so the moving upstream license URL is paired with the exact wheel's bundled license texts; this does not resolve security provenance"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-multiple"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "No source hash is recorded and public branch/build numbering does not establish which private security fixes are present; do not treat this component as safe."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native PDF renderer used for candidate validation and PDF-to-image conversion."
+        }
+      ],
+      "purl": "pkg:generic/pdfium@152.0.7947.0",
+      "type": "library",
+      "version": "152.0.7947.0"
+    },
+    {
+      "bom-ref": "pkg:generic/pillow%20codec%20bundle@12.3.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://pillow.readthedocs.io/en/stable/handbook/security.html"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Multiple licenses; child-component terms and the complete Pillow wheel license bundle apply"
+          }
+        }
+      ],
+      "name": "Pillow codec bundle",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF/HEIF remain rejected by the current operation allowlist."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "contains-affected-component"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Ship a Pillow build with a fixed OpenJPEG and keep all native codec versions, licenses, and format reachability explicitly inventoried."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Multiple licenses; child-component terms and the complete Pillow wheel license bundle apply"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-local-bundle-and-upstream-children"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The aggregate status cannot be clearer than its affected/unknown children; future wheel composition can change without a Python version change."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Aggregate SBOM record for the native libraries shipped in the inspected Pillow wheel."
+        }
+      ],
+      "purl": "pkg:generic/pillow%20codec%20bundle@12.3.0",
+      "type": "library",
+      "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:generic/qpdf@12.3.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/qpdf/qpdf/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/qpdf/qpdf/v12.3.2/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "qpdf",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted PDFs directly reach qpdf through pikepdf for inspection and structural operations."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep pikepdf/qpdf current together, reject parser warnings, and retain hard worker/resource isolation."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pikepdf"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pikepdf.__libqpdf_version__ == 12.3.2 and wheel licenses/licenses-for-wheels.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native parser memory, CPU, and correctness defects can be unpublished; no exact-match result is not a safety verdict."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native structural PDF parser/rewriter used through pikepdf."
+        }
+      ],
+      "purl": "pkg:generic/qpdf@12.3.2",
+      "type": "library",
+      "version": "12.3.2"
+    },
+    {
+      "bom-ref": "pkg:generic/tiff@4.7.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/libsdl-org/libtiff/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.7.1/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "libtiff"
+          }
+        }
+      ],
+      "name": "tiff",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted single- and multi-frame TIFF data directly reaches libtiff through Pillow."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep libtiff/Pillow current and enforce frame, pixel, decompression, disk, timeout, and worker limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "libtiff"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading tiff-4.7.1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "TIFF's complex IFD/compression surface has a long vulnerability history; no exact result is not proof of safety."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native TIFF decoder/encoder directly used for accepted hostile TIFF inputs."
+        }
+      ],
+      "purl": "pkg:generic/tiff@4.7.1",
+      "type": "library",
+      "version": "4.7.1"
+    },
+    {
+      "bom-ref": "pkg:generic/xz@5.8.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/tukaani-project/xz/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.3/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "name": "Multiple terms; liblzma is predominantly 0BSD and the upstream COPYING file governs the complete distribution"
+          }
+        }
+      ],
+      "name": "xz",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachability depends on the enabled Pillow/libtiff compression path; there is no standalone archive/XZ operation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep exact wheel provenance and hashes, monitor upstream releases, and remove unused codec support in custom builds where practical."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Multiple terms; liblzma is predominantly 0BSD and the upstream COPYING file governs the complete distribution"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading xz-5.8.3"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-multiple"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Historical XZ supply-chain compromise makes artifact provenance and hash verification essential even at an unaffected version."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "XZ/liblzma code bundled by Pillow and available to nested codec paths such as TIFF compression support."
+        }
+      ],
+      "purl": "pkg:generic/xz@5.8.3",
+      "type": "library",
+      "version": "5.8.3"
+    },
+    {
+      "bom-ref": "pkg:generic/zlib-ng@2.3.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/zlib-ng/zlib-ng/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/zlib-ng/zlib-ng/2.3.3/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Zlib"
+          }
+        }
+      ],
+      "name": "zlib-ng",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled compressed image data can reach zlib-ng through Pillow."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact native build current and enforce compressed/decompressed byte, pixel, timeout, and worker limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "Pillow codec bundle"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Zlib"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading zlib-ng-2.3.3"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Decompression bombs and native defects remain possible even without an exact published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native zlib-compatible decompressor used by Pillow formats including accepted PNG inputs."
+        }
+      ],
+      "purl": "pkg:generic/zlib-ng@2.3.3",
+      "type": "library",
+      "version": "2.3.3"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:libavif:aom:local",
+      "licenses": [
+        {
+          "license": {
+            "name": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded"
+          }
+        }
+      ],
+      "name": "AOM (libavif child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/libavif@1.4.2"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 Pillow wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "LOCAL"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:libavif:dav1d:local",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause-style terms in aggregate notice"
+          }
+        }
+      ],
+      "name": "dav1d (libavif child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/libavif@1.4.2"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 Pillow wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-2-Clause-style terms in aggregate notice"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section (src/obu.c dav1d authors)"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "LOCAL"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:libavif:libsharpyuv:local",
+      "licenses": [
+        {
+          "license": {
+            "name": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded"
+          }
+        }
+      ],
+      "name": "libsharpyuv (libavif child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/libavif@1.4.2"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 Pillow wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE and libavif-1.4.2 aggregate notices"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "LOCAL"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:libavif:libyuv:local",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause-style terms in aggregate notice"
+          }
+        }
+      ],
+      "name": "libyuv (libavif child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/libavif@1.4.2"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 Pillow wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause-style terms in aggregate notice"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE, libavif-1.4.2 aggregate section (third_party/libyuv)"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "LOCAL"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:abseil:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0 (aggregate notice)"
+          }
+        }
+      ],
+      "name": "Abseil",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/abseil.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:agg23:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "AGG 2.3 permissive notice"
+          }
+        }
+      ],
+      "name": "Anti-Grain Geometry 2.3",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "AGG 2.3 permissive notice"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/agg23.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "license family name only; no source revision"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:fast-float:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT (aggregate notice)"
+          }
+        }
+      ],
+      "name": "fast_float",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/fast_float.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:freetype:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "FTL OR GPL-2.0-or-later (aggregate notice)"
+          }
+        }
+      ],
+      "name": "FreeType (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "FTL OR GPL-2.0-or-later (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/freetype.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; distinct from Pillow's versioned FreeType record"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:icu:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "Unicode-3.0 (aggregate notice)"
+          }
+        }
+      ],
+      "name": "ICU",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Unicode-3.0 (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/icu.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:lcms:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT (aggregate notice)"
+          }
+        }
+      ],
+      "name": "Little CMS (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/lcms.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; distinct from Pillow's versioned lcms2 record"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:libjpeg-turbo:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause, IJG, and related aggregate notices"
+          }
+        }
+      ],
+      "name": "libjpeg-turbo (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause, IJG, and related aggregate notices"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2 BUILD_LICENSES/libjpeg_turbo.md and libjpeg_turbo.ijg"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; distinct from Pillow's versioned libjpeg-turbo record"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:libpng:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "libpng-2.0 (aggregate notice)"
+          }
+        }
+      ],
+      "name": "libpng (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "libpng-2.0 (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libpng.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; distinct from Pillow's versioned libpng record"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:libtiff:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "libtiff (aggregate notice)"
+          }
+        }
+      ],
+      "name": "libtiff (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "libtiff (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libtiff.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; distinct from Pillow's versioned TIFF record"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:llvm-libc:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0 WITH LLVM-exception (aggregate notice)"
+          }
+        }
+      ],
+      "name": "LLVM libc",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 WITH LLVM-exception (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/llvm-libc.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:openjpeg:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause (aggregate notice)"
+          }
+        }
+      ],
+      "name": "OpenJPEG (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-2-Clause (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES; must not inherit Pillow's 2.5.4 version"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:pdfium-binaries:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT (aggregate notice)"
+          }
+        }
+      ],
+      "name": "pdfium-binaries support code",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:simdutf:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT (aggregate notice)"
+          }
+        }
+      ],
+      "name": "simdutf",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/simdutf.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "not provided by BUILD_LICENSES"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
+      "bom-ref": "urn:localdocforge:native:pdfium:zlib:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "name": "Zlib (aggregate notice)"
+          }
+        }
+      ],
+      "name": "zlib (PDFium child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:generic/pdfium@152.0.7947.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Zlib (aggregate notice)"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/zlib.txt"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "aggregate notice preserved; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "BUILD_LICENSES text names 1.3.2.1 but provides no authoritative binary/source binding"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    }
+  ],
+  "compositions": [
+    {
+      "aggregate": "incomplete",
+      "assemblies": [
+        "pkg:pypi/localdocforge@0.1.0"
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/brotli@1.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/freetype@2.14.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/harfbuzz@14.2.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/lcms2@2.19.1"
+    },
+    {
+      "dependsOn": [
+        "urn:localdocforge:native:libavif:aom:local",
+        "urn:localdocforge:native:libavif:dav1d:local",
+        "urn:localdocforge:native:libavif:libsharpyuv:local",
+        "urn:localdocforge:native:libavif:libyuv:local"
+      ],
+      "ref": "pkg:generic/libavif@1.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libjpeg-turbo@3.1.4.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libpng@1.6.58"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/libwebp@1.6.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/openjpeg@2.5.4"
+    },
+    {
+      "dependsOn": [
+        "urn:localdocforge:native:pdfium:abseil:unversioned",
+        "urn:localdocforge:native:pdfium:agg23:unversioned",
+        "urn:localdocforge:native:pdfium:fast-float:unversioned",
+        "urn:localdocforge:native:pdfium:freetype:unversioned",
+        "urn:localdocforge:native:pdfium:icu:unversioned",
+        "urn:localdocforge:native:pdfium:lcms:unversioned",
+        "urn:localdocforge:native:pdfium:libjpeg-turbo:unversioned",
+        "urn:localdocforge:native:pdfium:libpng:unversioned",
+        "urn:localdocforge:native:pdfium:libtiff:unversioned",
+        "urn:localdocforge:native:pdfium:llvm-libc:unversioned",
+        "urn:localdocforge:native:pdfium:openjpeg:unversioned",
+        "urn:localdocforge:native:pdfium:pdfium-binaries:unversioned",
+        "urn:localdocforge:native:pdfium:simdutf:unversioned",
+        "urn:localdocforge:native:pdfium:zlib:unversioned"
+      ],
+      "ref": "pkg:generic/pdfium@152.0.7947.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/brotli@1.2.0",
+        "pkg:generic/freetype@2.14.3",
+        "pkg:generic/harfbuzz@14.2.1",
+        "pkg:generic/lcms2@2.19.1",
+        "pkg:generic/libavif@1.4.2",
+        "pkg:generic/libjpeg-turbo@3.1.4.1",
+        "pkg:generic/libpng@1.6.58",
+        "pkg:generic/libwebp@1.6.0",
+        "pkg:generic/openjpeg@2.5.4",
+        "pkg:generic/tiff@4.7.1",
+        "pkg:generic/xz@5.8.3",
+        "pkg:generic/zlib-ng@2.3.3"
+      ],
+      "ref": "pkg:generic/pillow%20codec%20bundle@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/qpdf@12.3.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/tiff@4.7.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/xz@5.8.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/zlib-ng@2.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/annotated-doc@0.0.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/annotated-types@0.7.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/colorama@0.4.6"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pikepdf@10.10.0",
+        "pkg:pypi/pillow@12.3.0",
+        "pkg:pypi/pydantic-settings@2.14.2",
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/pypdfium2@5.12.1",
+        "pkg:pypi/typer@0.27.0"
+      ],
+      "ref": "pkg:pypi/localdocforge@0.1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/lxml@6.1.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/mdurl@0.1.2"
+      ],
+      "ref": "pkg:pypi/markdown-it-py@4.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/mdurl@0.1.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/packaging@26.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
+        "pkg:generic/qpdf@12.3.2",
+        "pkg:pypi/lxml@6.1.1",
+        "pkg:pypi/packaging@26.2",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/pikepdf@10.10.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/pillow%20codec%20bundle@12.3.0"
+      ],
+      "ref": "pkg:pypi/pillow@12.3.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/pydantic-core@2.46.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/python-dotenv@1.2.2",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
+      "ref": "pkg:pypi/pydantic-settings@2.14.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/annotated-types@0.7.0",
+        "pkg:pypi/pydantic-core@2.46.4",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
+      "ref": "pkg:pypi/pydantic@2.13.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pygments@2.20.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/pdfium@152.0.7947.0"
+      ],
+      "ref": "pkg:pypi/pypdfium2@5.12.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/python-dotenv@1.2.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/markdown-it-py@4.2.0",
+        "pkg:pypi/pygments@2.20.0"
+      ],
+      "ref": "pkg:pypi/rich@15.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/shellingham@1.5.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/annotated-doc@0.0.4",
+        "pkg:pypi/colorama@0.4.6",
+        "pkg:pypi/rich@15.0.0",
+        "pkg:pypi/shellingham@1.5.4"
+      ],
+      "ref": "pkg:pypi/typer@0.27.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/typing-extensions@4.16.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/typing-inspection@0.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:libavif:aom:local"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:libavif:dav1d:local"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:libavif:libsharpyuv:local"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:libavif:libyuv:local"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:abseil:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:agg23:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:fast-float:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:freetype:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:icu:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:lcms:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:libjpeg-turbo:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:libpng:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:libtiff:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:llvm-libc:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:openjpeg:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:pdfium-binaries:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:simdutf:unversioned"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:pdfium:zlib:unversioned"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:pypi/localdocforge@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "localdocforge",
+      "purl": "pkg:pypi/localdocforge@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    "properties": [
+      {
+        "name": "localdocforge:advisoryAccessDate",
+        "value": "2026-07-19"
+      },
+      {
+        "name": "localdocforge:advisoryAmendedDate",
+        "value": "2026-07-20"
+      },
+      {
+        "name": "localdocforge:advisoryReport",
+        "value": "docs/ADVISORY_REPORT.json"
+      },
+      {
+        "name": "localdocforge:advisoryReportSha256",
+        "value": "51ab03e8bad31822e0ca35004e5b84020688871145dde1c623097ff1ffe58032"
+      },
+      {
+        "name": "localdocforge:advisoryReview",
+        "value": "authoritative upstream/vendor sources with OSV and GitHub reviewed-advisory corroboration; no-finding is not a safety claim"
+      },
+      {
+        "name": "localdocforge:lockEvidence",
+        "value": "requirements/locks/lite.txt; exact pins, markers, and SHA-256 artifact hashes"
+      },
+      {
+        "name": "localdocforge:nativeComposition",
+        "value": "incomplete: 16 versioned records plus 18 known unversioned children; additional statically linked or platform-specific children may exist"
+      },
+      {
+        "name": "localdocforge:profile",
+        "value": "lite"
+      },
+      {
+        "name": "localdocforge:releaseDisposition",
+        "value": "not-cleared"
+      },
+      {
+        "name": "localdocforge:wheelEvidencePlatform",
+        "value": "This universal-profile SBOM uses Windows x86-64 / CPython 3.14 evidence for every native component. It does not claim the same native composition on Linux or macOS; every other target wheel requires equivalent re-inventory."
+      }
+    ],
+    "timestamp": "2026-07-20T00:00:00Z",
+    "tools": {
+      "components": [
+        {
+          "name": "LocalDocForge offline release-artifact generator",
+          "type": "application",
+          "version": "2"
+        }
+      ]
+    }
+  },
+  "specVersion": "1.6",
+  "version": 1,
+  "vulnerabilities": [
+    {
+      "affects": [
+        {
+          "ref": "pkg:generic/openjpeg@2.5.4"
+        },
+        {
+          "ref": "pkg:generic/pillow%20codec%20bundle@12.3.0"
+        },
+        {
+          "ref": "pkg:pypi/pillow@12.3.0"
+        }
+      ],
+      "analysis": {
+        "detail": "The exact Windows-wheel nested component is affected. Direct exploitability currently requires reaching JPEG2000 decode, but sniff.py and images-to-PDF reject JP2/J2K; PDF JPEG2000 rendering uses PDFium rather than Pillow's OpenJPEG. Other target-platform wheels require equivalent native provenance review.",
+        "state": "in_triage"
+      },
+      "description": "Heap-buffer-overflow in OpenJPEG tile decoding",
+      "id": "OSV-2025-219",
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "recommendation": "Replace the Pillow native build with one containing fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed OpenJPEG release; keep JP2/J2K rejected and retain hard worker/resource isolation meanwhile.",
+      "source": {
+        "name": "OSV",
+        "url": "https://osv.dev/vulnerability/OSV-2025-219"
+      }
+    }
+  ]
+}

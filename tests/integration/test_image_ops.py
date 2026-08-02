@@ -104,6 +104,16 @@ class TestImagesToPdf:
         with pytest.raises(PipelineError, match="application/pdf"):
             images_to_pdf([fixtures_dir / "simple-3page.pdf"], out_dir / "never.pdf")
 
+    def test_jpeg2000_is_rejected_before_bundled_codec_decode(self, tmp_path, out_dir):
+        source = tmp_path / "untrusted.jp2"
+        source.write_bytes(b"\x00\x00\x00\x0cjP  \r\n\x87\n\x00\x00\x00\x14ftypjp2 ")
+        output = out_dir / "never.pdf"
+
+        with pytest.raises(PipelineError, match="Could not identify"):
+            images_to_pdf([source], output)
+
+        assert not output.exists()
+
 
 class TestPdfToImages:
     def test_render_all_pages_png(self, fixtures_dir, out_dir):
