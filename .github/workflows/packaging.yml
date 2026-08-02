@@ -39,7 +39,9 @@ jobs:
 
       - name: Install the hash-locked development set
         run: |
-          uv venv --python 3.14 .release-venv
+          # --seed installs pip into the venv: the release gate runs
+          # `python -m pip check`, and uv venvs ship without pip by default.
+          uv venv --seed --python 3.14 .release-venv
           uv pip sync --python .release-venv/bin/python --require-hashes requirements/locks/dev.txt
           uv pip install --python .release-venv/bin/python --no-deps ".[dev]"
 
