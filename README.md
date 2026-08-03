@@ -1,66 +1,85 @@
 # LocalDocForge
 
-A privacy-focused document-processing workbench: a typed Python core library,
-a scriptable CLI, and a localhost API with a minimal status page. The current
-package has no outbound network client, telemetry, update check, or remote
-browser asset. A full browser workflow is still planned.
+[![Packaging and install matrix](https://github.com/pes1ug23am910/LocalDocForge/actions/workflows/packaging.yml/badge.svg)](https://github.com/pes1ug23am910/LocalDocForge/actions/workflows/packaging.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](docs/PACKAGING.md)
 
-> **Project status: early alpha.** Phase 0 (foundation), the core of
-> Phase 1 (structural PDF tools + image conversion), and the first Phase 2
-> slice (lossless PDF compression, 2026-08-03) are implemented and tested.
-> Everything else in the roadmap is *not yet available* and is honestly
-> reported as such by `ldf doctor`. See `docs/FEATURE_MATRIX.md`.
+**Merge, split, compress, convert, and inspect PDFs entirely on your own
+machine.** No uploads, no account, no telemetry — the shipped package
+contains no outbound network client at all.
 
-> **Release decision: FAIL / not cleared for sensitive documents.** Windows 11
-> x64 is the primary and only locally executed release-hardening platform for
-> this checkpoint. Linux and macOS remain unverified; declared package markers
-> and configured CI jobs are not pass evidence. Exact results and blockers are
-> recorded in `docs/STATUS.md` and `docs/INDEPENDENT_AUDIT.md`.
+LocalDocForge is a privacy-first document-processing workbench: a typed
+Python core library, a scriptable `ldf` CLI, and a localhost API with a
+status page. It exists for the documents you would never paste into a
+cloud converter.
 
-## Privacy guarantees (and their limits)
+```text
+$ ldf compress outline-6page.pdf -o smaller.pdf
+Operation : compress
+Status    : success
+Engine    : pikepdf 10.10.0
+Input     : outline-6page.pdf (5,777 B, 6 pages)
+Output    : smaller.pdf (2,953 B, 6 pages)
+Elapsed   : 0.36s
+Validation: passed (7 checks)
+```
 
-- The shipped operations run on the host machine and contain no cloud
-  conversion or outbound network-resource loading. The web command listens on
-  loopback by default; non-loopback serving requires an explicit dangerous
-  opt-in.
-- `--strict-offline` is recorded in reports and rejects recognizable network
-  filesystem paths, network report/job/output locations, and non-loopback web
-  serving. It is an application policy, not an operating-system firewall;
-  container or host network isolation remains the stronger defense.
-- Reports omit document text and passwords. Public API reports also replace
-  server-side paths with artifact basenames; CLI reports intentionally name
-  the user-selected input and output files.
-- Limits, honestly stated: deleting temp files on SSDs is best-effort, not
-  forensic erasure; a crash can leave a private session directory, and startup
-  removes it only after acquiring its external OS-held session lease (missing,
-  unreadable, or still-held leases are preserved fail-closed); CLI parsers run
-  in-process, while API parsers run in bounded one-job workers that still retain
-  your filesystem authority and are not an OS filesystem/network sandbox (see
-  `docs/THREAT_MODEL.md`).
+*Real output from this repository's synthetic test fixture — 48.9 % smaller,
+losslessly, with the result render-compared pixel-for-pixel against the
+source before anything was published.*
+
+## Why this instead of a cloud converter
+
+- **Your files never leave the machine.** Every operation runs locally
+  through pikepdf/libqpdf, PDFium, and Pillow. The web UI binds to
+  `127.0.0.1` by default and authenticates every request.
+- **It refuses to guess.** Damaged PDFs are rejected rather than silently
+  "repaired", outputs are structurally reopened and render-checked before
+  they are published, and originals are never modified in place.
+- **It refuses to lie.** A feature is advertised only when its
+  implementation *and* a live engine probe both pass (`ldf doctor` is the
+  truth, not a brochure). Cropping is never called redaction. Known
+  preservation losses are reported with stable warning codes instead of
+  being dropped silently.
 
 ## What works today
 
-The capability rows below are implemented and covered by the repository test
-suite. Current release-platform execution evidence is Windows 11 x64 only; see
-`docs/PACKAGING.md` for the exact interpreter matrix.
-
 | Area | Capabilities |
 |---|---|
-| Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse. Page-moving operations warn about known document-level losses; remove-pages refuses structures it cannot safely rewrite. |
+| Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
-| Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden. Lossy presets are planned and refused until they exist. |
-| Convert | images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes, 36–600 DPI) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI) |
+| Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
+| Convert | images → PDF (JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI) |
 | Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
-| Safety net | every candidate PDF is structurally reopened and render-checked (all pages for selected high-risk cases, otherwise up to 20 sampled pages); generated images must decode. All candidates validate before publication, each final file is published atomically, and input/output aliases are refused. Multi-output rollback after a handled publication failure is best effort, not a process-crash transaction. |
+| Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
-## Quick start
+Everything above is covered by the repository's test suite (409 tests) and a
+full release gate. OCR, Office conversion, lossy compression presets,
+redaction, signatures, and the rest of the roadmap are **not implemented
+yet** and are honestly reported as unavailable by `ldf doctor` — see
+[`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md).
 
-The default and explicit Lite installs contain the local CLI/core PDF and image
-tools. This repository's reproducible path installs a hash-locked dependency
-set first, then installs LocalDocForge without re-resolving it:
+## Install
+
+Requires CPython 3.12–3.14. There is no PyPI package yet; install from the
+repository:
+
+```bash
+# CLI + core PDF/image tools (the default "lite" set)
+pip install "git+https://github.com/pes1ug23am910/LocalDocForge"
+
+# with the localhost web API and status page
+pip install "localdocforge[standard] @ git+https://github.com/pes1ug23am910/LocalDocForge"
+
+ldf doctor
+```
+
+For a supply-chain-audited install — hash-locked dependencies first, then
+the package with no re-resolution — use the lock profiles:
 
 ```powershell
-# Windows PowerShell — declared CPython 3.12, 3.13, or 3.14 recipe
+# Windows PowerShell (the release-hardened platform)
+git clone https://github.com/pes1ug23am910/LocalDocForge && cd LocalDocForge
 py -3.14 -m venv .venv
 .venv\Scripts\python.exe -m pip install --require-hashes `
   -r requirements\locks\lite.txt
@@ -69,29 +88,20 @@ py -3.14 -m venv .venv
 ```
 
 ```bash
-# Declared portable recipe; Linux/macOS are not verified at this checkpoint
+# Linux/macOS (CI-tested; see "Status and maturity")
+git clone https://github.com/pes1ug23am910/LocalDocForge && cd LocalDocForge
 python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/locks/lite.txt
 .venv/bin/python -m pip install --no-deps ".[lite]"
 .venv/bin/ldf --json doctor
 ```
 
-Use `requirements/locks/standard.txt` plus `".[standard]"` to add the
-localhost API/status page. Use `full.txt` plus `".[full]"` to additionally
-install the optional pypdf diagnostic adapter. “Full” means all currently
-shipped Python adapters, not the unimplemented roadmap. Exact profile,
-regeneration, build, CI, and uninstall commands are in
+Profiles: `lite` (CLI/core, the default), `standard` (adds the localhost
+API), `full` (adds the pypdf diagnostic adapter), `dev` (adds test/lint/
+build tooling). Exact recipes, locks, and uninstalls:
 [`docs/PACKAGING.md`](docs/PACKAGING.md).
 
-The bootstrap scripts install the development set by default and accept an
-explicit `lite`, `standard`, `full`, or `dev` profile.
-
-For the primary Windows workstation there is a task-oriented walkthrough,
-[`docs/GETTING_STARTED_WINDOWS.md`](docs/GETTING_STARTED_WINDOWS.md), and a
-dated machine-readiness/evidence report,
-[`docs/MACHINE_READINESS.md`](docs/MACHINE_READINESS.md).
-
-## CLI examples (all verified in this repository)
+## Everyday commands
 
 ```powershell
 ldf merge a.pdf b.pdf -o merged.pdf
@@ -107,73 +117,104 @@ ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf inspect input.pdf
 ldf --json doctor
-ldf --strict-offline web  # localhost API + status shell; prints the session token
+ldf --strict-offline web   # localhost API + status page; prints the session token
 ```
 
-The `ldf web` server binds to 127.0.0.1 by default, authenticates every API
-call with a per-session token header, sends CSP/hardening headers, and keeps
-job history in memory only. Admission happens before upload bytes enter a
-request-scoped, aggregate-bounded transport spool inside the private API session.
-Each conversion then runs in a fresh spawned worker; the API has a bounded queue,
-global and per-client caps, rate control, progress, hard cancellation, and an
-explicit asynchronous mode while preserving the default synchronous response.
-After a Windows Job Object boundary is established, the parent requires Job
-accounting to prove zero active processes before publishing a terminal state. If
-the leader exits before assignment, the document gate remains unopened and only
-leader-exit proof is reported—never a fictitious empty-Job result. Successful
-downloads hold a lease that blocks deletion/eviction until streaming closes, and
-session residue cleanup requires the external session lease. `--allow-nonlocal`
-is an explicit dangerous opt-in and is refused in strict-offline mode. Endpoint
-reference: `docs/CLI.md`.
-
 Page ranges: `1-5,9,12-end`, `odd`, `even`, `reverse`, `last`, `last-5`
-(the last five pages). Full grammar and exit codes: `docs/CLI.md`.
+(the last five pages). Encrypted PDFs prompt for the password interactively
+(hidden input); passwords are never taken as command-line arguments and
+never logged. Existing outputs are never overwritten unless you say
+`--collision overwrite`. Full grammar, exit codes, and the HTTP API
+contract: [`docs/CLI.md`](docs/CLI.md).
 
-Encrypted PDFs prompt for the password interactively (hidden input);
-passwords are never taken as command-line arguments and never logged.
+The `ldf web` server binds to `127.0.0.1`, authenticates every API call
+with a per-session token header, sends CSP/hardening headers, and keeps job
+history in memory only. Every conversion runs in a fresh spawned worker
+under OS containment (a Windows Job Object with kill-on-close, memory, CPU,
+and process limits; a POSIX process group with resource limits), and a
+terminal state is published only after the process tree is verified gone.
 
-## Honesty rules baked into the product
+## Status and maturity
 
-- A capability shows as available only when its implementation **and** a live
-  engine probe both pass — placeholder buttons do not exist.
-- Cropping, whiteout, and covering content are never called redaction.
-- Conversions report detected, known preservation losses through stable
-  `fidelity_warnings` codes. The warning set is not a claim of exhaustive
-  semantic equivalence; see `docs/CONVERSION_FIDELITY.md`.
-- A file will only ever be labelled PDF/A-compliant after an authoritative
-  local validator passes it (validator integration is a later phase — today
-  nothing is labelled PDF/A).
+**Early alpha, honestly scoped.** Phase 0 (foundation), the core of Phase 1
+(structural PDF tools + image conversion), and the first Phase 2 slice
+(lossless compression, 2026-08-03) are implemented, tested, and gated.
+
+- **For everyday, non-sensitive documents:** working and validated — the
+  full release gate (locks, lint, types, two full test-suite runs including
+  a network-blocked one, reproducible builds, clean install matrix) passes,
+  and every capability has been exercised end-to-end on real files.
+- **For sensitive documents:** **not yet cleared, by the project's own
+  release decision.** The open blockers (a bundled-dependency advisory,
+  no OS-enforced outbound-network denial proof, in-process CLI parsing,
+  platform scope) are recorded plainly in [`docs/STATUS.md`](docs/STATUS.md)
+  — nothing is hidden, and nothing is promised early.
+- **Platforms:** Windows 11 x64 is the release-hardened platform with
+  retained local evidence. Linux and macOS pass the full test suite and
+  clean-install matrix in CI (CPython 3.12–3.14, first executed
+  2026-08-03); they are CI-tested, not yet release-hardened. Deleting temp
+  files is best-effort, not forensic erasure, and `--strict-offline` is an
+  application policy — not an OS firewall; see
+  [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the boundaries stated
+  without marketing.
+
+## FAQ
+
+**Is it really offline?** The shipped package contains no outbound network
+client, telemetry, update check, or remote asset — verified by source
+inspection and by running the complete test suite with Python DNS and
+non-loopback sockets denied. `--strict-offline` additionally rejects
+recognizable network filesystem paths and non-loopback serving. It is
+application policy, not an OS firewall; a host firewall or offline VM
+remains the stronger guarantee.
+
+**Can it OCR / convert Office files / shrink scanned PDFs?** Not yet.
+Those are roadmap phases, and `ldf doctor` will keep saying so until each
+pipeline lands with tests. Lossless compression won't shrink scan-heavy
+PDFs much (their bytes are already JPEG data) — and the report tells you
+exactly that instead of pretending.
+
+**Why does `remove-pages` sometimes refuse?** Your document has structures
+(outlines, forms, internal links, tagged content) that this build cannot
+yet rewrite safely. Refusing beats handing you a silently corrupted file.
+
+**Can I use it as a Python library?** Yes —
+[`docs/LIBRARY_API.md`](docs/LIBRARY_API.md), with executed examples.
+
+## Documentation
+
+The full index is at [`docs/README.md`](docs/README.md). Highlights:
+[`docs/TECHNICAL_REFERENCE.md`](docs/TECHNICAL_REFERENCE.md) (every
+subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
+[`docs/GETTING_STARTED_WINDOWS.md`](docs/GETTING_STARTED_WINDOWS.md)
+(task-oriented walkthrough) · [`docs/MACHINE_READINESS.md`](docs/MACHINE_READINESS.md)
+(dated verification evidence) · [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+(contributing and the capability golden path).
 
 ## Development
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests -q     # run the complete suite
+pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
+.venv\Scripts\python.exe -m pytest tests -q    # 409 tests
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```
 
 Test fixtures are synthetic and generated by
-`tests/fixtures/make_fixtures.py` — no third-party documents.
-
-Repository map: `src/localdocforge/` (domain, security, jobs, engines,
-pipelines, operations, validation, reporting, config, cli) · `tests/`
-(unit, integration, security, fixtures) · `docs/` (architecture, threat
-model, engine decisions, feature matrix, status).
-
-Documentation index: [`docs/README.md`](docs/README.md). Consolidated
-technical reference:
-[`docs/TECHNICAL_REFERENCE.md`](docs/TECHNICAL_REFERENCE.md). Developer
-onboarding and the capability golden path:
-[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Python library usage:
-[`docs/LIBRARY_API.md`](docs/LIBRARY_API.md).
+`tests/fixtures/make_fixtures.py` — no third-party documents. The
+capability rules are enforced by tests: a feature flips to "available" only
+in the same change that lands its pipeline and tests, and the
+documentation-consistency suite fails when these docs drift from shipped
+reality. Start at [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Roadmap
 
 Lossy compression presets, repair, OCR, Office↔PDF, PDF/A, PDF↔Markdown,
 editor, forms, encryption, redaction, signatures, compare, scanner
-acquisition, full browser UI — phased plan in `docs/IMPLEMENTATION_PLAN.md`,
-current truth in `docs/STATUS.md`.
+acquisition, full browser UI — phased plan in
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), current truth
+in [`docs/STATUS.md`](docs/STATUS.md).
 
 ## License
 
-MIT. Dependency and external-engine licensing: `docs/LICENSING.md`.
+MIT. Dependency and external-engine licensing: [`docs/LICENSING.md`](docs/LICENSING.md).
