@@ -381,7 +381,7 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Keep the hash lock and repeat review before enabling Markdown conversion."
+          "value": "Keep the hash lock and repeat review before enabling attacker-controlled Markdown input or rendering."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
@@ -425,7 +425,7 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "Rich Markdown rendering dependency for local CLI presentation; Markdown document conversion is not enabled."
+          "value": "Rich Markdown rendering dependency for local CLI presentation; user-document Markdown input/rendering and Markdown-to-PDF are not enabled."
         }
       ],
       "purl": "pkg:pypi/markdown-it-py@4.2.0",
@@ -511,7 +511,7 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "URL parser used by markdown-it-py; document Markdown conversion is disabled."
+          "value": "URL parser used by markdown-it-py; user-document Markdown input/rendering and Markdown-to-PDF are disabled."
         }
       ],
       "purl": "pkg:pypi/mdurl@0.1.2",
@@ -4812,7 +4812,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "f5ed2be1336031dc8904098225531dc1c7ec6b8368ff7d8817c7538989ecf004"
+        "value": "82917de4debf9a9e9a1c99c4ec0526938ef174c7e7c3e99c9b8f5248aa9488a2"
       },
       {
         "name": "localdocforge:advisoryReview",

@@ -37,3 +37,19 @@ and friction feed the roadmap.
 ## Entries
 
 *(none yet)*
+
+### 2026-08-09 — Codex, GPT-5.6 Sol (Ultra reasoning) — ok
+- Task: Take the live capability snapshot before implementing the commissioned S4 `pdf-to-md` slice.
+- Command: `& 'E:\Sem-VI-Break\Pdf-Conversion-Tool\.venv\Scripts\ldf.exe' --json agent-brief`
+- Version: 0.1.0 @ f8a8b96
+- Observed: The first sandboxed launcher attempt could not access the venv's external Python interpreter; the approved read-only rerun exited 0 and returned valid registry-derived JSON with all 12 baseline capabilities.
+- Fallback: none; the same command succeeded with the required filesystem permission.
+- Suggestion: none for `ldf`; the initial failure was the agent sandbox boundary, not a LocalDocForge defect.
+
+### 2026-08-09 — Codex sub-agent, GPT-5.6 Sol — failed
+- Task: Read the live capability brief before adding S4 synthetic fixtures and focused tests.
+- Command: `ldf --json agent-brief`
+- Version: 0.1.0 @ f8a8b96
+- Observed: Exit 1 before LocalDocForge started because the sandbox denied access to the venv's external Python interpreter (`Access is denied`); no JSON report or warning code was produced.
+- Fallback: none; the root executor had already completed the identical read-only brief successfully with approved filesystem access.
+- Suggestion: none for `ldf`; route repository-venv launchers through the approved read-only permission when the interpreter lives outside the workspace sandbox.

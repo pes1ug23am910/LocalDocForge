@@ -1,14 +1,16 @@
 # Getting Started on Windows
 
 A practical, task-oriented guide to using LocalDocForge on Windows 11. Every
-command in this guide was executed and verified on the primary workstation on
-2026-08-03 (see `docs/MACHINE_READINESS.md` for the full evidence run). The
+original command set in this guide was executed and verified on the primary
+workstation on 2026-08-03 (see `docs/MACHINE_READINESS.md` for that evidence
+run); the S4 text-extraction additions are recorded in `docs/STATUS.md`. The
 authoritative reference for flags, grammar, exit codes, and the API contract
 remains `docs/CLI.md`; this guide does not replace it.
 
 > **Scope honesty:** LocalDocForge is early alpha. What this guide shows —
-> PDF organization, page editing, lossless compression, image↔PDF conversion,
-> inspection, and the localhost API — is everything that exists. Lossy
+> PDF organization, page editing, lossless compression, PDF text extraction,
+> image↔PDF conversion, inspection, and the localhost API — is everything that
+> exists. Lossy
 > compression presets, OCR, Office conversion, redaction, signatures, and the
 > rest of the roadmap are **not available** and no command in this build
 > pretends otherwise. The project's
@@ -51,15 +53,16 @@ ldf --json doctor   # machine-readable; same data the status page uses
 ```
 
 `doctor` is the live truth. A capability is listed as available only when its
-implementation and an engine probe both pass; nothing is a placeholder. As of
-2026-08-03 this machine reports all eleven shipped capabilities available:
-merge, split, remove-pages, extract-pages, organize, rotate, crop, inspect,
-compress, images-to-pdf, pdf-to-images.
+implementation and an engine probe both pass; nothing is a placeholder. The
+current build has thirteen implemented capability entries: merge, split,
+remove-pages, extract-pages, organize, rotate, crop, inspect, compress,
+images-to-pdf, pdf-to-images, convert-images, and pdf-to-markdown. Runtime
+availability still depends on the listed engine probes.
 
 ## 3. Everyday recipes
 
 Global flags go **before** the command: `ldf [--json] [--quiet]
-[--strict-offline] [--report-dir DIR] <command> …`.
+[--password-stdin] [--strict-offline] [--report-dir DIR] <command> …`.
 
 ### Combine and reorganize PDFs
 
@@ -132,6 +135,7 @@ ldf images-to-pdf photo.png -o photo.pdf --page-size image
 # PDF → PNG/JPEG/WebP/TIFF at 18–1200 DPI, optionally a page subset
 ldf pdf-to-images input.pdf -d pages\ --format png --dpi 300
 ldf pdf-to-images input.pdf -d pages\ --format jpeg --dpi 150 --pages odd
+ldf pdf-to-images scanned.pdf -d vision\ --preset llm
 ```
 
 `--page-size` accepts `A4`, `Letter`, `Legal`, `image`, or `WxH` with a
@@ -139,12 +143,43 @@ ldf pdf-to-images input.pdf -d pages\ --format jpeg --dpi 150 --pages odd
 36–600 DPI. Values that would blow past the configured pixel/byte/page bounds
 are rejected up front (§6).
 
+### Extract PDF text for agents
+
+```powershell
+# Markdown is the default; each occurrence starts with <!-- ldf:page N -->
+ldf pdf-to-md input.pdf -o content.md
+
+# Plain text subset; use --no-page-anchors for form-feed page separators
+ldf pdf-to-md input.pdf -o content.txt --format txt --pages "1-5,9"
+
+# One strict-schema JSON object per selected page occurrence
+ldf pdf-to-md input.pdf -o content.jsonl --format jsonl
+```
+
+The output file is always written explicitly as UTF-8 with LF line endings;
+stdout carries only the report. Markdown headings and top-to-bottom/left-to-
+right reading order are heuristics. The extractor normalizes Unicode to NFC but
+does not silently dehyphenate or repair bidi order. Columns, rotated/angled
+text, RTL scripts, and flattened tables can require review. Stable report codes
+are `no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
+`tables-flattened`; exact affected pages appear in
+`details.coverage.per_page[].warning_codes`. If a page has no text layer, use
+`ldf pdf-to-images input.pdf -d vision\ --preset llm` for vision input; OCR is
+not implemented.
+
+The full format/separator contract, exact JSONL keys, coverage schema, and
+limitations are in `docs/CLI.md` and `docs/CONVERSION_FIDELITY.md`.
+
 ### Inspect without modifying
 
 ```powershell
 ldf inspect input.pdf          # pages, sizes, encryption, annotations,
-ldf --json inspect input.pdf   # outlines, forms, attachments, JavaScript
+ldf --json inspect input.pdf   # + page_text_stats and text_coverage
 ```
+
+`page_text_stats` contains one `{page, char_count, has_text_layer}` record per
+source page; `text_coverage` summarizes pages and character counts. These are
+fast extraction-vs-render decision signals, not reading-order guarantees.
 
 ### Encrypted inputs
 
@@ -172,7 +207,8 @@ want missing-password guidance or the hidden console prompt.
 - **Every candidate is validated before publication.** Generated PDFs are
   structurally reopened (pikepdf) and render-checked (PDFium; all pages for
   high-risk cases, otherwise up to 20 sampled pages); generated images must
-  decode. Files are published atomically — you never get a half-written PDF —
+  decode; generated Markdown/TXT/JSONL must pass strict UTF-8, provenance, and
+  exact-schema/count checks. Files are published atomically — you never get a half-written output —
   but multi-output rollback after a handled failure is best-effort, not a
   crash-proof transaction.
 - **Reports.** Human summary by default, `--quiet` suppresses it, `--json`
@@ -218,7 +254,8 @@ Invoke-RestMethod -Method Delete `
 ```
 
 Operations: `merge`, `split`, `remove-pages`, `extract-pages`, `organize`,
-`rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images` — form fields
+`rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images`,
+`convert-images`, `pdf-to-md` — form fields
 per operation are tabulated in `docs/CLI.md`. Add `Prefer: respond-async` (or `?async=true`)
 for a 202 + status/events/cancel URLs instead of the default synchronous 201.
 
@@ -274,7 +311,7 @@ to `None` is disabled — see `ResourceLimits` in
 | Tesseract + OCRmyPDF | ❌ `winget install UB-Mannheim.TesseractOCR` | OCR (P2) |
 | Ghostscript | ❌ `winget install ArtifexSoftware.GhostScript` | PDF/A (P2) |
 | LibreOffice | ❌ `winget install TheDocumentFoundation.LibreOffice` | Office→PDF (P2) |
-| Pandoc | ❌ `winget install JohnMacFarlane.Pandoc` | Markdown paths (P3) |
+| Pandoc | ❌ `winget install JohnMacFarlane.Pandoc` | possible future document paths; not used by pdf-to-md |
 | veraPDF | ❌ verapdf.org installer | PDF/A validation (P2/P5) |
 
 Installing an executable today changes nothing: capabilities unlock only when
@@ -287,7 +324,7 @@ The project's own release gate currently says **FAIL / not cleared for
 sensitive documents** (`docs/STATUS.md`), even though everything above works.
 The honest reasons, condensed:
 
-- Bundled OpenJPEG 2.5.4 (inside Pillow) has an open advisory; PDFium's
+- Bundled OpenJPEG 2.5.4 and libheif 1.23.0 have recorded advisories; PDFium's
   advisory status is unknown for 18 unversioned native children.
 - `--strict-offline` is application policy plus Python-level socket guards —
   **not** an OS firewall. No OS-enforced outbound+DNS denial has been proven on
@@ -311,6 +348,7 @@ documents whose exposure would hurt you, wait for the blockers in
 | DPI/size value rejected | Outside 36–600 (images-to-pdf) / 18–1200 (pdf-to-images), or would exceed §6 limits. |
 | File rejected before conversion | Content sniffing found an extension/content mismatch, or the PDF is syntax-damaged (repair is not implemented — the tool won't silently "fix" your file). |
 | `compress` barely shrinks a file | The input is image-heavy or already optimized; lossless mode never re-encodes images. The report's `compression` details show exact before/after bytes. |
+| `pdf-to-md` reports `no-text-layer` | The page is scanned/image-only. Use `pdf-to-images --preset llm`; OCR is not shipped yet. |
 | 401 from every API call | Missing/wrong `X-LDF-Token` header — a browser cookie alone never authorizes API calls. |
 | 429/503 from the API | Queue/rate/per-client caps (§5). Honor `Retry-After`. |
 | Password prompt appears | Input is encrypted and stdin is interactive. Type it (hidden), or for a non-interactive invocation use global `--password-stdin` or `LDF_PASSWORD`; it is used to unlock only and never written to output/reports/logs. |

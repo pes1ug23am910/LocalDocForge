@@ -3,7 +3,8 @@
 The one-document consolidation of how LocalDocForge works, subsystem by
 subsystem, with the concrete constants, contracts, and invariants that the
 per-topic documents explain in prose. Written 2026-08-03 against the code as
-shipped (407-test suite and full release gate passing that day). Where a
+shipped (407-test suite and full release gate passing that day), with the S4
+PDF text-extraction surface updated on 2026-08-09. Where a
 per-topic document is the authority, it is linked; when this file and the code
 disagree, the code and its tests win.
 
@@ -25,7 +26,7 @@ Contents: [1 Stack](#1-system-identity-and-stack) · [2 Layout](#2-package-layou
 | Models/validation | Pydantic v2 (+ pydantic-settings) | every report/spec/settings object is typed |
 | CLI | Typer | stable exit codes, shell completion built in |
 | Structural PDF engine | pikepdf 10.x (libqpdf 12.x) | merge/split/remove/extract/organize/rotate/crop/inspect/compress |
-| Renderer | pypdfium2 5.x (PDFium) | validation renders, PDF→images, compress pixel-compare |
+| Renderer/text engine | pypdfium2 5.12.1 (PDFium 152.0.7947.0) | validation renders, PDF→images, compress pixel-compare, PDF→Markdown/text/JSONL, inspect text coverage |
 | Imaging | Pillow 12.x | image decode/encode, images→PDF, decompression-bomb guard |
 | Diagnostic PDF lib | pypdf (Full profile) | probed, used in tests; deliberately **not** an operation engine |
 | API service | FastAPI + Uvicorn + python-multipart (Standard profile) | loopback by default |
@@ -45,8 +46,8 @@ src/localdocforge/
   jobs/        per-job workspaces, atomic publication, stale sweep
   engines/     adapter contract, live probes, capability registry
   pipelines/   runner.py — the one job lifecycle every operation uses
-  operations/  organize.py (structural) · optimize.py (compress) · images.py
-  validation/  pikepdf reopen + syntax + PDFium render checks
+  operations/  organize.py (structural) · optimize.py (compress) · images.py · text.py
+  validation/  pikepdf reopen + syntax + PDFium render; image/text checks
   reporting/   JSON + human report writers
   config/      LDF_* settings, precedence, strict-offline validation
   cli/         Typer app (`ldf` / `localdocforge`)
@@ -65,7 +66,8 @@ and hand an `execute()` closure to the pipeline runner.
   `inputs`/`outputs` (path, media type, bytes, pages, optional sha256),
   byte/page totals, timing, `security_warnings`, `fidelity_warnings`,
   `errors`, `validation` (per-check results), and operation-specific
-  `details`. Never contains document text or passwords. `to_human()` renders
+  `details`. Never contains document text or passwords; `pdf-to-md` puts only
+  coverage counts and warning codes in `details`. `to_human()` renders
   the CLI summary; it is a Pydantic model, so `--json` is just
   `model_dump_json()`.
 - `SecurityWarning` / `FidelityWarning` — stable `code` + message + severity
@@ -152,7 +154,7 @@ them). `probe()` uses this runner for `<tool> --version`.
 - `EngineAdapter.probe() -> EngineInfo` must return unavailability instead of
   raising; probes are cached per process. `supported_operations()` declares
   operation ids (`OP_MERGE` … `OP_COMPRESS`, `OP_RENDER`,
-  `OP_PDF_TO_IMAGES`, `OP_IMAGES_TO_PDF`).
+  `OP_PDF_TO_IMAGES`, `OP_PDF_TO_MD`, `OP_IMAGES_TO_PDF`).
 - `EngineRegistry.engine_for(operation, preferred=None)` returns the first
   available supporting engine or raises `EngineUnavailableError` with install
   hints; a `preferred` engine must both support the operation and probe
@@ -191,7 +193,9 @@ Every operation runs the same eight steps (authoritative prose:
    candidates (`render_all=True`: crop, compress), otherwise ≤20 evenly
    sampled pages including both endpoints; blank pages recorded (grayscale
    floor 250), only rejected when a caller forbids all-blank. Images must
-   fully decode.
+   fully decode. A deterministic per-candidate validator hook covers other
+   media types: `pdf-to-md` requires strict UTF-8, coverage schema,
+   anchor cardinality, and exact JSONL record/schema/count agreement.
 7. **Publish** all candidates atomically (§5); handled multi-output failure
    rolls back new files and restores overwrite backups (best-effort, not
    crash-transactional).
@@ -211,10 +215,11 @@ Failures raise `PipelineError` with the failed report attached
 | extract-pages / organize | pikepdf | copy selected/ordered pages to a new document (duplicates allowed in organize) |
 | rotate | pikepdf | relative `/Rotate` on selected pages; multiples of 90 only |
 | crop | pikepdf | sets `/CropBox`, clamped to the media box (`crop-clamped`); non-intersecting boxes refused; always emits `crop-is-not-redaction`; renders **all** pages at validation |
-| inspect | pikepdf | read-only inventory: version, encryption, page count/sizes, annotations, outlines/AcroForm/attachments/JavaScript/open-action presence, docinfo |
+| inspect | pikepdf + PDFium text API | read-only inventory: version, encryption, page count/sizes, annotations, outlines/AcroForm/attachments/JavaScript/open-action presence, docinfo, plus ordered per-page character/text-layer records and aggregate text coverage (no page text); configured page/decompressed-text/memory bounds apply |
 | compress | pikepdf (+ PDFium compare) | lossless only: `remove_unreferenced_resources()` (failure → `resource-cleanup-skipped`, info), then save with `compress_streams=True`, `stream_decode_level=generalized` (never decodes DCT/JPX image data), `object_stream_mode=generate`, `recompress_flate=True`, `deterministic_id=True`. Then ≤5 sampled pages of source and candidate are rendered identically (scale 1.0) and compared per-channel via `ImageChops.difference`; **any nonzero delta or size mismatch blocks publication**. `details.compression` reports exact bytes/reduction; `compress-no-reduction` (info) when output ≥ input. Presets `balanced`/`aggressive`/`archival` are refused |
 | images-to-pdf | Pillow | multipage-TIFF aware, EXIF orientation honored; fixed page sizes composed on a raster canvas at `dpi` (36–600), `fit`/`stretch`/`center`, alpha flattened onto `background`; `image` page size keeps the pixel grid; photographs pass one JPEG generation (`images-reencoded` info) |
 | pdf-to-images | PDFium | 18–1200 dpi, PNG/JPEG/WebP/TIFF, page ranges; incremental pixel/byte limit checks; syntax-damaged inputs refused |
+| pdf-to-md | PDFium text API | Streams selected occurrences one page at a time; UTF-8/LF + NFC; Markdown `<!-- ldf:page N -->`, TXT `--- ldf:page N ---` (or form-feed without anchors), or exact-schema JSONL. Top-to-bottom/left-to-right ordering and font-size headings are heuristics; no bidi repair or silent dehyphenation. Per-page raw-character/memory preflight, 50,000-rectangle fallback, and bounded 4,096-object/15-level/512-ruling scans prevent unbounded layout work. Coverage/warning metadata only in reports |
 
 ### 8.1 Fidelity and security warning model
 
@@ -226,6 +231,14 @@ Single-document rewrites (rotate/crop/compress) preserve those structures but
 emit critical `signature-invalidated` when signature fields exist and critical
 `input-encryption-removed` when an encrypted input yields an unprotected
 output. Full vocabulary: `docs/CONVERSION_FIDELITY.md`.
+
+Text extraction emits at most one aggregate entry for each of
+`no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
+`tables-flattened`. Exact page attribution is the ordered
+`details.coverage.per_page[].warning_codes` array. Coverage keys are
+`pages_total`, `pages_with_text`, `pages_with_text_layer`,
+`char_count_min`, `char_count_median`, `char_count_max`, and `per_page`; the
+report never embeds extracted text.
 
 ## 9. Resource limits
 
@@ -247,6 +260,10 @@ output. Full vocabulary: `docs/CONVERSION_FIDELITY.md`.
 
 Directory monitors are sampled (50 ms cadence) and can overshoot between
 samples; none of this is a filesystem quota or sandbox.
+
+PDF text extraction checks selection length against `max_pages`, writes and
+accounts output incrementally, and releases each PDFium page before advancing;
+its report grows only with compact per-page counts/codes, not text bodies.
 
 ## 10. Configuration (`config/settings.py`)
 
@@ -277,6 +294,9 @@ instead of mutating the environment.
   Startup sweeps stale workspaces.
   Security warnings echo to stderr; `--report-dir` writes
   `<op>-<job-id>.report.{json,txt}`.
+- `pdf-to-md` accepts `--pages`, `--format md|txt|jsonl`, and
+  `--no-page-anchors`. Extracted text is always written to the explicit output
+  path as UTF-8; stdout remains report/diagnostic output.
 - `ldf web` refuses non-loopback binds without `--allow-nonlocal`, refuses
   them entirely under strict-offline, and translates Windows Ctrl+Break into
   the graceful shutdown path (exit 0, session lease released).
@@ -311,9 +331,10 @@ POST /api/jobs/{id}/cancel   terminate the contained worker tree
 DELETE /api/jobs/{id}        delete private files, forget the job
 ```
 
-Operations = the eleven shipped ones; allowed form fields per operation are
+Operations = the twelve worker-backed conversion operations; allowed form fields per operation are
 allowlisted (`_OPERATION_PARAMS`) — unknown/duplicate/out-of-range fields are
-422. Job states: `queued, running, success, failed, cancelled, timed_out,
+422. `pdf-to-md` honors `pages`, `format`, `page_anchors`, and `password`
+(`md`/true defaults). Job states: `queued, running, success, failed, cancelled, timed_out,
 crashed, limit_exceeded`.
 
 ### 12.3 Admission and transport
@@ -381,6 +402,11 @@ strict-offline, aliasing); anything parser-derived is genericized to
 "Document processing failed". Unexpected worker errors cross IPC only as
 generic `fatal` messages.
 
+For text extraction, the artifact — not stdout, report files, progress, or IPC
+— is the fidelity channel. Reports expose the bounded coverage schema and
+stable warning codes above. JSONL artifact records contain document text by
+design; conversion-report JSON never does.
+
 ## 14. Packaging and reproducibility
 
 Authoritative: `docs/PACKAGING.md`. In brief:
@@ -440,7 +466,7 @@ Authoritative: `docs/PACKAGING.md`. In brief:
 
 | Boundary | Status |
 |---|---|
-| Untrusted input handling | signature sniffing; syntax-damaged PDFs refused (no silent repair); limits everywhere; every output re-opened and render-checked before publication |
+| Untrusted input handling | signature sniffing; syntax-damaged PDFs refused (no silent repair); limits everywhere; PDFs reopen/render, images decode, and text artifacts pass strict UTF-8/provenance/schema validation before publication |
 | CLI execution | in-process engines, cooperative timeouts only |
 | API execution | one fresh spawned worker per job; Windows Job Object (kill-on-close, memory, CPU, process count) established before document bytes; verified-empty tree exit or fail-closed |
 | Filesystem | per-job private workspaces; atomic no-clobber publication; alias refusal; Windows path-form/reparse/device/ADS rejection; optional output jail |

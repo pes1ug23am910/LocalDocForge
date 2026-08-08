@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-08 (`pdf-to-images --preset llm` and the
-registry-derived agent brief on the Windows release-hardening baseline).
+Last updated: 2026-08-09 (S4 `pdf-to-md` text extraction and per-page inspect
+text counts; definitive Windows-AMD64 gate passed on the 545-outcome tree).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -404,6 +404,64 @@ result applies only to the recorded OS, architecture, and interpreter.
   `f2299b86791e6885a2775a1b4404e9bb80c5871cd17a744ee43f3d4f1efdb26a`.
   Retained `dist/` and `packaging-evidence/` records remained untouched.
 
+## Executed evidence — 2026-08-09 (`pdf-to-md` text extraction, S4)
+
+- S4 adds the engine-gated `pdf-to-markdown` capability using the already
+  shipped pypdfium2 5.12.1 / PDFium 152.0.7947.0 text and geometry APIs. The
+  library, CLI, and spawned-worker local API publish deterministic UTF-8
+  Markdown, plain text, or one-record-per-page JSONL; no new runtime dependency
+  was added. PyMuPDF and pymupdf4llm remain excluded because their AGPL license
+  exceeds the linked runtime ceiling.
+- Extraction streams selected occurrences one page at a time. It normalizes
+  Unicode to NFC and line endings to LF, preserves hyphen/line boundaries, and
+  performs no silent dehyphenation or bidi repair. Markdown headings and top-
+  to-bottom/left-to-right reading order are documented heuristics. Stable
+  warning codes cover pages without a text layer, inferred headings, uncertain
+  reading order (including columns/rotation/angled text/RTL), and conservatively
+  detected flattened tables.
+- Reports retain no extracted document text. They carry bounded aggregate
+  fidelity warnings plus coverage counts and compact per-page occurrence
+  records with character counts, text-layer state, and exact `warning_codes`.
+  `inspect` now exposes ordered per-page character/text-layer records and a
+  `text_coverage` summary so agents can choose text extraction or
+  `pdf-to-images --preset llm`.
+- Text candidates use operation-specific pre-publication validation: strict
+  UTF-8, required coverage fields, exact anchor cardinality for Markdown/plain
+  text, and exact-schema/count validation for JSONL. The standard private
+  workspace, resource limits, collision policy, atomic publication, cleanup,
+  and API worker isolation remain in force.
+- The sensitive-document release decision remains FAIL. S4 adds no dependency,
+  but it makes the already advisory-unknown PDFium build reachable through a
+  text-parser path as well as rendering; CLI parsing is still in-process and
+  the API worker remains a failure/resource boundary rather than an OS sandbox.
+- Final S4 verification collected 545 outcomes: 543 passed and two expected
+  platform skips in both the ordinary and Python blocked-network runs. The
+  exact-tree direct full suite passed in 75.2 seconds; the final focused
+  extraction/CLI/API/inspect/docs set passed 46 outcomes. Ruff reported `All
+  checks passed!`; mypy reported `Success: no issues found in 34 source files`
+  for native Windows, `--platform linux`, and `--platform darwin`; `pip check`,
+  lock drift, `git diff --check`, and generated SBOM/notices drift were clean.
+- A real `ldf.exe --json pdf-to-md` subprocess wrote a strict-UTF-8, NFC
+  Markdown artifact with its page anchor, returned `status=success` and
+  coverage, and put no text field in the report. This verifies that the known
+  non-ANSI Windows stdout issue is not being used as the text-fidelity channel.
+- The build-only manifest refresh passed in 32.935 seconds using disposable
+  system-temporary artifacts. The Windows-AMD64 package-source identity is
+  `a9ad99e5ba9ed3c59f8076334074bb1e377b5a93d64bafe5fe074673f546909d`;
+  the 124,962-byte wheel is
+  `f8f032b845f954d68ec5d194ca0c34f522b2ff722b425254adaad229c5331856`,
+  and the 111,797-byte sdist is
+  `43670e82a7f990a8c00f890dd77291605175b1bce99f9a6f17b755cb30b0b234`.
+  Both manifests contain `operations/text.py`.
+- The separate definitive verify-mode gate reproduced that identity without
+  updating it and passed end to end in 441.575 seconds on Windows-AMD64 CPython
+  3.14.4. All Base/Lite/Standard/Full source and wheel profiles plus the clean
+  Dev full suite passed. Fresh system-temporary evidence records
+  `release_manifest_verified: true`, `source_install_syntax_tested: true`, and
+  `full_tests.status: passed`; its SHA-256 is
+  `f7e2176deb9b7bef7e3049162455c27caeb0045b9a20eb931bc255bde487bdce`.
+  Retained `dist/` and `packaging-evidence/` remained untouched.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -507,8 +565,10 @@ against the source landed together, and the capability is engine-gated like
 every other. The 2026-08-08 convert-images slice followed the same golden
 path: iPhone HEIC/HEIF input (decode-only via pi-heif) for image conversion
 and images-to-pdf, with an `llm` preset producing AI-assistant-ready JPEGs
-and privacy-default GPS/EXIF stripping. Lossy compression presets, repair,
-OCR, Office/HTML/Markdown conversion, PDF/A/PDF/UA, editing/forms,
+and privacy-default GPS/EXIF stripping. Phase 3's core PDF text-extraction path
+now ships as `pdf-to-md`; semantic/table reconstruction remains future work.
+Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
+Markdown-to-PDF, PDF/A/PDF/UA, editing/forms,
 protection, secure redaction, signatures, compare, scanner/camera
 acquisition, and the React UI remain unavailable.
 
@@ -525,3 +585,8 @@ acquisition, and the React UI remain unavailable.
 - `compress` means lossless structural optimization until lossy presets exist;
   presets that would degrade images are refused, never silently approximated,
   and a candidate that renders differently from its source is never published.
+- `pdf-to-md` writes extracted content only to an explicit UTF-8 artifact.
+  Markdown page anchors are `<!-- ldf:page N -->`; TXT uses
+  `--- ldf:page N ---` or form-feed separators when anchors are disabled; JSONL
+  has one exact-schema record per selected occurrence. Reports carry coverage
+  statistics and warning codes, never the extracted text itself.

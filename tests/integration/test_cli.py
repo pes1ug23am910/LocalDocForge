@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 
 import pikepdf
@@ -16,6 +17,7 @@ import localdocforge.cli.main as cli_main
 from localdocforge.cli.main import (
     EXIT_COLLISION,
     EXIT_FAILED,
+    EXIT_NO_ENGINE,
     EXIT_USAGE,
     app,
 )
@@ -180,7 +182,15 @@ class TestVersionAndHelp:
     def test_help_lists_commands(self):
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        for command in ("merge", "split", "rotate", "doctor", "inspect", "agent-brief"):
+        for command in (
+            "merge",
+            "split",
+            "rotate",
+            "pdf-to-md",
+            "doctor",
+            "inspect",
+            "agent-brief",
+        ):
             assert command in result.output
         assert "--password-stdin" in result.output
         assert "LDF_PASSWORD" in result.output
@@ -351,9 +361,9 @@ class TestPasswordSources:
         original = cli_main.organize_ops.inspect_pdf
         observed: list[tuple[str | None, str | None]] = []
 
-        def observed_inspect(input_file, *, password=None):
+        def observed_inspect(input_file, *, password=None, settings=None):
             observed.append((os.environ.get("LDF_PASSWORD"), password))
-            return original(input_file, password=password)
+            return original(input_file, password=password, settings=settings)
 
         monkeypatch.setattr(cli_main.organize_ops, "inspect_pdf", observed_inspect)
         result = runner.invoke(
@@ -843,6 +853,111 @@ class TestImageCommands:
         assert "llm" in combined_output(result)
 
 
+class TestPdfToMdCommand:
+    def test_jsonl_selection_and_report_schema(self, fixtures_dir, out_dir):
+        output = out_dir / "selected.jsonl"
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "pdf-to-md",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(output),
+                "--pages",
+                "3,1",
+                "--format",
+                "jsonl",
+                "--no-page-anchors",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        report = json.loads(result.stdout)
+        assert report["status"] == "success"
+        assert report["details"]["format"] == "jsonl"
+        assert report["details"]["page_anchors"] is False
+        coverage = report["details"]["coverage"]
+        assert set(coverage) == {
+            "pages_total",
+            "pages_with_text",
+            "pages_with_text_layer",
+            "char_count_min",
+            "char_count_median",
+            "char_count_max",
+            "per_page",
+        }
+        assert [item["page"] for item in coverage["per_page"]] == [3, 1]
+        records = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
+        assert [record["page"] for record in records] == [3, 1]
+        assert all(
+            list(record) == ["page", "text", "char_count", "has_text_layer"]
+            for record in records
+        )
+
+    def test_unknown_format_is_usage_error(self, fixtures_dir, out_dir):
+        output = out_dir / "never.html"
+        result = runner.invoke(
+            app,
+            [
+                "pdf-to-md",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(output),
+                "--format",
+                "html",
+            ],
+        )
+
+        assert result.exit_code == EXIT_USAGE
+        assert "not supported" in combined_output(result)
+        assert not output.exists()
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="Exercises the real Windows process and console encoding boundary",
+    )
+    def test_windows_real_process_writes_unicode_as_utf8_nfc(
+        self, fixtures_dir, tmp_path
+    ):
+        environment = os.environ.copy()
+        environment.pop("LDF_PASSWORD", None)
+        environment["LDF_JOBS_ROOT"] = str(tmp_path / "jobs")
+        source_root = ROOT / "src"
+        prior_pythonpath = environment.get("PYTHONPATH")
+        environment["PYTHONPATH"] = (
+            str(source_root)
+            if not prior_pythonpath
+            else f"{source_root}{os.pathsep}{prior_pythonpath}"
+        )
+        output = tmp_path / "unicode.jsonl"
+        completed = subprocess.run(  # noqa: S603 - repository-owned CLI under test
+            [
+                sys.executable,
+                "-m",
+                "localdocforge.cli.main",
+                "--json",
+                "pdf-to-md",
+                str(fixtures_dir / "text-unicode.pdf"),
+                "-o",
+                str(output),
+                "--format",
+                "jsonl",
+            ],
+            cwd=ROOT,
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+
+        assert completed.returncode == 0, completed.stderr.decode(errors="replace")
+        decoded = output.read_bytes().decode("utf-8", errors="strict")
+        assert unicodedata.is_normalized("NFC", decoded)
+        assert "Café naïve Ångström" in json.loads(decoded)["text"]
+
+
 class TestConvertImagesCommand:
     def test_heic_glob_with_llm_preset(self, fixtures_dir, out_dir):
         pattern = str(fixtures_dir / "images" / "photo.heic")
@@ -933,6 +1048,45 @@ class TestInspectCommand:
         payload = json.loads(result.output)
         assert payload["page_count"] == 3
         assert payload["encrypted"] is False
+        assert [item["page"] for item in payload["page_text_stats"]] == [1, 2, 3]
+        assert all(
+            set(item) == {"page", "char_count", "has_text_layer"}
+            for item in payload["page_text_stats"]
+        )
+        assert all(item["has_text_layer"] is True for item in payload["page_text_stats"])
+        assert all(item["char_count"] > 0 for item in payload["page_text_stats"])
+        assert set(payload["text_coverage"]) == {
+            "pages_total",
+            "pages_with_text",
+            "pages_with_text_layer",
+            "char_count_min",
+            "char_count_median",
+            "char_count_max",
+        }
+        assert payload["text_coverage"]["pages_total"] == 3
+        assert payload["text_coverage"]["pages_with_text"] == 3
+        assert payload["text_coverage"]["pages_with_text_layer"] == 3
+        serialized = json.dumps(payload, ensure_ascii=False)
+        assert "MARKER-ALPHA-PAGE" not in serialized
+        assert "This is synthetic fixture text" not in serialized
+
+    def test_inspect_maps_missing_pdfium_to_no_engine(
+        self, fixtures_dir, monkeypatch
+    ):
+        registry = default_registry()
+        pdfium = registry.get("pdfium")
+        assert pdfium is not None
+        unavailable = pdfium.probe().model_copy(
+            update={"available": False, "install_hint": "install synthetic pdfium"}
+        )
+        monkeypatch.setattr(pdfium, "probe", lambda: unavailable)
+
+        result = runner.invoke(
+            app,
+            ["inspect", str(fixtures_dir / "simple-3page.pdf")],
+        )
+        assert result.exit_code == EXIT_NO_ENGINE
+        assert "synthetic pdfium" in result.stderr
 
 
 class TestReportDir:
