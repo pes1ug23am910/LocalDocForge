@@ -230,6 +230,33 @@ another fresh temporary dist directory and profile-evidence file. Both
 Dev checks, and `release_manifest_verified: true` passed. This keeps manifest
 drift an independent assertion.
 
+### 2026-08-08 S3 post-S2 integration manifest identity
+
+The registry-derived agent-brief slice was rebased onto the shipped S2
+PDF-to-images preset before merge review. Packaged inputs now contain both
+features, including the F1 integration update that advertises
+`pdf-to-images --preset llm` in the registry-keyed agent usage template and
+the merged 504-outcome inventory in the packaged README. A build-only
+`--update-artifact-manifest` run used a fresh system-temporary dist directory;
+it did not modify retained `dist/windows-11-x64/` or `packaging-evidence/`
+records.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `69354c7f9bb4d092661f0b29430de563362b3abfba34b4282f548aa49455a28a` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `a6831020d1e60321af4626b654d6739b17d616fc0eb4b4a9698d354bdca6c47a` | 112,760 |
+| `localdocforge-0.1.0.tar.gz` | `3ed23059b2ff8e503ade9dfb2d416c2f95049f75007cb486f7bfe349f0f3b1e9` | 100,287 |
+
+The fresh build-only run passed reproducible wheel/sdist construction, Twine,
+member/metadata checks, and sdist-to-wheel equivalence in 29.3 seconds. A
+separate definitive verify-mode full gate then reproduced this identity without
+updating it and passed in 331.7 seconds on Windows-AMD64 CPython 3.14.4. Both
+ordinary and blocked-network 504-outcome suites, locks, Ruff, three-platform
+mypy, generated-artifact drift, reproducible builds, all four source/wheel
+profiles, and the clean Dev full-suite passed; profile evidence records
+`full_tests.status: passed`, `release_manifest_verified: true`, and SHA-256
+`f2299b86791e6885a2775a1b4404e9bb80c5871cd17a744ee43f3d4f1efdb26a`.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source

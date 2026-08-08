@@ -27,9 +27,10 @@ ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] 
   paths, and non-loopback web serving. `LDF_STRICT_OFFLINE=true` is preserved
   when the flag is omitted. This is application enforcement, not an OS
   firewall; ordinary-looking POSIX network mounts cannot be distinguished.
-- `--report-dir DIR` — additionally write
+- `--report-dir DIR` — for conversion commands, additionally write
   `<operation>-<job-id>.report.json` and `.txt`. In strict mode this must be a
-  recognized local path.
+  recognized local path. Read-only metadata commands such as `agent-brief` do
+  not create report files.
 
 ## Exit codes
 
@@ -64,6 +65,8 @@ real page count before page processing.
 ```powershell
 ldf doctor                      # engines + capability list
 ldf --json doctor               # machine-readable diagnostics
+ldf agent-brief                 # registry-derived Markdown for coding agents
+ldf --json agent-brief          # the same ordered snapshot as structured JSON
 ldf inspect input.pdf           # read-only structural inventory
 ldf --strict-offline web        # API + status shell on http://127.0.0.1:8477
 ldf web --port 9000             # loopback on another port
@@ -95,6 +98,51 @@ ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-rea
 ldf convert-images scan.heic -d out/ --format png --keep-metadata
 ldf convert-images big.png -d out/ --max-dimension 1024
 ```
+
+### Registry-derived agent brief
+
+`ldf agent-brief` prints compact Markdown on stdout. Put the global option
+before the command (`ldf --json agent-brief`) to receive one structured JSON
+document containing the same snapshot. `--quiet` does not suppress the brief,
+and `--report-dir` does not create files for it.
+
+Command selection and ordering come from `CAPABILITY_SPECS`, not from a static
+command list: every `implemented=True` capability receives a one-line usage
+template and appears in registry order. One live
+`EngineRegistry.capabilities()` probe supplies its current `available`, engine,
+and missing-requirement state. Implemented commands remain visible but are
+clearly marked unavailable when their live engine probe fails; a capability
+with `implemented=False` cannot render at all. Template coverage is checked
+before stdout is emitted, so a future capability flip without a usage entry
+fails loudly instead of producing partial guidance.
+
+The brief also carries the stable exit-code table; five agent gotchas covering
+encrypted inputs, collision policy, glob expansion, warning arrays, and output
+fitness; and the structured `verify` -> `fallback` -> `review` workflow.
+`warnings[]` is agent shorthand: current conversion reports expose the exact
+`security_warnings[]` and `fidelity_warnings[]` arrays, whose entries contain
+stable `code` values.
+
+The feedback section resolves and prints the existing absolute path to
+`docs/AGENT_FEEDBACK.md` plus its rules: append only; an entry is required for
+failed or unsatisfactory output and whenever the agent falls back; a one-line
+smooth-success entry is optional; no other repository file may be changed
+unless the user explicitly commissioned development work;
+and entries must describe documents generically without sensitive paths or
+document text.
+
+The writable feedback log is intentionally not copied into wheels. Therefore a
+standalone wheel or direct VCS install with no discoverable source checkout
+exits 1 before writing stdout instead of inventing a feedback path. Run
+`agent-brief` from a LocalDocForge source checkout (the repository-local
+environment is supported); the checkout may still be discovered after changing
+to another working directory.
+
+`agent-brief` is read-only and stdout-only on success. It opens no document,
+creates no job/report/output directory, does not consume `--password-stdin`,
+and bypasses stale-workspace cleanup. Its only engine interaction is the same
+normal live capability-probe path used by `doctor`; it performs no conversion
+and has no local API job endpoint.
 
 Notes:
 
