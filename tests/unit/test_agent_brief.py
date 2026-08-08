@@ -78,6 +78,7 @@ def test_usage_templates_exactly_cover_implemented_specs() -> None:
     for usage in USAGE_BY_CAPABILITY_ID.values():
         assert usage.startswith("ldf ")
         assert "\n" not in usage and "\r" not in usage
+    assert "--preset llm" in USAGE_BY_CAPABILITY_ID["pdf-to-images"]
 
 
 def test_brief_uses_spec_order_one_probe_and_keeps_unavailable_implemented() -> None:

@@ -339,7 +339,7 @@ result applies only to the recorded OS, architecture, and interpreter.
   retained `dist/` and `packaging-evidence/` records remained unchanged and
   are not claimed as S2 evidence.
 
-## Executed evidence — 2026-08-08 (registry-derived agent brief, S3)
+## Executed evidence — 2026-08-08 (registry-derived agent brief, S3 pre-rebase)
 
 - `ldf agent-brief` now builds one immutable Markdown/JSON snapshot by
   iterating `CAPABILITY_SPECS` in registry order and joining exactly one live
@@ -373,6 +373,36 @@ result applies only to the recorded OS, architecture, and interpreter.
   profile-evidence SHA-256 is
   `83758a01cf851eee80f7d5597ae638e0e91aff74052076a6568f8d630cbfa878`.
   Protected retained evidence and archived dist checkpoints were unchanged.
+
+## Executed evidence — 2026-08-08 (S3 integration onto shipped S2)
+
+- S3 rebased onto `main` `6b8f40b` after S2 merged as `6481fb7`. Shared CLI,
+  test, and documentation surfaces retain both features; main's S1/S2 DONE
+  ledger rows and full audit trail remain intact, while S3 remains IN-REVIEW
+  for a pending independent verification.
+- Review nit F1 is addressed: the registry-keyed `pdf-to-images` usage
+  template now includes `[--preset llm]`, with the existing template-coverage
+  test extended in place. Explicit numeric collection confirms exactly 504
+  merged outcomes (502 passed and two expected skips in the pre-refresh full
+  suite); the focused agent-brief/CLI/documentation set passed 35 outcomes,
+  and Ruff, mypy, and generated-artifact drift checks passed.
+- A fresh build-only manifest update produced combined package-source identity
+  `69354c7f9bb4d092661f0b29430de563362b3abfba34b4282f548aa49455a28a`,
+  wheel `a6831020d1e60321af4626b654d6739b17d616fc0eb4b4a9698d354bdca6c47a`
+  (112,760 bytes), and sdist
+  `3ed23059b2ff8e503ade9dfb2d416c2f95049f75007cb486f7bfe349f0f3b1e9`
+  (100,287 bytes). The build used only a fresh system-temp dist; retained
+  `dist/` and `packaging-evidence/` records remain historical and untouched.
+- The separate definitive verify-mode full gate reproduced that identity
+  without updating and passed in 331.7 seconds on Windows-AMD64 CPython 3.14.4.
+  It passed locks, Ruff, Windows/Linux/macOS mypy modes, generated-artifact
+  drift, ordinary and blocked-network 504-outcome suites, reproducible builds,
+  Twine, sdist-to-wheel equivalence, all Base/Lite/Standard/Full source/wheel
+  profiles, and the clean Dev full-suite. Fresh profile evidence records
+  `full_tests.status: passed`, `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, and SHA-256
+  `f2299b86791e6885a2775a1b4404e9bb80c5871cd17a744ee43f3d4f1efdb26a`.
+  Retained `dist/` and `packaging-evidence/` records remained untouched.
 
 ## Implemented hardening
 
