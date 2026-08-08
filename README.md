@@ -53,7 +53,7 @@ source before anything was published.*
 | Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
-Everything above is covered by the repository's test suite (463 tests) and a
+Everything above is covered by the repository's test suite (464 tests) and a
 full release gate. OCR, Office conversion, lossy compression presets,
 redaction, signatures, and the rest of the roadmap are **not implemented
 yet** and are honestly reported as unavailable by `ldf doctor` — see
@@ -199,7 +199,7 @@ subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
 
 ```powershell
 pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
-.venv\Scripts\python.exe -m pytest tests -q    # 463 tests
+.venv\Scripts\python.exe -m pytest tests -q    # 464 tests
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```

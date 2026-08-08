@@ -171,29 +171,39 @@ the full gate.)
 
 ### 2026-08-08 S1 manifest identity
 
-The non-interactive-password slice intentionally changed packaged sources and
-refreshed the `Windows-AMD64` comparison identity only after the complete gate
-passed. Its gate used fresh temporary dist, checksum, and profile-evidence
-paths because the multi-model execution plan protects retained evidence from
-executor writes. Consequently, the live manifest below is authoritative for
-S1 drift checks, while `dist/windows-11-x64/` and
+The non-interactive-password slice and its review remediation intentionally
+changed packaged sources. Every gate used fresh temporary dist, checksum, and
+profile-evidence paths because the multi-model execution plan protects retained
+evidence from executor writes. Consequently, the live manifest below is the
+authoritative identity for the remediated S1 drift checks, while
+`dist/windows-11-x64/` and
 `packaging-evidence/windows-11-x64-SHA256SUMS.txt` remain honest historical
 2026-08-03 records and are not claimed as S1 artifacts.
 
 | Identity | SHA-256 | Bytes |
 |---|---|---:|
-| package source inputs | `227d7f77114ad8d01df92896f537632984043230c00f4fe11d1f6501b0b6a035` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `0ffdc9f62f31b6c8cd0c3cf04d5ed99f12d272b178e52965c5acf2806c86e937` | 104,211 |
-| `localdocforge-0.1.0.tar.gz` | `b6177813982649c31b5886e5cc35bdfb487a904eefa785a62390aaa89954339f` | 92,452 |
+| package source inputs | `d4b78a0b520f029eb94f6aba4e7ecdc1fc9dc2f4ffa625a9b12ea692ce34ff86` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `7f3e6689ece12b7eba18ec6ec20d7546f49ad67cb4ae3af5bac1c54a7d934476` | 104,614 |
+| `localdocforge-0.1.0.tar.gz` | `f7ad3852530f1ff6ca6d1f701ddaadf94fb2775d4aa5f97f403474aee53c978d` | 92,911 |
 
 The first full S1 refresh passed on Windows-AMD64 CPython 3.14.4 with 460
-collected outcomes, two expected skips, all clean install profiles, and
-`release_manifest_verified: true`. After the packaged README count and two
-independent-review findings were corrected, the definitive refresh repeated
-the complete gate on the final 463-outcome tree in 339.2 seconds. It again
-passed both full-suite modes, reproducible/Twine/sdist equivalence checks, all
-clean install profiles, and manifest verification; the table is that final
-identity.
+collected outcomes. After the packaged README count and two internal-review
+findings were corrected, the pre-review refresh repeated the complete gate on
+the 463-outcome tree in 339.2 seconds. The required cross-family review then
+found that the Windows NUL device was misclassified as interactive. The F1
+remediation adds a real `stdin=subprocess.DEVNULL` regression, bringing the
+tree to 464 outcomes.
+
+The first remediation-gate attempt passed the ordinary and blocked-environment
+suites, quality, reproducible/Twine/sdist-equivalence checks, and the installed
+Base/Lite/Standard/Full profile checks. It refreshed the table above, then the
+final Dev full-suite correctly rejected this document's still-previous hashes.
+This ordering failure left the protected artifacts untouched and required a
+definitive complete-gate rerun after synchronizing the documented identity.
+That rerun passed end to end in 341.1 seconds on Windows-AMD64 CPython 3.14.4:
+both 464-outcome suite modes, all quality and build checks, every clean install
+profile, the fresh Dev full-suite, and `release_manifest_verified: true`. The
+table is that reproducibly verified final identity.
 
 ## Clean profile/full-test matrices
 

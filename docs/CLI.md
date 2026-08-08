@@ -101,11 +101,16 @@ Notes:
 - Encrypted CLI-input precedence is global `--password-stdin` (before the
   command) → `LDF_PASSWORD` → hidden interactive prompt (TTY only). A non-TTY
   invocation with no supplied password exits 2 and names both non-interactive
-  mechanisms. The password value is never accepted in argv or written to
-  stdout, stderr, reports, or logs. One password is tried for every encrypted
-  input in an invocation; inputs requiring different passwords fail at the
-  first mismatch. Successful output is not re-encrypted and carries a critical
-  `input-encryption-removed` warning.
+  mechanisms. On Windows, only a stdin handle accepted by `GetConsoleMode` is
+  interactive; character devices such as NUL are non-interactive. Environment
+  presence is significant: `LDF_PASSWORD=` supplies the empty password (which
+  can unlock a PDF whose user password is empty) and a mismatch exits 1 rather
+  than falling through to the prompt. Unset the variable to select the
+  missing-credential or hidden-prompt path. The password value is never
+  accepted in argv or written to stdout, stderr, reports, or logs. One password
+  is tried for every encrypted input in an invocation; inputs requiring
+  different passwords fail at the first mismatch. Successful output is not
+  re-encrypted and carries a critical `input-encryption-removed` warning.
 - `--page-size` accepts `A4`, `Letter`, `Legal`, `image`, or `WxH` with optional
   `pt|mm|cm|in` (default `mm`), such as `210x297mm`.
 - Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and

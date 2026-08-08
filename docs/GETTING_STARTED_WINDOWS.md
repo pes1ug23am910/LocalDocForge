@@ -158,6 +158,10 @@ Outputs are **not** re-encrypted; every such conversion emits a critical
 `input-encryption-removed` warning. (There is no protect/unlock operation yet.)
 For interactive terminal entry, omit `--password-stdin` so the fallback prompt
 hides input; the explicit flag always performs its documented raw line read.
+Windows NUL, redirected files, and pipes are non-interactive even though some
+runtimes label NUL a character device. An exported empty `LDF_PASSWORD` is an
+explicit empty credential, not an absent source; remove the variable when you
+want missing-password guidance or the hidden console prompt.
 
 ## 4. Behaviors worth knowing before you rely on them
 

@@ -119,6 +119,8 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     assert "[--password-stdin]" in cli
     assert "--password-stdin" in cli
     assert "LDF_PASSWORD" in cli
+    assert "LDF_PASSWORD=" in cli
+    assert "supplies the empty password" in cli_flat
     assert "One password is tried for every encrypted input" in cli_flat
     precedence_start = cli_flat.index("Encrypted CLI-input precedence")
     precedence = cli_flat[precedence_start : precedence_start + 500]
@@ -128,11 +130,12 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "--password-stdin" in readme
     assert "LDF_PASSWORD" in readme
-    assert "test suite (463 tests)" in readme
+    assert "test suite (464 tests)" in readme
 
     threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
     assert "strict-UTF-8 line" in threat
     assert "environment-secret exposure" in threat
+    assert "empty `LDF_PASSWORD` suppresses prompt fallback" in threat
 
     feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
     assert "test_cli.py::TestPasswordSources" in feature
@@ -150,12 +153,15 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     active_docs = "\n".join((cli, readme, threat, feature, technical, getting_started))
     assert "passwords prompt-only" not in active_docs
     assert "never in argv/env/reports" not in active_docs
-    architecture_flat = " ".join(architecture.split())
-    assert "missing credentials in a non-TTY invocation map to usage exit 2" in architecture_flat
+    architecture_flat = " ".join(architecture.split()).lower()
+    assert (
+        "missing credentials in a non-interactive invocation map to usage exit 2"
+        in architecture_flat
+    )
 
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "non-interactive PDF passwords, S1" in status
-    assert "463 outcomes: 461 passed and two expected" in status
+    assert "464 outcomes: 462 passed and two expected" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging

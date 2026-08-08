@@ -119,8 +119,49 @@ def _password_value() -> str | None:
     return _configured_password()[0]
 
 
+def _windows_file_descriptor_is_console(file_descriptor: int) -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+
+        handle = msvcrt.get_osfhandle(file_descriptor)
+        if handle == -1:
+            return False
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.GetConsoleMode.argtypes = (
+            wintypes.HANDLE,
+            ctypes.POINTER(wintypes.DWORD),
+        )
+        kernel32.GetConsoleMode.restype = wintypes.BOOL
+        mode = wintypes.DWORD()
+        return bool(
+            kernel32.GetConsoleMode(
+                wintypes.HANDLE(handle),
+                ctypes.byref(mode),
+            )
+        )
+    except (AttributeError, OSError, OverflowError, TypeError, ValueError):
+        # Fail closed: pipes, files, NUL, missing handles, and probe failures
+        # must never enter a hidden prompt that no caller can answer.
+        return False
+
+
 def _stdin_is_tty() -> bool:
-    return sys.stdin.isatty()
+    try:
+        if not sys.stdin.isatty():
+            return False
+    except (AttributeError, OSError, ValueError):
+        return False
+    if sys.platform != "win32":
+        return True
+    try:
+        file_descriptor = sys.stdin.fileno()
+    except (AttributeError, OSError, ValueError):
+        return False
+    return _windows_file_descriptor_is_console(file_descriptor)
 
 
 def _missing_noninteractive_password() -> NoReturn:
@@ -227,13 +268,12 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
     try:
         report = operation_fn(*args, **kwargs)
     except organize_ops.EncryptedInputError as exc:
-        if password_retry:
+        options = kwargs.get("options")
+        if password_retry and options is not None and hasattr(options, "password"):
             password = _password_retry_value(exc)
-            options = kwargs.get("options")
-            if options is not None and hasattr(options, "password"):
-                options.password = password
-                _run(operation_fn, *args, password_retry=False, **kwargs)
-                return
+            options.password = password
+            _run(operation_fn, *args, password_retry=False, **kwargs)
+            return
         _fail_one_password(exc)
     except EngineUnavailableError as exc:
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
