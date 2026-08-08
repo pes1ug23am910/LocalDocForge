@@ -322,16 +322,127 @@ def images_to_pdf(
     )
 
 
-@dataclass
+#: Presets fill only image options the caller left unset. ``llm`` targets
+#: AI-assistant ingestion: JPEG keeps outputs small, quality 85 is visually
+#: clean, and 1568 px on the long edge avoids assistant-side downscaling.
+#: pdf-to-images and convert-images deliberately share this single mapping.
+CONVERT_PRESETS: dict[str, dict[str, Any]] = {
+    "llm": {"image_format": "jpeg", "quality": 85, "max_dimension": 1568},
+}
+
+
+class _ImplicitOptionString(str):
+    """String default whose identity records that the caller omitted it."""
+
+
+class _ImplicitOptionInteger(int):
+    """Integer default whose identity records that the caller omitted it."""
+
+
+_PDF_DEFAULT_IMAGE_FORMAT = _ImplicitOptionString("png")
+_PDF_DEFAULT_DPI = _ImplicitOptionInteger(150)
+_PDF_DEFAULT_QUALITY = _ImplicitOptionInteger(90)
+
+_PDF_TO_IMAGES_DEFAULTS: dict[str, Any] = {
+    "image_format": str(_PDF_DEFAULT_IMAGE_FORMAT),
+    "quality": int(_PDF_DEFAULT_QUALITY),
+    "dpi": int(_PDF_DEFAULT_DPI),
+    "max_dimension": None,
+}
+
+_CONVERT_DEFAULTS: dict[str, Any] = {
+    "image_format": "jpeg",
+    "quality": 90,
+    "max_dimension": None,
+}
+
+
+def _resolve_image_preset(
+    defaults: dict[str, Any],
+    preset: str | None,
+    explicit: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge explicit values over a shared image preset over defaults."""
+    if preset is not None and preset not in CONVERT_PRESETS:
+        available = ", ".join(sorted(CONVERT_PRESETS))
+        raise PipelineError(f"Unknown preset {preset!r}; available presets: {available}")
+    resolved = dict(defaults)
+    if preset is not None:
+        resolved.update(CONVERT_PRESETS[preset])
+    resolved.update({key: value for key, value in explicit.items() if value is not None})
+    return resolved
+
+
+@dataclass(eq=False)
 class PdfToImagesOptions:
-    image_format: str = "png"  # png | jpeg | webp | tiff
-    dpi: int = 150
+    #: Marker-typed values preserve the original public defaults while
+    #: allowing preset resolution to distinguish omitted from explicit flags.
+    image_format: str = _PDF_DEFAULT_IMAGE_FORMAT  # png | jpeg | webp | tiff
+    dpi: int = _PDF_DEFAULT_DPI
     pages: PageRange | None = None
-    jpeg_quality: int = 90
+    jpeg_quality: int = _PDF_DEFAULT_QUALITY
     collision: CollisionPolicy | None = None
     settings: Settings | None = None
     progress: ProgressCallback | None = None
     password: str | None = None
+    preset: str | None = None
+
+    def _semantic_comparison_key(self) -> tuple[object, ...]:
+        """Match dataclass equality while preserving preset explicitness."""
+        preset_sensitive = self.preset is not None
+        return (
+            self.image_format,
+            preset_sensitive
+            and isinstance(self.image_format, _ImplicitOptionString),
+            self.dpi,
+            preset_sensitive and isinstance(self.dpi, _ImplicitOptionInteger),
+            self.pages,
+            self.jpeg_quality,
+            preset_sensitive
+            and isinstance(self.jpeg_quality, _ImplicitOptionInteger),
+            self.collision,
+            self.settings,
+            self.progress,
+            self.password,
+            self.preset,
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        assert isinstance(other, PdfToImagesOptions)
+        return self._semantic_comparison_key() == other._semantic_comparison_key()
+
+
+def resolve_pdf_to_images_options(options: PdfToImagesOptions) -> dict[str, Any]:
+    """Resolve PDF render options with explicit DPI disabling the preset cap."""
+    resolved = _resolve_image_preset(
+        _PDF_TO_IMAGES_DEFAULTS,
+        options.preset,
+        {
+            "image_format": (
+                None
+                if isinstance(options.image_format, _ImplicitOptionString)
+                else options.image_format
+            ),
+            "quality": (
+                None
+                if isinstance(options.jpeg_quality, _ImplicitOptionInteger)
+                else options.jpeg_quality
+            ),
+            "dpi": (
+                None
+                if isinstance(options.dpi, _ImplicitOptionInteger)
+                else options.dpi
+            ),
+        },
+    )
+    if not isinstance(options.dpi, _ImplicitOptionInteger):
+        # The CLI/API contract says explicit --dpi outranks the preset's
+        # per-page pixel target. Format and quality remain independently
+        # inherited unless their own explicit options are supplied.
+        resolved["max_dimension"] = None
+    return resolved
 
 
 _FORMAT_INFO = {
@@ -346,6 +457,46 @@ _FORMAT_INFO = {
 OUTPUT_IMAGE_FORMATS = tuple(_FORMAT_INFO)
 
 
+def _pdf_render_geometry(
+    width_pt: float,
+    height_pt: float,
+    *,
+    dpi: int,
+    max_dimension: int | None,
+) -> tuple[float, int, int, bool]:
+    """Return cap-safe PDFium scale, ceil dimensions, and whether capped."""
+    if not (
+        math.isfinite(width_pt)
+        and math.isfinite(height_pt)
+        and width_pt > 0
+        and height_pt > 0
+    ):
+        raise PipelineError("PDF page dimensions must be finite and positive")
+
+    scale = dpi / 72.0
+
+    def dimensions(at_scale: float) -> tuple[int, int]:
+        # pypdfium2's PdfPage.render() allocates with these exact ceil rules.
+        return (
+            max(1, math.ceil(width_pt * at_scale)),
+            max(1, math.ceil(height_pt * at_scale)),
+        )
+
+    width_px, height_px = dimensions(scale)
+    if max_dimension is None or max(width_px, height_px) <= max_dimension:
+        return scale, width_px, height_px, False
+
+    scale = min(scale, max_dimension / max(width_pt, height_pt))
+    width_px, height_px = dimensions(scale)
+    # Floating-point division can land one ULP above the mathematical ratio
+    # (e.g. 1568.0000000000002), which PDFium would ceil to 1569. Walk toward
+    # zero until our preflight and PDFium's allocation both honor the cap.
+    while max(width_px, height_px) > max_dimension:
+        scale = math.nextafter(scale, 0.0)
+        width_px, height_px = dimensions(scale)
+    return scale, width_px, height_px, True
+
+
 def pdf_to_images(
     input_path: Path,
     output_dir: Path,
@@ -353,16 +504,25 @@ def pdf_to_images(
     options: PdfToImagesOptions | None = None,
 ) -> ConversionReport:
     options = options or PdfToImagesOptions()
-    format_key = options.image_format.lower()
+    resolved = resolve_pdf_to_images_options(options)
+    format_key = str(resolved["image_format"]).lower()
     if format_key not in _FORMAT_INFO:
         raise PipelineError(
-            f"Unsupported image format {options.image_format!r}; use png, jpeg, webp, or tiff"
+            f"Unsupported image format {resolved['image_format']!r}; "
+            "use png, jpeg, webp, or tiff"
         )
     pil_format, media_type, extension = _FORMAT_INFO[format_key]
-    if not 18 <= options.dpi <= 1200:
+    dpi = int(resolved["dpi"])
+    quality = int(resolved["quality"])
+    max_dimension = resolved["max_dimension"]
+    if max_dimension is not None:
+        max_dimension = int(max_dimension)
+    if not 18 <= dpi <= 1200:
         raise PipelineError("DPI must be between 18 and 1200")
-    if not 1 <= options.jpeg_quality <= 100:
+    if not 1 <= quality <= 100:
         raise PipelineError("Image quality must be between 1 and 100")
+    if max_dimension is not None and not 16 <= max_dimension <= 30000:
+        raise PipelineError("Preset max dimension must be between 16 and 30000 pixels")
 
     registry = default_registry()
     engine = registry.engine_for(OP_PDF_TO_IMAGES)
@@ -372,6 +532,7 @@ def pdf_to_images(
     def execute(context: JobContext, artifacts: list[InputArtifact]) -> ExecuteResult:
         import pypdfium2 as pdfium
 
+        fidelity: list[FidelityWarning] = []
         security: list[SecurityWarning] = []
         with _open_pdf(artifacts[0].path, options.password) as parsed:
             encrypted = parsed.is_encrypted
@@ -402,49 +563,80 @@ def pdf_to_images(
                     f"{page_limit}"
                 )
             candidates: list[CandidateOutput] = []
+            dimensions: list[dict[str, object]] = []
             page_occurrences: dict[int, int] = {}
             decompressed_bytes = 0
             output_bytes = 0
+            capped_pages = 0
             for order, page_number in enumerate(selection):
                 context.emit(
                     "render", current=order, total=len(selection), message=f"page {page_number}"
                 )
                 page = pdf[page_number - 1]
                 bitmap = None
+                image = None
                 try:
                     width_pt, height_pt = page.get_size()
-                    pixel_count = max(1, round(width_pt * options.dpi / 72.0)) * max(
-                        1, round(height_pt * options.dpi / 72.0)
+                    scale, predicted_width, predicted_height, capped = (
+                        _pdf_render_geometry(
+                            width_pt,
+                            height_pt,
+                            dpi=dpi,
+                            max_dimension=max_dimension,
+                        )
                     )
+                    pixel_count = predicted_width * predicted_height
                     pixel_limit = context.limits.max_image_pixels
                     if pixel_limit is not None and pixel_count > pixel_limit:
                         raise PipelineError(
                             f"Rendered page {page_number} would contain {pixel_count:,} pixels, "
                             f"over the configured limit of {pixel_limit:,}"
                         )
-                    bitmap = page.render(scale=options.dpi / 72.0)
+                    bitmap = page.render(scale=scale)
                     image = bitmap.to_pil()
+                    actual_width, actual_height = image.size
+                    actual_pixels = actual_width * actual_height
+                    if pixel_limit is not None and actual_pixels > pixel_limit:
+                        raise PipelineError(
+                            f"Rendered page {page_number} contains {actual_pixels:,} pixels, "
+                            f"over the configured limit of {pixel_limit:,}"
+                        )
+                    if (
+                        max_dimension is not None
+                        and max(actual_width, actual_height) > max_dimension
+                    ):
+                        raise PipelineError(
+                            f"Rendered page {page_number} exceeded the preset's "
+                            f"{max_dimension}-pixel long-edge limit"
+                        )
                 except BaseException:
+                    if image is not None:
+                        image.close()
                     if bitmap is not None:
                         bitmap.close()
                     raise
                 finally:
                     page.close()
+                assert image is not None
                 occurrence = page_occurrences.get(page_number, 0) + 1
                 page_occurrences[page_number] = occurrence
                 repeat = "" if occurrence == 1 else f"-repeat-{occurrence:03d}"
                 name = f"{stem}-page-{page_number:03d}{repeat}{extension}"
                 staging = context.workspace / name
-                save_kwargs: dict[str, object] = {"format": pil_format}
-                if pil_format == "JPEG":
-                    image = image.convert("RGB")
-                    save_kwargs["quality"] = options.jpeg_quality
-                    save_kwargs["dpi"] = (options.dpi, options.dpi)
-                elif pil_format == "WEBP":
-                    save_kwargs["quality"] = options.jpeg_quality
-                elif pil_format in ("PNG", "TIFF"):
-                    save_kwargs["dpi"] = (options.dpi, options.dpi)
+                effective_dpi = scale * 72.0
                 try:
+                    save_kwargs: dict[str, object] = {"format": pil_format}
+                    if pil_format == "JPEG":
+                        converted = image.convert("RGB")
+                        image.close()
+                        image = converted
+                        save_kwargs["quality"] = quality
+                        save_kwargs["dpi"] = (effective_dpi, effective_dpi)
+                    elif pil_format == "WEBP":
+                        save_kwargs["quality"] = quality
+                    elif pil_format in ("PNG", "TIFF"):
+                        save_kwargs["dpi"] = (effective_dpi, effective_dpi)
+                    actual_width, actual_height = image.size
                     decompressed_bytes += image.width * image.height * len(image.getbands())
                     byte_limit = context.limits.max_decompressed_bytes
                     if byte_limit is not None and decompressed_bytes > byte_limit:
@@ -471,15 +663,45 @@ def pdf_to_images(
                         media_type=media_type,
                     )
                 )
+                if capped:
+                    capped_pages += 1
+                dimensions.append(
+                    {
+                        "page": page_number,
+                        "occurrence": occurrence,
+                        "output_index": order,
+                        "width": actual_width,
+                        "height": actual_height,
+                        "effective_dpi": round(effective_dpi, 6),
+                    }
+                )
         finally:
             pdf.close()
+        if capped_pages:
+            fidelity.append(
+                FidelityWarning(
+                    code="image-downscaled",
+                    message=(
+                        f"{capped_pages} rendered page(s) were limited to at most "
+                        f"{max_dimension} px on the long edge by preset {options.preset!r}"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
         return ExecuteResult(
             candidates=candidates,
+            fidelity_warnings=fidelity,
             security_warnings=security,
             details={
-                "dpi": options.dpi,
+                "dpi": dpi,
                 "format": format_key,
-                "jpeg_quality": options.jpeg_quality,
+                "quality": quality if pil_format in ("JPEG", "WEBP") else None,
+                "configured_quality": quality,
+                "jpeg_quality": quality,
+                "preset": options.preset,
+                "max_dimension": max_dimension,
+                "dpi_mode": "per-page-cap" if max_dimension is not None else "fixed",
+                "dimensions": dimensions,
                 "pages_rendered": len(candidates),
             },
             output_page_count=len(candidates),
@@ -495,21 +717,6 @@ def pdf_to_images(
         settings=options.settings,
         progress=options.progress,
     )
-
-
-#: Presets fill only the convert-images options the caller left unset.
-#: ``llm`` targets compatible AI-image ingestion: JPEG keeps
-#: photo outputs small, quality 85 is visually clean, and 1568 px on the long
-#: edge is the largest size no current assistant downscales before reading.
-CONVERT_PRESETS: dict[str, dict[str, Any]] = {
-    "llm": {"image_format": "jpeg", "quality": 85, "max_dimension": 1568},
-}
-
-_CONVERT_DEFAULTS: dict[str, Any] = {
-    "image_format": "jpeg",
-    "quality": 90,
-    "max_dimension": None,
-}
 
 
 @dataclass
@@ -528,19 +735,15 @@ class ConvertImagesOptions:
 
 def resolve_convert_options(options: ConvertImagesOptions) -> dict[str, Any]:
     """Merge explicit values over the preset over the defaults."""
-    if options.preset is not None and options.preset not in CONVERT_PRESETS:
-        available = ", ".join(sorted(CONVERT_PRESETS))
-        raise PipelineError(
-            f"Unknown preset {options.preset!r}; available presets: {available}"
-        )
-    resolved = dict(_CONVERT_DEFAULTS)
-    if options.preset is not None:
-        resolved.update(CONVERT_PRESETS[options.preset])
-    for key in ("image_format", "quality", "max_dimension"):
-        value = getattr(options, key)
-        if value is not None:
-            resolved[key] = value
-    return resolved
+    return _resolve_image_preset(
+        _CONVERT_DEFAULTS,
+        options.preset,
+        {
+            "image_format": options.image_format,
+            "quality": options.quality,
+            "max_dimension": options.max_dimension,
+        },
+    )
 
 
 def _profile_is_srgb(icc_bytes: bytes) -> bool:

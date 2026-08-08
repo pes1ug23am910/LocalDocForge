@@ -695,6 +695,46 @@ class TestImageCommands:
         assert result.exit_code == 0, result.output
         assert len(list(out_dir.glob("*.jpg"))) == 1
 
+    def test_pdf_to_images_llm_preset_json_report(self, fixtures_dir, out_dir):
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "pdf-to-images",
+                str(fixtures_dir / "mixed-sizes.pdf"),
+                "-d",
+                str(out_dir),
+                "--preset",
+                "llm",
+                "--pages",
+                "1",
+            ],
+        )
+        assert result.exit_code == 0, combined_output(result)
+        payload = json.loads(result.stdout)
+        assert payload["details"]["format"] == "jpeg"
+        assert payload["details"]["quality"] == 85
+        assert payload["details"]["max_dimension"] == 1568
+        assert payload["details"]["dimensions"][0]["height"] == 1568
+        assert len(list(out_dir.glob("*.jpg"))) == 1
+
+    def test_pdf_to_images_unknown_preset_is_usage_error(
+        self, fixtures_dir, out_dir
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "pdf-to-images",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-d",
+                str(out_dir),
+                "--preset",
+                "tiny",
+            ],
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert "llm" in combined_output(result)
+
 
 class TestConvertImagesCommand:
     def test_heic_glob_with_llm_preset(self, fixtures_dir, out_dir):

@@ -102,6 +102,15 @@ def make_mixed_sizes(directory: Path) -> None:
     )
 
 
+def make_fractional_size(directory: Path) -> None:
+    """Page geometry that exposes ceil-at-cap floating-point regressions."""
+    _make_text_pdf(
+        directory / "fractional-size.pdf",
+        [("Fractional Page", _body("fractional page"))],
+        page_size=(100.0, 752.64111328125),
+    )
+
+
 def make_rotated(directory: Path) -> None:
     import pikepdf
 
@@ -243,7 +252,7 @@ def make_unicode_name(directory: Path) -> None:
     )
 
 
-FIXTURES_VERSION = "fixtures generated v3 (heif + icc + unicode password)\n"
+FIXTURES_VERSION = "fixtures generated v4 (fractional page geometry)\n"
 
 
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
@@ -255,6 +264,7 @@ def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
     make_simple(directory)
     make_outline(directory)
     make_mixed_sizes(directory)
+    make_fractional_size(directory)
     make_rotated(directory)
     make_encrypted(directory)
     make_malformed(directory)
