@@ -145,9 +145,23 @@ inherit these controls automatically.
 
 ### T5. Sensitive-data leakage
 
-- CLI PDF passwords come from a hidden interactive prompt, never a command-line
-  option. API passwords are multipart form values. Passwords are not included
-  in conversion reports or external command arguments.
+- CLI PDF-password values never appear in argv. A non-interactive caller may
+  provide one strict-UTF-8 line through global `--password-stdin` or use
+  `LDF_PASSWORD`; precedence is flag → environment → hidden TTY prompt. The raw
+  stdin flag remains authoritative on a TTY as its documented surface
+  requires; an interactive user who needs echo suppression must omit the flag
+  and use the hidden prompt. The CLI removes the environment value from its
+  own process after reading it and clears its per-invocation credential state
+  on context close. Presence is authoritative even when the value is empty:
+  an empty `LDF_PASSWORD` suppresses prompt fallback and is attempted as an
+  empty credential. The parent shell still
+  retains an exported environment value, and same-user process inspection is
+  outside this application's boundary, so redirected stdin is preferable when
+  environment-secret exposure matters. Stdin resolution is deferred until a
+  password-capable command begins, so help and argument-parse failures do not
+  consume secret input. API passwords remain multipart form values. Passwords
+  are not included in stdout/stderr results, conversion reports, logs, or
+  external command arguments.
 - Conversion reports contain artifact metadata, filenames, engine/version
   information, counts, warnings, errors, and user-selected CLI destinations;
   they do not intentionally contain extracted document text or passwords.

@@ -198,8 +198,15 @@ silently ignored.
 ### Error model
 
 Operations raise `PipelineError` with the failed `ConversionReport` where one
-exists. `EncryptedInputError` allows an interactive CLI password prompt and a
-single retry. Interfaces map documented cases to stable exit codes or bounded
+exists. The CLI resolves an explicitly selected stdin credential lazily and
+once, after subcommand parsing but before password-capable operation setup;
+this leaves help paths non-consuming. `EncryptedInputError` then lets the CLI
+apply its configured stdin/environment credential or perform one hidden
+interactive retry. POSIX uses `isatty()` for that decision; Windows additionally
+requires `GetConsoleMode` to accept the stdin OS handle, so NUL and other
+non-console character devices cannot enter an unanswerable prompt. Missing
+credentials in a non-interactive invocation map to usage exit 2. Interfaces map
+documented cases to stable exit codes or bounded
 HTTP error responses. The worker boundary generalizes parser-derived errors,
 scrubs paths/passwords from reports and progress, and validates every IPC
 message. Unexpected API exceptions return a generic 500 response without

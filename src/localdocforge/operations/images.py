@@ -34,6 +34,7 @@ from localdocforge.engines.adapters import (
 )
 from localdocforge.engines.registry import default_registry
 from localdocforge.jobs.workspace import CollisionPolicy
+from localdocforge.operations.organize import _open_pdf
 from localdocforge.pipelines.runner import (
     CandidateOutput,
     ExecuteResult,
@@ -369,23 +370,11 @@ def pdf_to_images(
     stem = sanitize_filename(input_path.stem, fallback="document")
 
     def execute(context: JobContext, artifacts: list[InputArtifact]) -> ExecuteResult:
-        import pikepdf
         import pypdfium2 as pdfium
 
         security: list[SecurityWarning] = []
-        try:
-            with pikepdf.open(artifacts[0].path, password=options.password or "") as parsed:
-                syntax_issues = list(parsed.check_pdf_syntax())
-                encrypted = parsed.is_encrypted
-        except pikepdf.PasswordError as exc:
-            raise PipelineError(
-                f"{artifacts[0].path.name!r} is encrypted or the supplied password is wrong"
-            ) from exc
-        if syntax_issues:
-            raise PipelineError(
-                f"{artifacts[0].path.name!r} has {len(syntax_issues)} structural syntax "
-                "warning(s); automatic repair is not an implemented operation"
-            )
+        with _open_pdf(artifacts[0].path, options.password) as parsed:
+            encrypted = parsed.is_encrypted
         if encrypted:
             security.append(
                 SecurityWarning(

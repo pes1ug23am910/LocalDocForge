@@ -53,6 +53,12 @@ def test_published_profiles_match_shipped_capabilities():
     metadata = project["project"]
     assert metadata["requires-python"] == ">=3.12,<3.15"
     assert project["build-system"]["requires"] == ["setuptools==83.0.0"]
+    declared_base = frozenset(
+        release_gate.Requirement(requirement).name.lower()
+        for requirement in metadata["dependencies"]
+    )
+    assert release_gate.EXPECTED_BASE_DEPENDENCIES == declared_base
+    assert "pi-heif" in release_gate.EXPECTED_BASE_DEPENDENCIES
     assert "Operating System :: Microsoft :: Windows :: Windows 11" in metadata[
         "classifiers"
     ]
