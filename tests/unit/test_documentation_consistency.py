@@ -113,6 +113,40 @@ def test_compression_slice_is_documented_consistently() -> None:
     assert "Lossy compression presets, repair" in threat
 
 
+def test_pdf_to_images_llm_preset_is_documented_consistently() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf pdf-to-images scanned.pdf -d vision/ --preset llm" in readme
+    assert "per-page JPEG q85 renders with long edge ≤ 1568 px" in readme
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    cli_flat = " ".join(cli.split())
+    assert "ldf pdf-to-images scan.pdf -d vision/ --preset llm" in cli
+    assert "separate render scale for every page" in cli_flat
+    assert "Explicit `--dpi` selects fixed-DPI rendering and disables" in cli_flat
+    api_row = next(line for line in cli.splitlines() if line.startswith("| pdf-to-images |"))
+    assert "`preset` (`llm`)" in api_row
+
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    feature_row = next(
+        line for line in feature.splitlines() if line.startswith("| PDF → images")
+    )
+    assert "`llm` preset" in feature_row
+    assert "explicit DPI disables the cap" in feature_row
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
+        encoding="utf-8"
+    )
+    pdf_images = fidelity[fidelity.index("## pdf-to-images") : fidelity.index("## convert-images")]
+    assert "JPEG quality 85" in pdf_images
+    assert "1568-px long-edge bound" in pdf_images
+    assert "image-downscaled" in pdf_images
+    assert "effective DPI" in pdf_images
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "pdf-to-images LLM preset, S2" in status
+    assert "fractional-size page" in status
+
+
 def test_password_stdin_slice_is_documented_consistently() -> None:
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
     cli_flat = " ".join(cli.split())
@@ -130,7 +164,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "--password-stdin" in readme
     assert "LDF_PASSWORD" in readme
-    assert "test suite (464 tests)" in readme
+    assert "test suite (476 tests)" in readme
 
     threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
     assert "strict-UTF-8 line" in threat

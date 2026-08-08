@@ -772,6 +772,14 @@ def compress(
 
 # --------------------------------------------------------------------------- images
 
+_LLM_RENDER_PRESET = image_ops.CONVERT_PRESETS["llm"]
+_LLM_RENDER_PRESET_HELP = (
+    f"'llm' = {_LLM_RENDER_PRESET['image_format'].upper()} quality "
+    f"{_LLM_RENDER_PRESET['quality']}, long edge <= "
+    f"{_LLM_RENDER_PRESET['max_dimension']} px per page; never upscales from "
+    "the default render. Explicit --format/--quality/--dpi override preset values."
+)
+
 
 @app.command("images-to-pdf")
 def images_to_pdf_cmd(
@@ -804,21 +812,52 @@ def images_to_pdf_cmd(
 def pdf_to_images_cmd(
     input_file: Annotated[Path, typer.Argument(dir_okay=False)],
     output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
-    image_format: Annotated[str, typer.Option("--format")] = "png",
-    dpi: Annotated[int, typer.Option("--dpi", min=18, max=1200)] = 150,
+    image_format: Annotated[
+        str | None,
+        typer.Option("--format", help="png | jpeg | webp | tiff (default png)."),
+    ] = None,
+    dpi: Annotated[
+        int | None,
+        typer.Option(
+            "--dpi",
+            min=18,
+            max=1200,
+            help="Fixed render DPI (default 150); explicitly setting it overrides "
+            "the llm preset's pixel cap.",
+        ),
+    ] = None,
     pages: Annotated[str | None, typer.Option("--pages")] = None,
-    quality: Annotated[int, typer.Option("--quality", min=1, max=100)] = 90,
+    quality: Annotated[
+        int | None,
+        typer.Option("--quality", min=1, max=100, help="JPEG/WebP quality (default 90)."),
+    ] = None,
+    preset: Annotated[
+        str | None,
+        typer.Option("--preset", help=_LLM_RENDER_PRESET_HELP),
+    ] = None,
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Render PDF pages to PNG/JPEG/WebP/TIFF images."""
+    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
+        available = ", ".join(sorted(image_ops.CONVERT_PRESETS))
+        typer.secho(
+            f"Error: --preset {preset!r} is not available. Available: {available}.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
     options = image_ops.PdfToImagesOptions(
-        image_format=image_format,
-        dpi=dpi,
         pages=_parse_range(pages),
-        jpeg_quality=quality,
+        preset=preset,
         collision=collision,
         password=_password_value(),
     )
+    if image_format is not None:
+        options.image_format = image_format
+    if dpi is not None:
+        options.dpi = dpi
+    if quality is not None:
+        options.jpeg_quality = quality
     _run(image_ops.pdf_to_images, input_file, output_dir, options=options)
 
 

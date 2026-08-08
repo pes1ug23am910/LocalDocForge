@@ -1201,19 +1201,30 @@ def _run_images_to_pdf(paths, output_dir, params, settings, progress=None):
 
 def _run_pdf_to_images(paths, output_dir, params, settings, progress=None):
     source = _one_input(paths, "pdf-to-images")
-    dpi = _int_param(params, "dpi", default=150, minimum=18, maximum=1200)
-    quality = _int_param(params, "quality", default=90, minimum=1, maximum=100)
-    assert dpi is not None and quality is not None
+    image_format = params.get("format") or None
+    if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
+        raise _ApiError(422, "'format' must be one of: png, jpeg, webp, tiff")
+    preset = params.get("preset") or None
+    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
+        raise _ApiError(
+            422, "'preset' must be one of: " + ", ".join(sorted(image_ops.CONVERT_PRESETS))
+        )
+    dpi = _int_param(params, "dpi", minimum=18, maximum=1200)
+    quality = _int_param(params, "quality", minimum=1, maximum=100)
     options = image_ops.PdfToImagesOptions(
-        image_format=params.get("format", "png"),
-        dpi=dpi,
         pages=_range_or_none(params.get("pages"), what="pages"),
-        jpeg_quality=quality,
+        preset=preset,
         collision=CollisionPolicy.RENAME,
         settings=settings,
         password=params.get("password") or None,
         progress=progress,
     )
+    if image_format is not None:
+        options.image_format = image_format
+    if dpi is not None:
+        options.dpi = dpi
+    if quality is not None:
+        options.jpeg_quality = quality
     return image_ops.pdf_to_images(source, output_dir, options=options)
 
 
@@ -1267,7 +1278,9 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "crop": frozenset({"box", "pages", "password"}),
     "compress": frozenset({"preset", "password"}),
     "images-to-pdf": frozenset({"page_size", "fit", "margin", "background", "dpi", "quality"}),
-    "pdf-to-images": frozenset({"format", "dpi", "pages", "quality", "password"}),
+    "pdf-to-images": frozenset(
+        {"format", "dpi", "pages", "quality", "preset", "password"}
+    ),
     "convert-images": frozenset(
         {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}
     ),

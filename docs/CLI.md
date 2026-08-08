@@ -89,6 +89,7 @@ ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4 --fit fit
 ldf images-to-pdf photo.png -o photo.pdf --page-size image
 ldf images-to-pdf photos/*.HEIC -o photos.pdf            # iPhone HEIC input
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300 --pages odd
+ldf pdf-to-images scan.pdf -d vision/ --preset llm       # vision-ready JPEGs
 
 ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-ready JPEGs
 ldf convert-images scan.heic -d out/ --format png --keep-metadata
@@ -116,6 +117,16 @@ Notes:
 - Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and
   PNG/JPEG/WebP/TIFF output. Resource limits may reject a value that would
   exceed configured pixel, decompressed-byte, page, or output bounds.
+- For `pdf-to-images`, `--preset llm` selects JPEG quality 85 and computes a
+  separate render scale for every page so its long edge is at most 1568 px.
+  The ordinary 150-DPI render is the ceiling: a page already below the pixel
+  bound stays at that size and is never enlarged merely to reach 1568 px.
+  Explicit `--format` and `--quality` independently replace those preset
+  values while retaining the per-page cap. Explicit `--dpi` selects fixed-DPI
+  rendering and disables the preset cap, so it can intentionally produce a
+  larger image. Reports record the resolved preset/format, configured and
+  applied quality (`null` for lossless PNG/TIFF), cap mode, and every output's
+  actual width, height, and effective DPI.
 - Image inputs (images-to-pdf and convert-images) may be HEIC/HEIF, JPG, PNG,
   TIFF, BMP, or WebP; HEIC decoding runs through the decode-only pi-heif
   engine, so HEIF *output* is never offered.
@@ -201,7 +212,7 @@ output paths. Supported string form fields are:
 | crop | required finite `box=x0,y0,x1,y1`, optional `pages` and `password` |
 | compress | optional `preset` (only `lossless` exists), optional `password` |
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
-| pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), and `password` |
+| pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), `preset` (`llm`), and `password` |
 | convert-images | optional `format` (png/jpeg/webp/tiff), `quality` (1–100), `max_dimension` (16–30000), `preset` (`llm`), boolean `keep_metadata`, and `background` |
 
 Unknown, duplicated, invalid, or out-of-range parameters return 422. Upload

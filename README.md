@@ -49,11 +49,11 @@ source before anything was published.*
 | Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
 | Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
-| Convert | images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
+| Convert | images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
 | Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
-Everything above is covered by the repository's test suite (464 tests) and a
+Everything above is covered by the repository's test suite (476 tests) and a
 full release gate. OCR, Office conversion, lossy compression presets,
 redaction, signatures, and the rest of the roadmap are **not implemented
 yet** and are honestly reported as unavailable by `ldf doctor` — see
@@ -115,6 +115,7 @@ ldf crop input.pdf --box "50,50,400,500" -o out.pdf    # warns: NOT redaction
 ldf compress input.pdf -o smaller.pdf                  # lossless; images untouched
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
+ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
 ldf convert-images photos/*.HEIC -d ready/ --preset llm  # iPhone photos → AI-ready JPEGs
 ldf inspect input.pdf
 ldf --json doctor
@@ -199,7 +200,7 @@ subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
 
 ```powershell
 pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
-.venv\Scripts\python.exe -m pytest tests -q    # 464 tests
+.venv\Scripts\python.exe -m pytest tests -q    # 476 tests
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```

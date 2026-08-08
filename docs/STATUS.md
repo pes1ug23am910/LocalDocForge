@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-08 (non-interactive encrypted-PDF credentials on the
-Windows release-hardening baseline).
+Last updated: 2026-08-08 (`pdf-to-images --preset llm` vision-ready page
+renders on the Windows release-hardening baseline).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (464 tests as of
+SBOM/notices drift, the complete collected test suite (476 tests as of
 2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -288,6 +288,56 @@ result applies only to the recorded OS, architecture, and interpreter.
   and `dist/windows-11-x64/` records were neither overwritten nor relabelled;
   the new S1 comparison identity is recorded in
   `packaging/release-artifact-manifest.json` and `docs/PACKAGING.md`.
+
+## Executed evidence — 2026-08-08 (pdf-to-images LLM preset, S2)
+
+- S2 extends the already-shipped PDFium `pdf-to-images` pipeline with
+  `--preset llm` across the library, CLI, and local API: JPEG quality 85 and a
+  per-page long-edge bound of 1568 px, using the same preset mapping as
+  `convert-images`. The ordinary 150-DPI render is a never-upscaled ceiling;
+  explicit format/quality values replace only their preset fields, while an
+  explicit DPI requests fixed-DPI output and disables the cap.
+- PDFium's upward dimension rounding now drives both resource preflight and
+  rendering. A synthetic fractional-size page that previously could compute
+  1568.0000000000002 is adjusted by ULPs before allocation and verified at an
+  actual 1568-px edge. Reports retain the established scalar fields and add
+  preset/cap mode plus ordered actual dimensions and effective DPI per output;
+  capped pages reuse the documented `image-downscaled` info code.
+- Eleven new behavior outcomes cover mixed A4 portrait, landscape Letter, and
+  a small 300-point square; no-upscale behavior; independent format, quality,
+  and DPI precedence; the fractional rounding adversary; JSON CLI output;
+  library/CLI/API invalid-preset refusal; API downloads; and report/file
+  dimension agreement. The expanded focused image/API/CLI regression command
+  completed with 53 passing outcomes.
+- The capability registry remains unchanged because PDF-to-images was already
+  honestly implemented and engine-gated. No dependency, lock, SBOM, notice,
+  advisory, or engine-license change was needed.
+- The standalone tree checks passed with 476 outcomes (474 passed and two
+  expected skips), Ruff over `src` and `tests`, mypy over 32 source files,
+  generated-release-artifact drift, documentation consistency, and diff
+  hygiene. An initial all-default gate also passed every phase in 316.206
+  seconds. Independent diff review then found that nullable public option
+  annotations weakened typed-library compatibility and that semantically
+  different preset configurations compared equal. Concrete annotations and
+  semantic equality were restored; the focused S2/docs selection passed 60/60
+  and the complete 476-outcome suite passed again in 53.217 seconds. The
+  definitive post-audit gate then passed from
+  2026-08-08T21:48:23.2302079+05:30 through
+  2026-08-08T21:54:56.2085350+05:30 (392.978 seconds).
+- The final Base, Lite, Standard, and Full source/wheel profile smokes all
+  report `status: passed`; the fresh Dev record reports
+  `full_tests.status: passed`, `release_manifest_verified: true`, and platform
+  `Windows-AMD64`. The gate's ordinary, blocked-network, and two fresh-Dev
+  suite modes each exercised the complete 476-outcome tree. Linux and Darwin
+  mypy modes passed, but no native Linux or macOS execution is claimed.
+- The package identity is recorded in `docs/PACKAGING.md`: source inputs
+  `6e0707f41f1a22be8876b4fdc1f1593f27063b09e1badc29be49df28366dc063`,
+  wheel `5d2dd0ceb978665fc4d89fb90d7ace35c00b98dd920267ab7cfe1d6bcb8b1b2f`
+  (106,628 bytes), and sdist
+  `1b2630a8adb11082954038e81ea5189c619422e7a14dc14f7405be14db7581c0`
+  (94,998 bytes). Build and profile evidence use fresh temporary paths;
+  retained `dist/` and `packaging-evidence/` records remained unchanged and
+  are not claimed as S2 evidence.
 
 ## Implemented hardening
 
