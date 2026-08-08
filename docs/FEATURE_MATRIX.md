@@ -1,9 +1,11 @@
 # Feature Matrix
 
-Machine-checked source of truth: `ldf doctor --json` (capability gating is
-tested in `tests/unit/test_registry.py`). This file adds the human detail the
-JSON cannot carry. "Verified" means executed in this repository with output
-inspected — see the test files listed.
+Machine-checked source of truth: `ldf --json doctor` (capability gating is
+tested in `tests/unit/test_registry.py`). `ldf agent-brief` is the compact
+agent-facing view: implemented entries follow registry order and retain their
+live availability state, while unimplemented entries cannot render. This file
+adds the human detail the JSON cannot carry. "Verified" means executed in this
+repository with output inspected — see the test files listed.
 
 Interfaces legend: **Lib** Python API · **CLI** · **API** local HTTP · **UI** browser.
 
@@ -40,6 +42,7 @@ Interfaces legend: **Lib** Python API · **CLI** · **API** local HTTP · **UI**
 | Validate (PDF/A, PDF/UA) | ❌ planned P5 | needs veraPDF | — | — | Output validation reopens with pikepdf/qpdf, rejects syntax warnings, checks expected page counts, and renders through PDFium; this is not PDF/A or PDF/UA conformance validation |
 | Scan to PDF (hardware) | ❌ planned P5 | — | — | — | |
 | Batch YAML/JSON jobs | ❌ planned P2 | — | — | — | |
+| Registry-derived agent brief | ✅ | `CAPABILITY_SPECS` + live capability probes | CLI | `test_agent_brief.py`, `test_cli.py::TestAgentBrief`, `test_documentation_consistency.py` | Read-only Markdown/JSON on stdout; every implemented command appears with live availability and one-line usage, while unimplemented capabilities are structurally excluded; requires a discoverable source checkout because the writable feedback log is intentionally not packaged; no API/UI endpoint |
 | Local web API (`ldf web`) | ✅ | FastAPI/uvicorn + spawned workers | API | `test_api.py`, `test_privacy_boundary.py`, `test_worker_isolation.py` + live localhost verification | Loopback-only by default; strict-offline forbids non-loopback even with the exposure opt-in; token auth; bounded queue/rate/concurrency controls; synchronous compatibility or explicit async states/progress/cancel; workers retain user filesystem authority and are not an OS sandbox; browser UI not built |
 | Browser UI (React) | ❌ next slice | — | — | — | current index page is an honest capability listing, no fake tools |
 

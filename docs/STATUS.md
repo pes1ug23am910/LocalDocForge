@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-08 (`pdf-to-images --preset llm` vision-ready page
-renders on the Windows release-hardening baseline).
+Last updated: 2026-08-08 (`pdf-to-images --preset llm` and the
+registry-derived agent brief on the Windows release-hardening baseline).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (476 tests as of
+SBOM/notices drift, the complete collected test suite (504 tests as of
 2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -338,6 +338,41 @@ result applies only to the recorded OS, architecture, and interpreter.
   (94,998 bytes). Build and profile evidence use fresh temporary paths;
   retained `dist/` and `packaging-evidence/` records remained unchanged and
   are not claimed as S2 evidence.
+
+## Executed evidence — 2026-08-08 (registry-derived agent brief, S3)
+
+- `ldf agent-brief` now builds one immutable Markdown/JSON snapshot by
+  iterating `CAPABILITY_SPECS` in registry order and joining exactly one live
+  `EngineRegistry.capabilities()` result. Every `implemented=True` command is
+  present with one-line usage and live availability/reasons; every
+  `implemented=False` capability is structurally excluded even if a hostile
+  test result falsely marks it available.
+- Both output forms contain stable exit codes, five agent gotchas, the
+  `verify` -> `fallback` -> `review` workflow, and the existing absolute
+  `docs/AGENT_FEEDBACK.md` path plus its append-only, required-outcome,
+  write-scope, and privacy rules. JSON fields mirror the live registry, while
+  Markdown renders that same typed snapshot.
+- The command performs no conversion or engine execution beyond that normal
+  live probe path, opens no document, writes only stdout on success, creates no
+  report/output/job directory, does not consume `--password-stdin`, and
+  bypasses the inherited stale-workspace sweep so its read-only claim is
+  literal.
+- Thirty-four focused unit/CLI/documentation outcomes passed, including
+  missing/stale templates, duplicate/missing/extra registry ids, hostile
+  metadata and false-implementation state, implemented-but-unavailable state,
+  lazy CWD-independent feedback-path resolution, strict-offline remote-path
+  avoidance, byte stability, global option composition, and no-read/no-write
+  guards. Ruff over `src tests` and mypy over 33 source files also passed.
+- The definitive literal-invariant verify-mode full release gate passed in 382.7 seconds on
+  Windows-AMD64 CPython 3.14.4. It reproduced the tracked source/wheel/sdist
+  identity, passed both ordinary and blocked-network 492-outcome suites (490
+  passed plus two expected skips), Ruff, three-platform mypy, artifact drift,
+  reproducible builds, Twine, sdist-to-wheel equivalence, every source/wheel
+  install profile, and the clean Dev full-suite; fresh profile evidence records
+  `full_tests.status: passed` and `release_manifest_verified: true`. Its fresh
+  profile-evidence SHA-256 is
+  `83758a01cf851eee80f7d5597ae638e0e91aff74052076a6568f8d630cbfa878`.
+  Protected retained evidence and archived dist checkpoints were unchanged.
 
 ## Implemented hardening
 
