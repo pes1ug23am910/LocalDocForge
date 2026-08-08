@@ -32,6 +32,7 @@
             "localdocforge/operations/images.py",
             "localdocforge/operations/optimize.py",
             "localdocforge/operations/organize.py",
+            "localdocforge/operations/text.py",
             "localdocforge/pipelines/__init__.py",
             "localdocforge/pipelines/runner.py",
             "localdocforge/py.typed",
@@ -45,8 +46,8 @@
             "localdocforge/validation/__init__.py",
             "localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "a6831020d1e60321af4626b654d6739b17d616fc0eb4b4a9698d354bdca6c47a",
-          "size": 112760
+          "sha256": "1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097",
+          "size": 125012
         },
         "localdocforge-0.1.0.tar.gz": {
           "members": [
@@ -83,6 +84,7 @@
             "localdocforge-0.1.0/src/localdocforge/operations/images.py",
             "localdocforge-0.1.0/src/localdocforge/operations/optimize.py",
             "localdocforge-0.1.0/src/localdocforge/operations/organize.py",
+            "localdocforge-0.1.0/src/localdocforge/operations/text.py",
             "localdocforge-0.1.0/src/localdocforge/pipelines/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/pipelines/runner.py",
             "localdocforge-0.1.0/src/localdocforge/py.typed",
@@ -96,12 +98,12 @@
             "localdocforge-0.1.0/src/localdocforge/validation/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "3ed23059b2ff8e503ade9dfb2d416c2f95049f75007cb486f7bfe349f0f3b1e9",
-          "size": 100287
+          "sha256": "42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4",
+          "size": 111839
         }
       },
       "source_date_epoch": 1704067200,
-      "source_tree_sha256": "69354c7f9bb4d092661f0b29430de563362b3abfba34b4282f548aa49455a28a"
+      "source_tree_sha256": "b3384fe440a96881a96d9617d4a5dd2a35ac2f03d8f7146055ff989024ee0f5f"
     }
   },
   "schema": 3

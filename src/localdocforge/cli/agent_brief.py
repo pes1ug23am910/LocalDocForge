@@ -42,6 +42,10 @@ USAGE_BY_CAPABILITY_ID: Final[Mapping[str, str]] = MappingProxyType(
             "ldf pdf-to-images INPUT.pdf -d OUTPUT_DIR "
             "[--format png --dpi 300] [--preset llm]"
         ),
+        "pdf-to-markdown": (
+            "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
+            "[--format md|txt|jsonl] [--no-page-anchors]"
+        ),
         "convert-images": "ldf convert-images IMAGE... -d OUTPUT_DIR [--preset llm]",
     }
 )

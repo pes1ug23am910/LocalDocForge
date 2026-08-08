@@ -4,8 +4,10 @@ import pytest
 
 from localdocforge.engines.adapters import (
     OP_CONVERT_IMAGES,
+    OP_INSPECT,
     OP_MERGE,
     OP_PDF_TO_IMAGES,
+    OP_PDF_TO_MD,
     OP_RENDER,
 )
 from localdocforge.engines.base import EngineUnavailableError
@@ -14,7 +16,7 @@ from localdocforge.engines.registry import CAPABILITY_SPECS, EngineRegistry
 IMPLEMENTED_IDS = {
     "merge", "split", "remove-pages", "extract-pages", "organize",
     "rotate", "crop", "inspect", "compress", "images-to-pdf", "pdf-to-images",
-    "convert-images",
+    "pdf-to-markdown", "convert-images",
 }
 
 
@@ -54,6 +56,9 @@ class TestSelection:
     def test_engine_for_render_is_pdfium(self, registry):
         assert registry.engine_for(OP_RENDER).name == "pdfium"
 
+    def test_engine_for_pdf_to_md_is_pdfium(self, registry):
+        assert registry.engine_for(OP_PDF_TO_MD).name == "pdfium"
+
     def test_engine_for_convert_images_is_pillow(self, registry):
         assert registry.engine_for(OP_CONVERT_IMAGES).name == "pillow"
 
@@ -69,6 +74,26 @@ class TestSelection:
         assert capability.available
         spec = next(item for item in CAPABILITY_SPECS if item.id == "convert-images")
         assert spec.extra_engines == ("pi-heif",)
+
+    def test_inspect_capability_requires_pdfium_for_text_inventory(self, registry):
+        capability = {c.id: c for c in registry.capabilities()}["inspect"]
+        assert capability.available
+        spec = next(item for item in CAPABILITY_SPECS if item.id == "inspect")
+        assert spec.operation == OP_INSPECT
+        assert spec.extra_engines == ("pdfium",)
+
+    def test_inspect_capability_is_gated_off_when_pdfium_probe_fails(self, monkeypatch):
+        registry = EngineRegistry()
+        pdfium = registry.get("pdfium")
+        assert pdfium is not None
+        unavailable = pdfium.probe().model_copy(
+            update={"available": False, "install_hint": "install synthetic pdfium"}
+        )
+        monkeypatch.setattr(pdfium, "probe", lambda: unavailable)
+
+        capability = {c.id: c for c in registry.capabilities()}["inspect"]
+        assert not capability.available
+        assert "pdfium" in capability.missing_requirements
 
     def test_unwired_library_cannot_be_selected_as_an_engine(self, registry):
         with pytest.raises(EngineUnavailableError):
@@ -87,6 +112,13 @@ class TestSelection:
 
 
 class TestCapabilityHonesty:
+    def test_pdf_to_markdown_keeps_stable_capability_id(self):
+        matching = [spec for spec in CAPABILITY_SPECS if spec.id == "pdf-to-markdown"]
+        assert len(matching) == 1
+        assert matching[0].implemented
+        assert matching[0].operation == OP_PDF_TO_MD
+        assert all(spec.id != "pdf-to-md" for spec in CAPABILITY_SPECS)
+
     def test_only_implemented_capabilities_can_be_available(self, registry):
         for capability in registry.capabilities():
             if capability.available:

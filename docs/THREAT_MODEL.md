@@ -9,7 +9,7 @@ inherit these controls automatically.
 
 1. User documents and their filenames, metadata, annotations, attachments, and
    form values.
-2. Derived data: converted documents, rendered pages, future extracted text or
+2. Derived data: converted documents, rendered pages, extracted text, future
    OCR data, reports, and temporary files.
 3. Secrets: PDF passwords and future certificate passphrases/private keys.
 4. The user's filesystem, processes, and machine integrity.
@@ -17,7 +17,8 @@ inherit these controls automatically.
 ## Trust boundaries
 
 - Every input document and upload is untrusted, regardless of extension.
-- CLI operations invoke pikepdf/libqpdf, PDFium, Pillow, and — for HEIC/HEIF
+- CLI operations invoke pikepdf/libqpdf, PDFium (rendering and text extraction),
+  Pillow, and — for HEIC/HEIF
   input — the libheif/libde265 decoders (via pi-heif) in-process. API
   operations invoke them in a fresh spawned child with process/resource
   containment. Both retain the user's filesystem authority; the worker is a
@@ -47,6 +48,11 @@ inherit these controls automatically.
   at most 20 pages. This detects structural/render failures; it does not prove
   semantic equivalence or absence of malicious content.
 - Generated images must decode through Pillow before publication.
+- Generated Markdown/TXT/JSONL must decode as strict UTF-8. `pdf-to-md` also
+  validates its required coverage report, exact page-anchor cardinality, or
+  exact JSONL record schema/counts before publication. These checks defend the
+  output contract; they do not prove correct language, reading order, or table
+  reconstruction.
 - Aggregate input bytes, aggregate output bytes, PDF page counts, image pixel
   counts, and decompressed image bytes are enforced in the implemented
   pipelines. Encrypted PDFs are page-counted again after opening. Output totals
@@ -88,6 +94,14 @@ inherit these controls automatically.
   whiteout, and cover-and-replace are not implemented.
 - Office macros/external-link handling is not a current control because Office
   conversion is unavailable.
+- Extracted Markdown is untrusted document content, not executable application
+  input. `pdf-to-md` creates only plain UTF-8 artifacts and invokes no Markdown
+  renderer. Markdown/TXT, with or without structural page anchors, escapes
+  source lines matching either reserved page-marker syntax
+  (`<!-- ldf:page N -->` or `--- ldf:page N ---`) so content
+  cannot forge provenance boundaries; JSONL preserves them as ordinary framed
+  data. Downstream tools must still treat links, HTML-like text, and
+  instructions in the artifact as untrusted data.
 
 ### T3. Filesystem abuse and source integrity
 
@@ -167,6 +181,11 @@ inherit these controls automatically.
   they do not intentionally contain extracted document text or passwords.
   API reports additionally scrub server-private paths. Unexpected API errors
   return a generic message and hardening headers rather than exception details.
+- `pdf-to-md` deliberately writes document text only to the requested output
+  artifact. Its reports and worker IPC retain counts, booleans, and stable
+  warning codes but never per-page text. On Windows, stdout/console encoding is
+  not a fidelity boundary: the CLI prints only its report there, while the
+  artifact is written explicitly as UTF-8.
 - Admission precedes multipart parsing. API transport uses a random contained
   `.transport-*` directory beneath the private session and is aggregate-bounded
   by the upload, enabled input, and enabled temporary-byte ceilings. Handles and
@@ -258,7 +277,8 @@ inherit these controls automatically.
 
 ### T8. Unavailable security-sensitive capabilities
 
-Lossy compression presets, repair, OCR, Office/HTML/Markdown conversion,
+Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF, and
+Markdown-to-PDF conversion,
 PDF/A or PDF/UA validation/conversion, form editing, encryption/protection
 tools, secure redaction, signatures, compare, scanner/camera acquisition, and
 a full browser job UI are unavailable. UI capability lists and `ldf doctor`
@@ -280,6 +300,12 @@ refused, never approximated.
 - PDF rendering is sampled for routine long outputs, and render success is not
   proof of fonts, reading order, links, forms, signatures, accessibility,
   compliance, or exact visual fidelity.
+- PDF text extraction relies on source text objects and deterministic geometry
+  heuristics. Image-only pages have no extractable layer; multi-column,
+  rotated/angled, and RTL content may be ordered incorrectly; hyphenation is
+  preserved rather than silently repaired; tables remain flattened. Stable
+  warnings expose detected uncertainty, but detection is conservative and the
+  absence of a warning is not a correctness guarantee.
 - Multi-output publication and cleanup have handled-failure recovery but cannot
   be made crash-transactional or forensically erasing at application level.
 - Strict-offline is an application policy with platform-specific path

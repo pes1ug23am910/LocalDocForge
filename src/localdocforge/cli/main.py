@@ -26,6 +26,7 @@ from localdocforge.cli.agent_brief import AgentBriefError, build_agent_brief, re
 from localdocforge.config.settings import Settings, get_settings, set_settings
 from localdocforge.domain.models import ConversionReport
 from localdocforge.domain.pages import PageRange, PageRangeError
+from localdocforge.engines.adapters import OP_INSPECT, OP_PDF_TO_MD
 from localdocforge.engines.base import EngineUnavailableError
 from localdocforge.engines.registry import default_registry
 from localdocforge.jobs.workspace import (
@@ -36,6 +37,7 @@ from localdocforge.jobs.workspace import (
 from localdocforge.operations import images as image_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
+from localdocforge.operations import text as text_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.reporting.writers import write_report_files
 from localdocforge.security.paths import is_remote_path
@@ -538,13 +540,28 @@ def inspect(
     if not input_file.is_file():
         typer.secho(f"Error: file does not exist: {input_file}", fg=typer.colors.RED, err=True)
         raise typer.Exit(EXIT_USAGE)
+    try:
+        registry = default_registry()
+        registry.engine_for(OP_INSPECT)
+        registry.engine_for(OP_PDF_TO_MD)
+    except EngineUnavailableError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_NO_ENGINE) from exc
     password = _password_value()
     try:
-        info = organize_ops.inspect_pdf(input_file, password=password)
+        info = organize_ops.inspect_pdf(
+            input_file,
+            password=password,
+            settings=get_settings(),
+        )
     except organize_ops.EncryptedInputError as exc:
         password = _password_retry_value(exc)
         try:
-            info = organize_ops.inspect_pdf(input_file, password=password)
+            info = organize_ops.inspect_pdf(
+                input_file,
+                password=password,
+                settings=get_settings(),
+            )
         except Exception as retry_exc:  # wrong password or damaged file
             typer.secho(f"Error: {retry_exc}", fg=typer.colors.RED, err=True)
             raise typer.Exit(EXIT_FAILED) from retry_exc
@@ -556,6 +573,47 @@ def inspect(
         return
     for key, value in info.items():
         typer.echo(f"{key:>14}: {value}")
+
+
+# --------------------------------------------------------------------------- text
+
+
+@app.command("pdf-to-md")
+def pdf_to_md_cmd(
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    pages: Annotated[str | None, typer.Option("--pages")] = None,
+    output_format: Annotated[
+        str,
+        typer.Option("--format", help="md | txt | jsonl (default md)."),
+    ] = "md",
+    no_page_anchors: Annotated[
+        bool,
+        typer.Option(
+            "--no-page-anchors",
+            help="Omit page anchors (TXT uses form-feed separators instead).",
+        ),
+    ] = False,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Extract PDF text to agent-friendly Markdown, text, or JSONL."""
+    format_key = output_format.strip().lower()
+    if format_key not in text_ops.TEXT_OUTPUT_FORMATS:
+        available = ", ".join(text_ops.TEXT_OUTPUT_FORMATS)
+        typer.secho(
+            f"Error: --format {output_format!r} is not supported; use {available}.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    options = text_ops.PdfToMdOptions(
+        output_format=format_key,
+        pages=_parse_range(pages),
+        page_anchors=not no_page_anchors,
+        collision=collision,
+        password=_password_value(),
+    )
+    _run(text_ops.pdf_to_md, input_file, output, options=options)
 
 
 # --------------------------------------------------------------------------- organize

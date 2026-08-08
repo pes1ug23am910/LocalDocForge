@@ -67,7 +67,7 @@ ldf doctor                      # engines + capability list
 ldf --json doctor               # machine-readable diagnostics
 ldf agent-brief                 # registry-derived Markdown for coding agents
 ldf --json agent-brief          # the same ordered snapshot as structured JSON
-ldf inspect input.pdf           # read-only structural inventory
+ldf inspect input.pdf           # read-only structure + per-page text counts
 ldf --strict-offline web        # API + status shell on http://127.0.0.1:8477
 ldf web --port 9000             # loopback on another port
 ldf web --host 0.0.0.0 --allow-nonlocal  # dangerous; refused in strict mode
@@ -93,11 +93,115 @@ ldf images-to-pdf photo.png -o photo.pdf --page-size image
 ldf images-to-pdf photos/*.HEIC -o photos.pdf            # iPhone HEIC input
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300 --pages odd
 ldf pdf-to-images scan.pdf -d vision/ --preset llm       # vision-ready JPEGs
+ldf pdf-to-md input.pdf -o content.md                     # Markdown (default)
+ldf pdf-to-md input.pdf -o content.txt --format txt --pages 1-5,9
+ldf pdf-to-md input.pdf -o content.jsonl --format jsonl
 
 ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-ready JPEGs
 ldf convert-images scan.heic -d out/ --format png --keep-metadata
 ldf convert-images big.png -d out/ --max-dimension 1024
 ```
+
+### PDF text extraction
+
+```text
+ldf pdf-to-md INPUT.pdf -o OUTPUT [--pages RANGE]
+    [--format md|txt|jsonl] [--no-page-anchors]
+```
+
+`pdf-to-md` extracts one selected page at a time through pypdfium2/PDFium and
+atomically publishes one explicitly UTF-8 file. It never sends extracted text
+through stdout: ordinary stdout is the human report, and global `--json` emits
+the conversion report. This is intentional because an external Windows console
+or pipe may not preserve non-ANSI stdout characters; the output artifact is the
+text-fidelity channel.
+
+The CLI and API operation id is `pdf-to-md`; the pre-existing stable registry/
+doctor capability id remains `pdf-to-markdown`.
+
+Formats and separators are deterministic:
+
+- `md` (default) begins each selected occurrence with the exact source anchor
+  `<!-- ldf:page N -->`. Extracted line/blank-line boundaries form paragraph
+  blocks, and larger-font lines may become Markdown headings. With
+  `--no-page-anchors`, those comments are
+  omitted; pages remain separated by blank lines.
+- `txt` begins each selected occurrence with `--- ldf:page N ---`. With
+  `--no-page-anchors`, markers are omitted and a single form-feed character
+  (`U+000C`, `\f`) separates page occurrences.
+- `jsonl` writes exactly one JSON object followed by LF per selected occurrence:
+  `{"page": N, "text": "…", "char_count": N,
+  "has_text_layer": true|false}`. The keys and key order are stable, and
+  `--no-page-anchors` has no semantic effect because the `page` field is the
+  provenance marker. `page` is a positive 1-based integer, `text` is a string,
+  `char_count` is a non-negative integer, and `has_text_layer` is boolean.
+
+Output order follows the shared page-range grammar, including descending,
+repeated, and reverse selections. Page numbers remain the 1-based source page
+numbers; repeated pages therefore repeat their number. Text line endings are
+normalized to LF and Unicode is normalized to NFC. Non-newline whitespace runs
+(including tabs, form-feed, and NBSP) collapse to one ASCII space, trailing
+space and outer blank lines are trimmed, and geometry supplies paragraph
+breaks. Inter-fragment spacing is heuristic: a gap of at most 1 pt or 10% of
+the smaller line height concatenates styled runs; a larger gap inserts one
+ASCII space. LocalDocForge does
+not silently dehyphenate, join words across lines, apply bidi repair, or rewrite
+ligatures beyond the Unicode mapping returned by PDFium. In Markdown and TXT,
+with or without structural page anchors, source lines matching either reserved syntax
+(`<!-- ldf:page N -->` or `--- ldf:page N ---`) are escaped so document text
+cannot forge provenance. JSONL preserves both strings unchanged as ordinary
+`text` data because framing comes from the JSON record itself.
+
+Markdown structure and reading order are **heuristics**, not semantic recovery.
+The baseline is top-to-bottom then left-to-right over PDFium text rectangles;
+font-size clustering provides heading inference. Columns, rotated/angled text,
+and RTL scripts can be ordered incorrectly. Tables are flattened into reading-
+order text in S4; conservative ruled-grid detection can warn, but absence of the
+warning is not proof that a page contains no table. The four stable fidelity
+codes are:
+
+- `no-text-layer` — a page has no PDF text objects; use
+  `pdf-to-images --preset llm` for vision input (OCR remains unavailable).
+- `headings-inferred` — Markdown headings were inferred from font-size
+  clustering.
+- `reading-order-uncertain` — geometry suggests columns, rotated/angled text,
+  or RTL content whose logical order may differ from the baseline.
+- `tables-flattened` — ruled-grid density suggests tabular content was emitted
+  as ordinary text.
+
+To keep reports bounded, `fidelity_warnings[]` contains at most one aggregate
+entry for each code. Exact attribution lives in
+`details.coverage.per_page[]`: each ordered occurrence record has the exact
+keys `page`, `char_count`, `has_text_layer`, and stable `warning_codes[]`.
+`details.coverage` has the exact keys `pages_total`, `pages_with_text`,
+`pages_with_text_layer`, `char_count_min`, `char_count_median`,
+`char_count_max`, and `per_page`. Counts apply to selected
+occurrences, so a repeated page is counted repeatedly. A text layer containing
+only whitespace can have `has_text_layer=true` but `char_count=0`.
+`char_count` is Python's length of the normalized extracted page text before
+anchors/Markdown markup (Unicode code points); in JSONL it therefore equals
+`len(record["text"])`. It is not an encoded byte length or grapheme count.
+Consequently, selecting one empty page with anchors disabled can legitimately
+publish a zero-byte MD/TXT artifact; the coverage record, not file non-emptiness,
+distinguishes that success from a failed extraction.
+
+Before publication the text-specific validator requires strict UTF-8 and the
+coverage fields above. It also requires exactly one valid anchor per selected
+occurrence when anchors are enabled, or validates every JSONL record against
+the exact schema and reported counts. A validation mismatch blocks publication.
+The configured input/output/page limits and worker isolation apply as they do
+to other operations; extraction retains only one page's text/layout data at a
+time rather than accumulating the document body in memory. Per page, raw
+PDFium character count is conservatively preflighted against the remaining
+decompressed budget and `max_memory_bytes // 64`; more than 50,000 rectangles
+uses bounded full-page fallback plus `reading-order-uncertain`. Object
+inventory stops at 4,096 objects, descends through at most 15 nested Form
+levels, and retains at most 512 horizontal and 512 vertical ruling candidates.
+If either bounded traversal cannot establish whether a zero-character page has
+a text object, the operation refuses with
+`[reading-order-uncertain]` rather than emitting a false `no-text-layer` claim.
+Pages above one million raw characters are also preflighted against the
+remaining output budget; the streaming writer performs the exact final check.
 
 ### Registry-derived agent brief
 
@@ -175,6 +279,17 @@ Notes:
   larger image. Reports record the resolved preset/format, configured and
   applied quality (`null` for lossless PNG/TIFF), cap mode, and every output's
   actual width, height, and effective DPI.
+- `inspect` reports `page_text_stats`, one ordered
+  `{page, char_count, has_text_layer}` record per source page, plus the
+  `text_coverage` summary. These counts use the same PDFium text policy as
+  `pdf-to-md` and help agents choose extraction versus page rendering; no
+  extracted page text enters the inventory. For a valid zero-page source,
+  `page_text_stats` is empty and the summary's min/median/max fields are JSON
+  `null` (all three page counters are zero). The inventory refuses inputs over
+  the configured `max_pages` limit and applies the configured cumulative
+  `max_decompressed_bytes` and per-page `max_memory_bytes // 64` text
+  preflights; it never uses unbounded full-page text extraction. This is a
+  decision aid, not a cheap probe: rectangle-dense pages can still be slow.
 - Image inputs (images-to-pdf and convert-images) may be HEIC/HEIF, JPG, PNG,
   TIFF, BMP, or WebP; HEIC decoding runs through the decode-only pi-heif
   engine, so HEIF *output* is never offered.
@@ -245,7 +360,7 @@ poll-based; this release does not claim a streaming/SSE channel.
 
 `operation` is one of `merge`, `split`, `remove-pages`, `extract-pages`,
 `organize`, `rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images`,
-or `convert-images`.
+`pdf-to-md`, or `convert-images`.
 Upload each
 source under multipart field `files`. The server, not the request, chooses all
 output paths. Supported string form fields are:
@@ -261,6 +376,7 @@ output paths. Supported string form fields are:
 | compress | optional `preset` (only `lossless` exists), optional `password` |
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
 | pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), `preset` (`llm`), and `password` |
+| pdf-to-md | optional `pages`, `format` (`md`, `txt`, or `jsonl`; default `md`), strict boolean `page_anchors` (`true`/`false`; default `true`), and `password` |
 | convert-images | optional `format` (png/jpeg/webp/tiff), `quality` (1–100), `max_dimension` (16–30000), `preset` (`llm`), boolean `keep_metadata`, and `background` |
 
 Unknown, duplicated, invalid, or out-of-range parameters return 422. Upload
@@ -309,10 +425,15 @@ acquired; held, missing, or unreadable leases are preserved fail-closed. Cleanup
 failure is surfaced as an error (and as a critical report warning when a report
 exists); none of these paths is described as secure erasure.
 
+For a `pdf-to-md` API job, the server-selected output is `document.md`,
+`document.txt`, or `document.jsonl` according to the resolved format. As with
+the CLI, the download artifact carries text while the job report carries only
+coverage and warnings.
+
 ## Planned (commands and job endpoints do not exist)
 
-`repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `pdf-to-md`,
-`md-to-pdf`, `pdf-to-pdfa`, `pdf-to-docx/pptx/xlsx`, `watermark`,
+`repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `md-to-pdf`, `pdf-to-pdfa`,
+`pdf-to-docx/pptx/xlsx`, `watermark`,
 `page-numbers`, `forms`, `protect`, `unlock`, `redact`, `sanitize`, `metadata`,
 `attachments`, `sign`, `verify-signatures`, `compare`, `validate`, `batch`,
 `scan`, and `edit` are unavailable. The full browser job UI is also planned;
