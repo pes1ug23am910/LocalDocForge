@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 
 import pikepdf
+import pytest
 from typer.testing import CliRunner
 
+import localdocforge.cli.main as cli_main
 from localdocforge.cli.main import (
     EXIT_COLLISION,
+    EXIT_FAILED,
     EXIT_USAGE,
     app,
 )
@@ -21,6 +25,13 @@ def combined_output(result) -> str:
         return result.output + (result.stderr or "")
     except ValueError:
         return result.output
+
+
+def assert_secret_absent(result, secret: str) -> None:
+    encoded = secret.encode("utf-8")
+    assert encoded not in result.stdout_bytes
+    assert encoded not in result.stderr_bytes
+    assert encoded not in result.output_bytes
 
 
 class TestDoctor:
@@ -61,6 +72,24 @@ class TestVersionAndHelp:
         assert result.exit_code == 0
         for command in ("merge", "split", "rotate", "doctor", "inspect"):
             assert command in result.output
+        assert "--password-stdin" in result.output
+        assert "LDF_PASSWORD" in result.output
+
+    def test_password_stdin_does_not_consume_subcommand_help(self, monkeypatch):
+        def unexpected_read():
+            raise AssertionError("subcommand help must not consume password stdin")
+
+        monkeypatch.setattr(cli_main, "_read_password_stdin", unexpected_read)
+        result = runner.invoke(
+            app,
+            ["--password-stdin", "merge", "--help"],
+            input=b"",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert "Usage:" in result.output
+        assert "merge" in result.output
+        assert cli_main._state["password_stdin_requested"] is False
 
     def test_strict_offline_refuses_explicit_nonlocal_web_bind(self):
         result = runner.invoke(
@@ -144,6 +173,391 @@ class TestMergeCommand:
             ],
         )
         assert result.exit_code == EXIT_USAGE
+
+
+class TestPasswordSources:
+    def test_password_stdin_reads_utf8_crlf_without_trimming(
+        self, fixtures_dir, out_dir, unicode_fixture_password
+    ):
+        out = out_dir / "stdin-unicode.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "merge",
+                str(fixtures_dir / "encrypted-unicode.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out),
+            ],
+            input=f"{unicode_fixture_password}\r\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        with pikepdf.open(out) as pdf:
+            assert len(pdf.pages) == 5
+
+    def test_environment_password_succeeds_and_does_not_leak_to_next_invocation(
+        self, fixtures_dir, out_dir, fixture_password
+    ):
+        first = out_dir / "env-success.pdf"
+        first_result = runner.invoke(
+            app,
+            [
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(first),
+            ],
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert first_result.exit_code == 0, combined_output(first_result)
+        assert cli_main._state["password"] is None
+        assert cli_main._state["password_supplied"] is False
+        assert cli_main._state["password_stdin_requested"] is False
+
+        second = out_dir / "must-not-exist.pdf"
+        second_result = runner.invoke(
+            app,
+            [
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(second),
+            ],
+            env={"LDF_PASSWORD": None},
+        )
+        assert second_result.exit_code == EXIT_USAGE
+        assert "--password-stdin" in second_result.stderr
+        assert "LDF_PASSWORD" in second_result.stderr
+        assert second_result.stdout == ""
+        assert not second.exists()
+
+    def test_environment_password_is_removed_before_operation(
+        self, fixtures_dir, fixture_password, monkeypatch
+    ):
+        original = cli_main.organize_ops.inspect_pdf
+        observed: list[tuple[str | None, str | None]] = []
+
+        def observed_inspect(input_file, *, password=None):
+            observed.append((os.environ.get("LDF_PASSWORD"), password))
+            return original(input_file, password=password)
+
+        monkeypatch.setattr(cli_main.organize_ops, "inspect_pdf", observed_inspect)
+        result = runner.invoke(
+            app,
+            ["--json", "inspect", str(fixtures_dir / "encrypted.pdf")],
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert observed == [(None, fixture_password)]
+        assert_secret_absent(result, fixture_password)
+
+    def test_password_stdin_takes_precedence_over_environment(
+        self, fixtures_dir, out_dir, fixture_password
+    ):
+        out = out_dir / "stdin-precedence.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out),
+            ],
+            input=f"{fixture_password}\n",
+            env={"LDF_PASSWORD": "wrong-environment-password"},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert out.is_file()
+
+    def test_wrong_stdin_password_does_not_fall_back_to_environment(
+        self, fixtures_dir, out_dir, fixture_password
+    ):
+        wrong_password = "wrong-stdin-password"
+        out = out_dir / "no-fallback.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out),
+            ],
+            input=f"{wrong_password}\n",
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert result.exit_code == EXIT_FAILED
+        assert "Wrong password" in result.stderr
+        assert "encrypted.pdf" in result.stderr
+        assert_secret_absent(result, wrong_password)
+        assert not out.exists()
+
+    @pytest.mark.parametrize(
+        ("password_input", "expected_message"),
+        [
+            (b"", "requires one UTF-8 line"),
+            (b"\xff\n", "must be valid UTF-8"),
+        ],
+    )
+    def test_password_stdin_input_errors_are_sanitized_usage_failures(
+        self, fixtures_dir, fixture_password, password_input, expected_message
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "inspect",
+                str(fixtures_dir / "simple-3page.pdf"),
+            ],
+            input=password_input,
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert expected_message in result.stderr
+        assert_secret_absent(result, fixture_password)
+
+    def test_password_stdin_remains_explicit_source_when_stdin_is_tty(
+        self, fixtures_dir, fixture_password, monkeypatch
+    ):
+        monkeypatch.setattr(cli_main, "_stdin_is_tty", lambda: True)
+
+        def unexpected_prompt(*_args, **_kwargs):
+            raise AssertionError("--password-stdin must outrank the hidden prompt")
+
+        monkeypatch.setattr(cli_main.typer, "prompt", unexpected_prompt)
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "--json",
+                "inspect",
+                str(fixtures_dir / "encrypted.pdf"),
+            ],
+            input=f"{fixture_password}\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert json.loads(result.stdout)["encrypted"] is True
+        assert_secret_absent(result, fixture_password)
+
+    def test_wrong_password_behavior_remains_exit_one(self, fixtures_dir, out_dir):
+        wrong_password = "synthetic-wrong-password"
+        out = out_dir / "wrong-password.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out),
+            ],
+            env={"LDF_PASSWORD": wrong_password},
+        )
+        assert result.exit_code == EXIT_FAILED
+        assert "Wrong password" in result.stderr
+        assert_secret_absent(result, wrong_password)
+        assert not out.exists()
+
+    def test_empty_environment_password_counts_as_supplied(
+        self, fixtures_dir, monkeypatch
+    ):
+        monkeypatch.setattr(cli_main, "_stdin_is_tty", lambda: True)
+
+        def unexpected_prompt(*_args, **_kwargs):
+            raise AssertionError("a supplied environment value must suppress prompting")
+
+        monkeypatch.setattr(cli_main.typer, "prompt", unexpected_prompt)
+        result = runner.invoke(
+            app,
+            ["inspect", str(fixtures_dir / "encrypted.pdf")],
+            env={"LDF_PASSWORD": ""},
+        )
+        assert result.exit_code == EXIT_FAILED
+        assert "is encrypted" in result.stderr
+        assert "One password is used for all encrypted inputs" in result.stderr
+
+    def test_inspect_honors_password_stdin(
+        self, fixtures_dir, unicode_fixture_password
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "--json",
+                "inspect",
+                str(fixtures_dir / "encrypted-unicode.pdf"),
+            ],
+            input=f"{unicode_fixture_password}\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        payload = json.loads(result.stdout)
+        assert payload["encrypted"] is True
+        assert payload["page_count"] == 3
+        assert_secret_absent(result, unicode_fixture_password)
+
+    def test_inspect_without_password_is_noninteractive_usage_error(self, fixtures_dir):
+        result = runner.invoke(
+            app,
+            ["inspect", str(fixtures_dir / "encrypted.pdf")],
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert "--password-stdin" in result.stderr
+        assert "LDF_PASSWORD" in result.stderr
+        assert result.stdout == ""
+
+    def test_pdf_to_images_honors_environment_and_missing_password_is_usage_error(
+        self, fixtures_dir, out_dir, tmp_path, fixture_password
+    ):
+        success_dir = out_dir / "encrypted-render"
+        success = runner.invoke(
+            app,
+            [
+                "pdf-to-images",
+                str(fixtures_dir / "encrypted.pdf"),
+                "-d",
+                str(success_dir),
+                "--pages",
+                "1",
+                "--dpi",
+                "72",
+            ],
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert success.exit_code == 0, combined_output(success)
+        assert len(list(success_dir.glob("*.png"))) == 1
+
+        missing_dir = tmp_path / "missing-password-render"
+        missing = runner.invoke(
+            app,
+            [
+                "pdf-to-images",
+                str(fixtures_dir / "encrypted.pdf"),
+                "-d",
+                str(missing_dir),
+                "--pages",
+                "1",
+            ],
+            env={"LDF_PASSWORD": None},
+        )
+        assert missing.exit_code == EXIT_USAGE
+        assert "--password-stdin" in missing.stderr
+        assert "LDF_PASSWORD" in missing.stderr
+        assert not missing_dir.exists()
+
+    def test_hidden_interactive_prompt_fallback_still_works(
+        self, fixtures_dir, fixture_password, monkeypatch
+    ):
+        monkeypatch.setattr(cli_main, "_stdin_is_tty", lambda: True)
+        result = runner.invoke(
+            app,
+            ["--json", "inspect", str(fixtures_dir / "encrypted.pdf")],
+            input=f"{fixture_password}\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert json.loads(result.stdout)["encrypted"] is True
+        assert "PDF password" in result.output
+        assert_secret_absent(result, fixture_password)
+
+    def test_different_passwords_fail_clearly_under_one_password_v1(
+        self, fixtures_dir, out_dir, fixture_password
+    ):
+        out = out_dir / "different-passwords.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "encrypted-unicode.pdf"),
+                "-o",
+                str(out),
+            ],
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert result.exit_code == EXIT_FAILED
+        assert "Wrong password" in result.stderr
+        assert "encrypted-unicode.pdf" in result.stderr
+        assert "One password is used for all encrypted inputs" in result.stderr
+        assert_secret_absent(result, fixture_password)
+        assert not out.exists()
+
+    def test_hidden_prompt_different_passwords_keep_one_password_guidance(
+        self, fixtures_dir, out_dir, fixture_password, monkeypatch
+    ):
+        monkeypatch.setattr(cli_main, "_stdin_is_tty", lambda: True)
+        out = out_dir / "prompted-different-passwords.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "encrypted-unicode.pdf"),
+                "-o",
+                str(out),
+            ],
+            input=f"{fixture_password}\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == EXIT_FAILED
+        assert "Wrong password" in result.stderr
+        assert "encrypted-unicode.pdf" in result.stderr
+        assert "One password is used for all encrypted inputs" in result.stderr
+        assert_secret_absent(result, fixture_password)
+        assert not out.exists()
+
+    def test_password_absent_from_json_human_and_report_files(
+        self, fixtures_dir, out_dir, tmp_path, fixture_password
+    ):
+        reports = tmp_path / "reports"
+        json_result = runner.invoke(
+            app,
+            [
+                "--json",
+                "--report-dir",
+                str(reports),
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out_dir / "json-secret-check.pdf"),
+            ],
+            env={"LDF_PASSWORD": fixture_password},
+        )
+        assert json_result.exit_code == 0, combined_output(json_result)
+        assert json.loads(json_result.stdout)["status"] == "success"
+        assert_secret_absent(json_result, fixture_password)
+        report_files = sorted(reports.glob("merge-*.report.*"))
+        assert len(report_files) == 2
+        secret_bytes = fixture_password.encode("utf-8")
+        for report_file in report_files:
+            assert secret_bytes not in report_file.read_bytes()
+
+        human_result = runner.invoke(
+            app,
+            [
+                "--password-stdin",
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out_dir / "human-secret-check.pdf"),
+            ],
+            input=f"{fixture_password}\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert human_result.exit_code == 0, combined_output(human_result)
+        assert "Status    : success" in human_result.stdout
+        assert_secret_absent(human_result, fixture_password)
 
 
 class TestSplitAndOrganizeCommands:

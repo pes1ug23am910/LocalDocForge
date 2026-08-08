@@ -9,11 +9,19 @@ policy.
 Global options come **before** the command:
 
 ```text
-ldf [--json] [--quiet] [--strict-offline] [--report-dir DIR] <command> …
+ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] <command> …
 ```
 
 - `--json` — machine-readable report or diagnostics on stdout.
 - `--quiet` — suppress the human conversion-report summary.
+- `--password-stdin` — read exactly one UTF-8 password line from
+  stdin. One trailing CRLF, LF, or CR terminator is removed; every other
+  character, including spaces, is preserved. This source outranks
+  `LDF_PASSWORD`. The flag performs this raw line read even when stdin is a
+  TTY; terminal users should omit it when they want the separate hidden
+  interactive prompt instead. Help and subcommand parse failures do not drain
+  stdin; a password-capable command resolves the selected source immediately
+  before operation setup.
 - `--strict-offline` — record strict state in reports and reject recognizable
   network filesystem inputs, outputs, jobs/report locations, external-tool
   paths, and non-loopback web serving. `LDF_STRICT_OFFLINE=true` is preserved
@@ -90,9 +98,14 @@ ldf convert-images big.png -d out/ --max-dimension 1024
 Notes:
 
 - PowerShell does not expand `*`; LocalDocForge expands globs itself.
-- Encrypted CLI inputs prompt interactively with hidden input. Passwords are
-  not accepted as CLI arguments or written to reports. Successful output is
-  not re-encrypted and carries a critical `input-encryption-removed` warning.
+- Encrypted CLI-input precedence is global `--password-stdin` (before the
+  command) → `LDF_PASSWORD` → hidden interactive prompt (TTY only). A non-TTY
+  invocation with no supplied password exits 2 and names both non-interactive
+  mechanisms. The password value is never accepted in argv or written to
+  stdout, stderr, reports, or logs. One password is tried for every encrypted
+  input in an invocation; inputs requiring different passwords fail at the
+  first mismatch. Successful output is not re-encrypted and carries a critical
+  `input-encryption-removed` warning.
 - `--page-size` accepts `A4`, `Letter`, `Legal`, `image`, or `WxH` with optional
   `pt|mm|cm|in` (default `mm`), such as `210x297mm`.
 - Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and
@@ -125,6 +138,9 @@ Notes:
 - CLI reports omit document text and passwords but intentionally include
   artifact filenames and user-selected output paths. Treat saved reports as
   local metadata.
+- The local API is unchanged: its existing optional multipart `password` form
+  field provides interface parity without using the CLI's stdin/environment
+  mechanisms.
 
 ## The local API (`ldf web`)
 

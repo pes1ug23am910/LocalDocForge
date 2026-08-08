@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-08 (HEIC input and convert-images slice on the Windows
-release-hardening baseline).
+Last updated: 2026-08-08 (non-interactive encrypted-PDF credentials on the
+Windows release-hardening baseline).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (444 tests as of
+SBOM/notices drift, the complete collected test suite (463 tests as of
 2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -125,15 +125,16 @@ result applies only to the recorded OS, architecture, and interpreter.
   `972a1e82e662dac0618518aa45bc8f3ac7e0b1cd4f2c179c6a665f222d0b56d8`
   (96,834 bytes), archived with its checksum file in
   `dist/windows-11-x64-2026-08-03-superseded-2/`.
-- Canonical package identity (2026-08-03, current): source
+- Retained package identity (2026-08-03; superseded in the release manifest
+  by the 2026-08-08 S1 identity below): source
   `150b4aeb882d0b6c8b09787fed94d7df8d460ad2522aac61c37395f3fa504db2`;
   wheel `049345cb2dd1f6d23da011a95984eede0e5d64e2d34a052f8e408132dee2b2b0`
   (98,083 bytes); sdist
   `531c4084dd8071cae8c66e2408c1ed388a1c419c48d3e12b799b32311e3d69ca`
   (84,593 bytes). The complete gate passed with this identity after the
-  Linux limit-classification fix;
-  `packaging-evidence/windows-11-x64-SHA256SUMS.txt` was regenerated from
-  the retained files and matches the manifest.
+  Linux limit-classification fix. The historical
+  `packaging-evidence/windows-11-x64-SHA256SUMS.txt` authenticates those
+  retained files; it is not claimed to authenticate the S1 build outputs.
 - Cross-platform artifact identity is now honestly platform-scoped. The CI
   Ubuntu gate reached the artifact-manifest comparison and failed
   byte-identity against the Windows-recorded manifest; measurement showed
@@ -234,6 +235,45 @@ result applies only to the recorded OS, architecture, and interpreter.
   stripped with the GPS-aware report codes, long edge bounded to 1568 px,
   ~100 KB JPEG outputs, validation reopening every output — and one HEIC
   composed into a PDF page via `ldf images-to-pdf`.
+
+## Executed evidence — 2026-08-08 (non-interactive PDF passwords, S1)
+
+- S1 adds two non-argv credential sources for encrypted CLI inputs: global
+  `--password-stdin` consumes exactly one strict-UTF-8 line, while
+  `LDF_PASSWORD` is the lower-precedence automation fallback. The existing
+  hidden TTY prompt remains last. One resolved password is tried for every
+  encrypted input, differing input passwords fail clearly, and outputs remain
+  unencrypted.
+- Seventeen focused CLI outcomes cover UTF-8, CRLF, a significant trailing
+  space, source precedence in both directions, EOF, invalid UTF-8, explicit
+  raw-TTY input, hidden-prompt JSON purity and multi-input guidance,
+  wrong/empty passwords, state/environment cleanup,
+  `inspect`, `pdf-to-images`, and multi-input failure. Secret canaries are
+  absent from stdout, stderr, JSON/human reports, and report-file bytes.
+- The complete suite collected 463 outcomes: 461 passed and two expected
+  platform/capability skips. Ruff, three-platform mypy over 32 source files,
+  generated release-artifact drift, reproducible build, Twine,
+  sdist-to-wheel equivalence, and clean Base/Lite/Standard/Full profile checks
+  also passed on Windows-AMD64 CPython 3.14.4.
+- The first complete S1 gate exposed one inherited release-script mismatch:
+  `pi-heif` was already shipped and locked by the prior HEIC slice, but the
+  hard-coded base-dependency expectation had not been updated. After explicit
+  user approval, the expectation was synchronized and a packaging-contract
+  regression now derives and compares the exact declared base set. The
+  remediation gate then passed end-to-end in 351.7 seconds with
+  `release_manifest_verified: true`.
+- Independent review then caught and drove fixes for explicit raw-TTY flag
+  semantics, subcommand-help stdin consumption, and prompted multi-input
+  guidance. The definitive full gate on that final 463-outcome tree passed in
+  339.2 seconds. Its source/wheel/sdist SHA-256 values are respectively
+  `227d7f77114ad8d01df92896f537632984043230c00f4fe11d1f6501b0b6a035`,
+  `0ffdc9f62f31b6c8cd0c3cf04d5ed99f12d272b178e52965c5acf2806c86e937`,
+  and `b6177813982649c31b5886e5cc35bdfb487a904eefa785a62390aaa89954339f`.
+- Per the multi-model plan's protected-evidence rule, S1's gates used fresh
+  temporary dist and profile-evidence paths. Existing `packaging-evidence/`
+  and `dist/windows-11-x64/` records were neither overwritten nor relabelled;
+  the new S1 comparison identity is recorded in
+  `packaging/release-artifact-manifest.json` and `docs/PACKAGING.md`.
 
 ## Implemented hardening
 
