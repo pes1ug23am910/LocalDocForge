@@ -288,7 +288,8 @@ Notes:
   `null` (all three page counters are zero). The inventory refuses inputs over
   the configured `max_pages` limit and applies the configured cumulative
   `max_decompressed_bytes` and per-page `max_memory_bytes // 64` text
-  preflights; it never uses unbounded full-page text extraction.
+  preflights; it never uses unbounded full-page text extraction. This is a
+  decision aid, not a cheap probe: rectangle-dense pages can still be slow.
 - Image inputs (images-to-pdf and convert-images) may be HEIC/HEIF, JPG, PNG,
   TIFF, BMP, or WebP; HEIC decoding runs through the decode-only pi-heif
   engine, so HEIF *output* is never offered.

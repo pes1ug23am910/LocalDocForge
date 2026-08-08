@@ -199,6 +199,7 @@ def _extract_fragments(
     textpage: Any,
     *,
     byte_limit: int | None,
+    sample_style: bool,
     check_cancelled: Callable[[], None] | None,
 ) -> tuple[list[_Fragment], bool]:
     """Extract bounded line fragments."""
@@ -226,7 +227,7 @@ def _extract_fragments(
             raise PipelineError(
                 "Bounded PDFium fragments exceed the configured extraction byte limit"
             )
-        font_size, angle = _fragment_style(textpage, clipped)
+        font_size, angle = _fragment_style(textpage, clipped) if sample_style else (0.0, 0.0)
         fragments.append(
             _Fragment(
                 text=text,
@@ -481,6 +482,7 @@ def _extract_page(
     *,
     markdown: bool,
     analyze_layout: bool = True,
+    sample_style: bool = True,
     decoded_byte_limit: int | None = None,
     output_byte_limit: int | None = None,
     memory_limit: int | None = None,
@@ -536,6 +538,7 @@ def _extract_page(
             page,
             textpage,
             byte_limit=working_byte_limit,
+            sample_style=sample_style,
             check_cancelled=check_cancelled,
         )
         page_box = tuple(float(value) for value in page.get_bbox())
@@ -1123,6 +1126,7 @@ def inspect_page_text_stats(
                     page,
                     markdown=False,
                     analyze_layout=False,
+                    sample_style=False,
                     decoded_byte_limit=decoded_limit,
                     memory_limit=limits.max_memory_bytes,
                 )

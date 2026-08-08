@@ -309,14 +309,23 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     for phrase in (
         "Unicode is normalized to NFC",
         "one selected page at a time",
+        "per-page wall time scales with PDFium text-rectangle count",
         "details.coverage.per_page[]",
         '"warning_codes": [...]',
         "pdf-to-images --preset llm",
     ):
         assert phrase in text_section_flat
 
+    getting_started = (ROOT / "docs" / "GETTING_STARTED_WINDOWS.md").read_text(
+        encoding="utf-8"
+    )
+    assert "fast extraction-vs-render decision signals" not in getting_started
+    assert "not a cheap probe" in getting_started
+
     engines = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
     assert "| pypdfium2 (PDFium) | 5.12.1 / PDFium 152.0.7947.0 |" in engines
+    assert "Chrome's widely deployed PDF engine" in engines
+    assert "Chrome's PDF engine: fast" not in engines
     assert "PyMuPDF and" in engines and "pymupdf4llm are banned" in engines
 
     architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")

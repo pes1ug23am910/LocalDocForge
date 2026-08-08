@@ -525,6 +525,55 @@ def test_page_object_scan_treats_terminal_form_depth_as_truncated() -> None:
     assert not scan.has_text_object
 
 
+def test_inspect_skips_unused_fragment_style_sampling(
+    fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unexpected_style_sample(
+        _textpage: object, _rect: tuple[float, float, float, float]
+    ) -> tuple[float, float]:
+        raise AssertionError("inspect must not sample unused fragment style")
+
+    monkeypatch.setattr(text_ops, "_fragment_style", unexpected_style_sample)
+
+    info = inspect_pdf(fixtures_dir / "simple-3page.pdf")
+
+    assert [item["page"] for item in info["page_text_stats"]] == [1, 2, 3]
+    assert all(item["char_count"] > 0 for item in info["page_text_stats"])
+
+
+def test_txt_extraction_retains_angle_sampling(
+    fixtures_dir: Path,
+    out_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    samples = 0
+
+    def angled_style_sample(
+        _textpage: object, _rect: tuple[float, float, float, float]
+    ) -> tuple[float, float]:
+        nonlocal samples
+        samples += 1
+        return 12.0, 0.25
+
+    monkeypatch.setattr(text_ops, "_fragment_style", angled_style_sample)
+    output = out_dir / "styled.txt"
+
+    report = pdf_to_md(
+        fixtures_dir / "simple-3page.pdf",
+        output,
+        options=_options(
+            tmp_path,
+            output_format="txt",
+            pages=PageRange(spec="1"),
+        ),
+    )
+
+    assert samples > 0
+    assert "MARKER-ALPHA-PAGE-1" in output.read_text(encoding="utf-8")
+    assert "reading-order-uncertain" in _warning_codes(report)
+
+
 def test_inspect_zero_page_pdf_has_defined_empty_text_summary(fixtures_dir: Path) -> None:
     info = inspect_pdf(fixtures_dir / "text-zero-page.pdf")
     assert info["page_count"] == 0
