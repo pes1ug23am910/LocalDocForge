@@ -148,10 +148,20 @@ ldf --json inspect input.pdf   # outlines, forms, attachments, JavaScript
 
 ### Encrypted inputs
 
-Password-protected PDFs prompt interactively with hidden input. Passwords are
-never accepted as command-line arguments and never written to logs or reports.
+Password-protected PDFs use this precedence: global `--password-stdin` (one
+UTF-8 line from stdin) → `LDF_PASSWORD` → hidden interactive prompt
+(TTY only). The password value is never accepted as a command-line argument or
+written to stdout, stderr, logs, or reports. A non-interactive call with no
+source exits 2 and names both mechanisms. One value applies to every encrypted
+input in that invocation; files needing different passwords fail clearly.
 Outputs are **not** re-encrypted; every such conversion emits a critical
 `input-encryption-removed` warning. (There is no protect/unlock operation yet.)
+For interactive terminal entry, omit `--password-stdin` so the fallback prompt
+hides input; the explicit flag always performs its documented raw line read.
+Windows NUL, redirected files, and pipes are non-interactive even though some
+runtimes label NUL a character device. An exported empty `LDF_PASSWORD` is an
+explicit empty credential, not an absent source; remove the variable when you
+want missing-password guidance or the hidden console prompt.
 
 ## 4. Behaviors worth knowing before you rely on them
 
@@ -303,7 +313,7 @@ documents whose exposure would hurt you, wait for the blockers in
 | `compress` barely shrinks a file | The input is image-heavy or already optimized; lossless mode never re-encodes images. The report's `compression` details show exact before/after bytes. |
 | 401 from every API call | Missing/wrong `X-LDF-Token` header — a browser cookie alone never authorizes API calls. |
 | 429/503 from the API | Queue/rate/per-client caps (§5). Honor `Retry-After`. |
-| Password prompt appears | Input is encrypted. Type it (hidden); it is used to unlock only, never stored. |
+| Password prompt appears | Input is encrypted and stdin is interactive. Type it (hidden), or for a non-interactive invocation use global `--password-stdin` or `LDF_PASSWORD`; it is used to unlock only and never written to output/reports/logs. |
 
 ## 10. Keeping the installation healthy
 

@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import glob as _glob
 import json
+import os
 import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 import typer
 
@@ -55,7 +56,141 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False,
 )
 
-_state: dict[str, object] = {"json": False, "quiet": False, "report_dir": None}
+_PASSWORD_ENV = "LDF_PASSWORD"  # noqa: S105 - variable name, not a credential
+
+_state: dict[str, object] = {
+    "json": False,
+    "quiet": False,
+    "report_dir": None,
+    "password": None,
+    "password_supplied": False,
+    "password_stdin_requested": False,
+}
+
+
+def _clear_password_state() -> None:
+    _state["password"] = None
+    _state["password_supplied"] = False
+    _state["password_stdin_requested"] = False
+
+
+def _password_stdin_error(message: str, *, cause: Exception | None = None) -> NoReturn:
+    typer.secho(f"Error: {message}", fg=typer.colors.RED, err=True)
+    raise typer.Exit(EXIT_USAGE) from cause
+
+
+def _read_password_stdin() -> str:
+    """Read exactly one explicitly UTF-8 password line without trimming spaces."""
+    try:
+        raw = typer.get_binary_stream("stdin").readline()
+    except (OSError, ValueError) as exc:
+        _password_stdin_error("could not read a password line from stdin", cause=exc)
+    if raw == b"":
+        _password_stdin_error("--password-stdin requires one UTF-8 line on stdin")
+    try:
+        password = raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        _password_stdin_error("--password-stdin input must be valid UTF-8", cause=exc)
+    if password.endswith("\r\n"):
+        return password[:-2]
+    if password.endswith(("\n", "\r")):
+        return password[:-1]
+    return password
+
+
+def _ensure_password_resolved() -> None:
+    if _state["password_stdin_requested"]:
+        _state["password"] = _read_password_stdin()
+        _state["password_supplied"] = True
+        _state["password_stdin_requested"] = False
+
+
+def _configured_password() -> tuple[str | None, bool]:
+    _ensure_password_resolved()
+    if not _state["password_supplied"]:
+        return None, False
+    password = _state["password"]
+    if not isinstance(password, str):
+        raise RuntimeError("configured CLI password state is invalid")
+    return password, True
+
+
+def _password_value() -> str | None:
+    return _configured_password()[0]
+
+
+def _windows_file_descriptor_is_console(file_descriptor: int) -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+
+        handle = msvcrt.get_osfhandle(file_descriptor)
+        if handle == -1:
+            return False
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.GetConsoleMode.argtypes = (
+            wintypes.HANDLE,
+            ctypes.POINTER(wintypes.DWORD),
+        )
+        kernel32.GetConsoleMode.restype = wintypes.BOOL
+        mode = wintypes.DWORD()
+        return bool(
+            kernel32.GetConsoleMode(
+                wintypes.HANDLE(handle),
+                ctypes.byref(mode),
+            )
+        )
+    except (AttributeError, OSError, OverflowError, TypeError, ValueError):
+        # Fail closed: pipes, files, NUL, missing handles, and probe failures
+        # must never enter a hidden prompt that no caller can answer.
+        return False
+
+
+def _stdin_is_tty() -> bool:
+    try:
+        if not sys.stdin.isatty():
+            return False
+    except (AttributeError, OSError, ValueError):
+        return False
+    if sys.platform != "win32":
+        return True
+    try:
+        file_descriptor = sys.stdin.fileno()
+    except (AttributeError, OSError, ValueError):
+        return False
+    return _windows_file_descriptor_is_console(file_descriptor)
+
+
+def _missing_noninteractive_password() -> NoReturn:
+    typer.secho(
+        "Error: encrypted input requires a password in non-interactive mode; "
+        "use global --password-stdin before the command or set LDF_PASSWORD.",
+        fg=typer.colors.RED,
+        err=True,
+    )
+    raise typer.Exit(EXIT_USAGE)
+
+
+def _fail_one_password(exc: organize_ops.EncryptedInputError) -> NoReturn:
+    typer.secho(
+        f"Error: {exc} One password is used for all encrypted inputs "
+        "in an invocation.",
+        fg=typer.colors.RED,
+        err=True,
+    )
+    raise typer.Exit(EXIT_FAILED) from exc
+
+
+def _password_retry_value(exc: organize_ops.EncryptedInputError) -> str:
+    _, supplied = _configured_password()
+    if supplied:
+        _fail_one_password(exc)
+    if not _stdin_is_tty():
+        _missing_noninteractive_password()
+    return typer.prompt("PDF password", hide_input=True, err=True)
 
 
 def _version_callback(value: bool) -> None:
@@ -66,11 +201,19 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     json_output: Annotated[
         bool, typer.Option("--json", help="Emit machine-readable JSON on stdout.")
     ] = False,
     quiet: Annotated[
         bool, typer.Option("--quiet", "-q", help="Suppress the report summary.")
+    ] = False,
+    password_stdin: Annotated[
+        bool,
+        typer.Option(
+            "--password-stdin",
+            help="Read one UTF-8 password line from stdin; overrides LDF_PASSWORD.",
+        ),
     ] = False,
     strict_offline: Annotated[
         bool | None,
@@ -89,6 +232,14 @@ def main(
         typer.Option("--version", callback=_version_callback, is_eager=True),
     ] = None,
 ) -> None:
+    _clear_password_state()
+    ctx.call_on_close(_clear_password_state)
+    environment_password = os.environ.pop(_PASSWORD_ENV, None)
+    if password_stdin:
+        _state["password_stdin_requested"] = True
+    elif environment_password is not None:
+        _state["password"] = environment_password
+        _state["password_supplied"] = True
     _state["json"] = json_output
     _state["quiet"] = quiet
     _state["report_dir"] = report_dir
@@ -117,15 +268,13 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
     try:
         report = operation_fn(*args, **kwargs)
     except organize_ops.EncryptedInputError as exc:
-        if password_retry and sys.stdin.isatty():
-            password = typer.prompt("PDF password", hide_input=True)
-            options = kwargs.get("options")
-            if options is not None:
-                options.password = password
-                _run(operation_fn, *args, password_retry=False, **kwargs)
-                return
-        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(EXIT_FAILED) from exc
+        options = kwargs.get("options")
+        if password_retry and options is not None and hasattr(options, "password"):
+            password = _password_retry_value(exc)
+            options.password = password
+            _run(operation_fn, *args, password_retry=False, **kwargs)
+            return
+        _fail_one_password(exc)
     except EngineUnavailableError as exc:
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(EXIT_NO_ENGINE) from exc
@@ -369,23 +518,16 @@ def inspect(
     if not input_file.is_file():
         typer.secho(f"Error: file does not exist: {input_file}", fg=typer.colors.RED, err=True)
         raise typer.Exit(EXIT_USAGE)
+    password = _password_value()
     try:
-        info = organize_ops.inspect_pdf(input_file)
-    except organize_ops.EncryptedInputError:
-        if sys.stdin.isatty():
-            password = typer.prompt("PDF password", hide_input=True)
-            try:
-                info = organize_ops.inspect_pdf(input_file, password=password)
-            except Exception as exc:  # wrong password or damaged file
-                typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
-                raise typer.Exit(EXIT_FAILED) from exc
-        else:
-            typer.secho(
-                "Error: file is encrypted; run interactively to enter the password.",
-                fg=typer.colors.RED,
-                err=True,
-            )
-            raise typer.Exit(EXIT_FAILED) from None
+        info = organize_ops.inspect_pdf(input_file, password=password)
+    except organize_ops.EncryptedInputError as exc:
+        password = _password_retry_value(exc)
+        try:
+            info = organize_ops.inspect_pdf(input_file, password=password)
+        except Exception as retry_exc:  # wrong password or damaged file
+            typer.secho(f"Error: {retry_exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(EXIT_FAILED) from retry_exc
     except Exception as exc:
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(EXIT_FAILED) from exc
@@ -437,7 +579,9 @@ def merge(
             )
             raise typer.Exit(EXIT_USAGE)
         ranges = [_parse_range(page_spec) for page_spec in pages]
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.merge_pdfs,
         _expand_inputs(paths),
@@ -462,7 +606,9 @@ def split(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Split a PDF into ranges, every-N chunks, or single pages (default)."""
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.split_pdf,
         input_file,
@@ -481,7 +627,9 @@ def remove_pages_cmd(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Remove the selected pages."""
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.remove_pages,
         input_file,
@@ -499,7 +647,9 @@ def extract_pages_cmd(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Extract the selected pages into a new PDF."""
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.extract_pages,
         input_file,
@@ -517,7 +667,9 @@ def organize(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Reorder, duplicate, or drop pages using an explicit order."""
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.organize_pdf,
         input_file,
@@ -536,7 +688,9 @@ def rotate(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Rotate the selected pages (default: all) by a multiple of 90 degrees."""
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.rotate_pages,
         input_file,
@@ -570,7 +724,9 @@ def crop(
             err=True,
         )
         raise typer.Exit(EXIT_USAGE) from None
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(
         organize_ops.crop_pages,
         input_file,
@@ -608,7 +764,9 @@ def compress(
             err=True,
         )
         raise typer.Exit(EXIT_USAGE)
-    options = organize_ops.OrganizeOptions(collision=collision)
+    options = organize_ops.OrganizeOptions(
+        collision=collision, password=_password_value()
+    )
     _run(optimize_ops.compress_pdf, input_file, output, preset=preset, options=options)
 
 
@@ -659,6 +817,7 @@ def pdf_to_images_cmd(
         pages=_parse_range(pages),
         jpeg_quality=quality,
         collision=collision,
+        password=_password_value(),
     )
     _run(image_ops.pdf_to_images, input_file, output_dir, options=options)
 

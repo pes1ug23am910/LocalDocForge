@@ -50,6 +50,17 @@ BUILD_BACKEND_RELEASE_HASHES = frozenset(
 BUILD_BACKEND_MAX_BYTES = 2 * 1024 * 1024
 SOURCE_DATE_EPOCH = "1704067200"
 ALL_STEPS = ("locks", "quality", "artifacts", "tests", "blocked-network", "build", "profiles")
+EXPECTED_BASE_DEPENDENCIES = frozenset(
+    {
+        "pydantic",
+        "pydantic-settings",
+        "typer",
+        "pikepdf",
+        "pypdfium2",
+        "pillow",
+        "pi-heif",
+    }
+)
 
 
 def _run(
@@ -322,15 +333,7 @@ def _validate_metadata(wheel: Path) -> None:
 
     requirements = [Requirement(value) for value in metadata.get_all("Requires-Dist") or ()]
     base = {item.name.lower() for item in requirements if item.marker is None}
-    expected_base = {
-        "pydantic",
-        "pydantic-settings",
-        "typer",
-        "pikepdf",
-        "pypdfium2",
-        "pillow",
-    }
-    if base != expected_base:
+    if base != EXPECTED_BASE_DEPENDENCIES:
         raise RuntimeError(f"wheel base dependency drift: {sorted(base)}")
 
     by_extra: dict[str, set[str]] = {name: set() for name in ("lite", "standard", "full", "dev")}
