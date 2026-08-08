@@ -2,18 +2,24 @@
 
 from __future__ import annotations
 
+from typing import get_type_hints
+
 import pikepdf
 import pytest
 from PIL import Image
 
-from localdocforge.domain.models import ReportStatus
+from localdocforge.config.settings import Settings
+from localdocforge.domain.models import ReportStatus, ResourceLimits
 from localdocforge.domain.pages import PageRange
+from localdocforge.jobs.workspace import CollisionPolicy
 from localdocforge.operations.images import (
+    CONVERT_PRESETS,
     ImagesToPdfOptions,
     PdfToImagesOptions,
     images_to_pdf,
     parse_page_size,
     pdf_to_images,
+    resolve_pdf_to_images_options,
 )
 from localdocforge.pipelines.runner import PipelineError
 
@@ -25,6 +31,10 @@ def page_sizes(path):
              round(float(p.mediabox[3]) - float(p.mediabox[1]), 1))
             for p in pdf.pages
         ]
+
+
+def fidelity_codes(report):
+    return {warning.code for warning in report.fidelity_warnings}
 
 
 class TestParsePageSize:
@@ -116,6 +126,72 @@ class TestImagesToPdf:
 
 
 class TestPdfToImages:
+    def test_defaults_and_llm_preset_resolution(self):
+        options = PdfToImagesOptions()
+        hints = get_type_hints(PdfToImagesOptions)
+        assert hints["image_format"] is str
+        assert hints["dpi"] is int
+        assert hints["jpeg_quality"] is int
+        assert options.image_format == "png"
+        assert options.dpi == 150
+        assert options.jpeg_quality == 90
+        defaults = resolve_pdf_to_images_options(options)
+        assert defaults == {
+            "image_format": "png",
+            "quality": 90,
+            "dpi": 150,
+            "max_dimension": None,
+        }
+
+        preset_options = PdfToImagesOptions(preset="llm")
+        preset = resolve_pdf_to_images_options(preset_options)
+        assert preset == CONVERT_PRESETS["llm"] | {"dpi": 150}
+
+        explicit_defaults = PdfToImagesOptions(
+            image_format="png", dpi=150, jpeg_quality=90
+        )
+        explicit_preset_defaults = PdfToImagesOptions(
+            image_format="png", dpi=150, jpeg_quality=90, preset="llm"
+        )
+        assert options == explicit_defaults
+        assert preset_options != explicit_preset_defaults
+
+        positional = PdfToImagesOptions(
+            "jpeg", 72, None, 80, CollisionPolicy.RENAME
+        )
+        assert positional.collision is CollisionPolicy.RENAME
+        assert positional.preset is None
+
+    def test_explicit_format_and_quality_override_llm_preset(self):
+        resolved = resolve_pdf_to_images_options(
+            PdfToImagesOptions(preset="llm", image_format="webp", jpeg_quality=37)
+        )
+        assert resolved["image_format"] == "webp"
+        assert resolved["quality"] == 37
+        assert resolved["max_dimension"] == CONVERT_PRESETS["llm"]["max_dimension"]
+
+        explicit_legacy_defaults = resolve_pdf_to_images_options(
+            PdfToImagesOptions(
+                preset="llm", image_format="png", jpeg_quality=90, dpi=150
+            )
+        )
+        assert explicit_legacy_defaults["image_format"] == "png"
+        assert explicit_legacy_defaults["quality"] == 90
+        assert explicit_legacy_defaults["dpi"] == 150
+        assert explicit_legacy_defaults["max_dimension"] is None
+
+    def test_explicit_dpi_disables_llm_pixel_cap(self):
+        resolved = resolve_pdf_to_images_options(
+            PdfToImagesOptions(preset="llm", dpi=200)
+        )
+        assert resolved["dpi"] == 200
+        assert resolved["max_dimension"] is None
+        assert resolved["image_format"] == CONVERT_PRESETS["llm"]["image_format"]
+
+    def test_unknown_preset_is_refused(self):
+        with pytest.raises(PipelineError, match="Unknown preset"):
+            resolve_pdf_to_images_options(PdfToImagesOptions(preset="tiny"))
+
     def test_render_all_pages_png(self, fixtures_dir, out_dir):
         report = pdf_to_images(
             fixtures_dir / "simple-3page.pdf",
@@ -147,6 +223,127 @@ class TestPdfToImages:
         with Image.open(files[0]) as image:
             assert image.format == "JPEG"
 
+        renamed = pdf_to_images(
+            fixtures_dir / "simple-3page.pdf",
+            out_dir,
+            options=PdfToImagesOptions(
+                image_format="jpeg",
+                dpi=72,
+                pages=PageRange(spec="2"),
+                collision=CollisionPolicy.RENAME,
+            ),
+        )
+        assert renamed.outputs[0].path != files[0]
+        assert renamed.outputs[0].path.is_file()
+        assert renamed.details["dimensions"][0]["output_index"] == 0
+        assert "output" not in renamed.details["dimensions"][0]
+
+    def test_llm_preset_caps_mixed_pages_without_upscaling_small_page(
+        self, fixtures_dir, out_dir
+    ):
+        report = pdf_to_images(
+            fixtures_dir / "mixed-sizes.pdf",
+            out_dir,
+            options=PdfToImagesOptions(preset="llm"),
+        )
+        files = sorted(out_dir.glob("*.jpg"))
+        assert len(files) == 3
+        actual_dimensions = []
+        for path in files:
+            with Image.open(path) as image:
+                assert image.format == "JPEG"
+                assert image.mode == "RGB"
+                actual_dimensions.append(image.size)
+        assert actual_dimensions == [(1109, 1568), (1568, 1212), (625, 625)]
+        assert max(actual_dimensions[2]) == 625  # 300 pt at the 150-DPI ceiling
+
+        details = report.details
+        assert details["format"] == CONVERT_PRESETS["llm"]["image_format"]
+        assert details["quality"] == CONVERT_PRESETS["llm"]["quality"]
+        assert details["configured_quality"] == CONVERT_PRESETS["llm"]["quality"]
+        assert details["jpeg_quality"] == CONVERT_PRESETS["llm"]["quality"]
+        assert details["max_dimension"] == CONVERT_PRESETS["llm"]["max_dimension"]
+        assert details["dpi_mode"] == "per-page-cap"
+        assert [
+            (item["width"], item["height"]) for item in details["dimensions"]
+        ] == actual_dimensions
+        assert details["dimensions"][2]["effective_dpi"] == 150.0
+        assert "image-downscaled" in fidelity_codes(report)
+
+    def test_llm_preset_fractional_page_never_rounds_to_1569(
+        self, fixtures_dir, out_dir
+    ):
+        report = pdf_to_images(
+            fixtures_dir / "fractional-size.pdf",
+            out_dir,
+            options=PdfToImagesOptions(preset="llm"),
+        )
+        with Image.open(report.outputs[0].path) as image:
+            assert max(image.size) == CONVERT_PRESETS["llm"]["max_dimension"]
+            assert image.size == (
+                report.details["dimensions"][0]["width"],
+                report.details["dimensions"][0]["height"],
+            )
+            pixel_count = image.width * image.height
+
+        limited_dir = out_dir / "pixel-limit"
+        limited_settings = Settings(
+            jobs_root=out_dir / "jobs",
+            limits=ResourceLimits(max_image_pixels=pixel_count - 1),
+        )
+        with pytest.raises(PipelineError, match="over the configured limit"):
+            pdf_to_images(
+                fixtures_dir / "fractional-size.pdf",
+                limited_dir,
+                options=PdfToImagesOptions(preset="llm", settings=limited_settings),
+            )
+        assert not limited_dir.exists()
+
+    def test_llm_explicit_overrides_are_independent(self, fixtures_dir, out_dir):
+        webp_report = pdf_to_images(
+            fixtures_dir / "mixed-sizes.pdf",
+            out_dir / "webp",
+            options=PdfToImagesOptions(
+                preset="llm",
+                image_format="webp",
+                jpeg_quality=37,
+                pages=PageRange(spec="1"),
+            ),
+        )
+        with Image.open(webp_report.outputs[0].path) as image:
+            assert image.format == "WEBP"
+            assert max(image.size) == CONVERT_PRESETS["llm"]["max_dimension"]
+        assert webp_report.details["quality"] == 37
+
+        png_report = pdf_to_images(
+            fixtures_dir / "mixed-sizes.pdf",
+            out_dir / "png",
+            options=PdfToImagesOptions(
+                preset="llm",
+                image_format="png",
+                jpeg_quality=41,
+                pages=PageRange(spec="1"),
+            ),
+        )
+        with Image.open(png_report.outputs[0].path) as image:
+            assert image.format == "PNG"
+            assert max(image.size) == CONVERT_PRESETS["llm"]["max_dimension"]
+        assert png_report.details["quality"] is None
+        assert png_report.details["configured_quality"] == 41
+
+        dpi_report = pdf_to_images(
+            fixtures_dir / "mixed-sizes.pdf",
+            out_dir / "dpi",
+            options=PdfToImagesOptions(
+                preset="llm", dpi=200, pages=PageRange(spec="1")
+            ),
+        )
+        with Image.open(dpi_report.outputs[0].path) as image:
+            assert max(image.size) > CONVERT_PRESETS["llm"]["max_dimension"]
+        assert dpi_report.details["max_dimension"] is None
+        assert dpi_report.details["dpi_mode"] == "fixed"
+        assert "image-downscaled" not in fidelity_codes(dpi_report)
+
     def test_repeated_page_selection_gets_deterministic_unique_names(
         self, fixtures_dir, out_dir
     ):
@@ -164,6 +361,9 @@ class TestPdfToImages:
         for path in files:
             with Image.open(path) as image:
                 image.load()
+        assert [item["page"] for item in report.details["dimensions"]] == [1, 1]
+        assert [item["occurrence"] for item in report.details["dimensions"]] == [1, 2]
+        assert [item["output_index"] for item in report.details["dimensions"]] == [0, 1]
 
     def test_unsupported_format_rejected(self, fixtures_dir, out_dir):
         with pytest.raises(PipelineError, match="Unsupported image format"):

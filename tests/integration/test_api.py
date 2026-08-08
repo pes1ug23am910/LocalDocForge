@@ -7,6 +7,7 @@ import io
 import pikepdf
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from localdocforge.api.app import create_app
 from localdocforge.cli.main import bind_allowed
@@ -143,6 +144,64 @@ class TestJobFlow:
         image = client.get(f"/api/jobs/{job_id}/outputs/2", headers=auth())
         assert image.content[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_pdf_to_images_accepts_llm_preset_with_reported_dimensions(
+        self, client, fixtures_dir
+    ):
+        response = client.post(
+            "/api/jobs/pdf-to-images",
+            headers=auth(),
+            files=[upload(fixtures_dir / "mixed-sizes.pdf")],
+            data={"preset": "llm"},
+        )
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        details = payload["report"]["details"]
+        assert details["format"] == "jpeg"
+        assert details["quality"] == 85
+        assert details["max_dimension"] == 1568
+        assert details["dpi_mode"] == "per-page-cap"
+        assert len(details["dimensions"]) == 3
+        for index, expected in enumerate(details["dimensions"]):
+            downloaded = client.get(
+                f"/api/jobs/{payload['job_id']}/outputs/{index}", headers=auth()
+            )
+            assert downloaded.content[:3] == b"\xff\xd8\xff"
+            with Image.open(io.BytesIO(downloaded.content)) as image:
+                assert image.size == (expected["width"], expected["height"])
+                assert max(image.size) <= 1568
+        assert (
+            details["dimensions"][2]["width"],
+            details["dimensions"][2]["height"],
+        ) == (625, 625)
+
+        lossless_override = client.post(
+            "/api/jobs/pdf-to-images",
+            headers=auth(),
+            files=[upload(fixtures_dir / "mixed-sizes.pdf")],
+            data={"preset": "llm", "format": "png", "quality": "41", "pages": "1"},
+        )
+        assert lossless_override.status_code == 201, lossless_override.text
+        lossless_details = lossless_override.json()["report"]["details"]
+        assert lossless_details["format"] == "png"
+        assert lossless_details["quality"] is None
+        assert lossless_details["configured_quality"] == 41
+        assert lossless_details["max_dimension"] == 1568
+
+        dpi_override = client.post(
+            "/api/jobs/pdf-to-images",
+            headers=auth(),
+            files=[upload(fixtures_dir / "mixed-sizes.pdf")],
+            data={"preset": "llm", "dpi": "200", "pages": "1"},
+        )
+        assert dpi_override.status_code == 201, dpi_override.text
+        dpi_details = dpi_override.json()["report"]["details"]
+        assert dpi_details["max_dimension"] is None
+        assert dpi_details["dpi_mode"] == "fixed"
+        assert max(
+            dpi_details["dimensions"][0]["width"],
+            dpi_details["dimensions"][0]["height"],
+        ) > 1568
+
     def test_compress_job_reports_reduction_and_downloads(self, client, fixtures_dir):
         response = client.post(
             "/api/jobs/compress",
@@ -257,6 +316,16 @@ class TestJobErrors:
         )
         assert response.status_code == 422
         assert "Unknown form field" in response.json()["detail"]
+
+    def test_pdf_to_images_rejects_unknown_preset(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/pdf-to-images",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data={"preset": "tiny"},
+        )
+        assert response.status_code == 422
+        assert "preset" in response.json()["detail"]
 
     def test_image_api_honors_layout_and_quality_parameters(self, client, fixtures_dir):
         response = client.post(

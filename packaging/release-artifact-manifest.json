@@ -44,8 +44,8 @@
             "localdocforge/validation/__init__.py",
             "localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "7f3e6689ece12b7eba18ec6ec20d7546f49ad67cb4ae3af5bac1c54a7d934476",
-          "size": 104614
+          "sha256": "5d2dd0ceb978665fc4d89fb90d7ace35c00b98dd920267ab7cfe1d6bcb8b1b2f",
+          "size": 106628
         },
         "localdocforge-0.1.0.tar.gz": {
           "members": [
@@ -94,12 +94,12 @@
             "localdocforge-0.1.0/src/localdocforge/validation/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "f7ad3852530f1ff6ca6d1f701ddaadf94fb2775d4aa5f97f403474aee53c978d",
-          "size": 92911
+          "sha256": "1b2630a8adb11082954038e81ea5189c619422e7a14dc14f7405be14db7581c0",
+          "size": 94998
         }
       },
       "source_date_epoch": 1704067200,
-      "source_tree_sha256": "d4b78a0b520f029eb94f6aba4e7ecdc1fc9dc2f4ffa625a9b12ea692ce34ff86"
+      "source_tree_sha256": "6e0707f41f1a22be8876b4fdc1f1593f27063b09e1badc29be49df28366dc063"
     }
   },
   "schema": 3
