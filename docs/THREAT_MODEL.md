@@ -17,7 +17,8 @@ inherit these controls automatically.
 ## Trust boundaries
 
 - Every input document and upload is untrusted, regardless of extension.
-- CLI operations invoke pikepdf/libqpdf, PDFium, and Pillow in-process. API
+- CLI operations invoke pikepdf/libqpdf, PDFium, Pillow, and — for HEIC/HEIF
+  input — the libheif/libde265 decoders (via pi-heif) in-process. API
   operations invoke them in a fresh spawned child with process/resource
   containment. Both retain the user's filesystem authority; the worker is a
   failure boundary, not a restricted filesystem or kernel sandbox.

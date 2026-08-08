@@ -199,7 +199,19 @@ class TestImageCommands:
         result = runner.invoke(app, ["images-to-pdf", pattern, "-o", str(out)])
         assert result.exit_code == 0, result.output
         with pikepdf.open(out) as pdf:
-            assert len(pdf.pages) == 2  # photo.jpg + exif-rotated.jpg
+            # photo, exif-rotated, srgb-tagged, and bad-profile fixtures
+            assert len(pdf.pages) == 4
+
+    def test_images_to_pdf_accepts_heic(self, fixtures_dir, out_dir):
+        out = out_dir / "cli-heic.pdf"
+        result = runner.invoke(
+            app,
+            ["images-to-pdf", str(fixtures_dir / "images" / "photo.heic"),
+             "-o", str(out)],
+        )
+        assert result.exit_code == 0, result.output
+        with pikepdf.open(out) as pdf:
+            assert len(pdf.pages) == 1
 
     def test_images_to_pdf_no_glob_match(self, out_dir):
         result = runner.invoke(
@@ -215,6 +227,60 @@ class TestImageCommands:
         )
         assert result.exit_code == 0, result.output
         assert len(list(out_dir.glob("*.jpg"))) == 1
+
+
+class TestConvertImagesCommand:
+    def test_heic_glob_with_llm_preset(self, fixtures_dir, out_dir):
+        pattern = str(fixtures_dir / "images" / "photo.heic")
+        result = runner.invoke(
+            app, ["convert-images", pattern, "-d", str(out_dir), "--preset", "llm"]
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert (out_dir / "photo.jpg").is_file()
+        assert "EXIF metadata" in result.output
+
+    def test_format_and_max_dimension_flags(self, fixtures_dir, out_dir):
+        result = runner.invoke(
+            app,
+            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
+             "-d", str(out_dir), "--format", "png", "--max-dimension", "200"],
+        )
+        assert result.exit_code == 0, combined_output(result)
+        assert (out_dir / "photo.png").is_file()
+
+    def test_unknown_preset_is_usage_error(self, fixtures_dir, out_dir):
+        result = runner.invoke(
+            app,
+            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
+             "-d", str(out_dir), "--preset", "tiny"],
+        )
+        assert result.exit_code == EXIT_USAGE
+        assert "llm" in combined_output(result)
+
+    def test_unknown_format_is_usage_error(self, fixtures_dir, out_dir):
+        result = runner.invoke(
+            app,
+            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
+             "-d", str(out_dir), "--format", "gif"],
+        )
+        assert result.exit_code == EXIT_USAGE
+
+    def test_missing_input_is_usage_error(self, out_dir):
+        result = runner.invoke(
+            app,
+            ["convert-images", str(out_dir / "absent.heic"), "-d", str(out_dir)],
+        )
+        assert result.exit_code == EXIT_USAGE
+
+    def test_existing_output_respects_collision_policy(self, fixtures_dir, out_dir):
+        (out_dir / "photo.jpg").write_bytes(b"occupied")
+        result = runner.invoke(
+            app,
+            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
+             "-d", str(out_dir)],
+        )
+        assert result.exit_code == EXIT_COLLISION
+        assert (out_dir / "photo.jpg").read_bytes() == b"occupied"
 
 
 class TestCompressCommand:

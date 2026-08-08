@@ -33,6 +33,10 @@ dependencies = [
     "pikepdf>=9.0",
     "pypdfium2>=4.30",
     "pillow>=10.4",
+    # HEIF/HEIC decode plugin. pi-heif is the decode-only distribution of
+    # pillow-heif: no bundled x265 encoder, so the wheel license ceiling stays
+    # LGPL-3.0 instead of the full package's GPLv2 wheels.
+    "pi-heif>=1.0",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +60,10 @@ dev = [
     "python-multipart>=0.0.9",
     "pypdf>=5.0",
     "pytest>=8.3",
+    # Full pillow-heif (GPLv2 wheels: bundles the x265 HEVC encoder) is a
+    # dev-only fixture tool, like reportlab: tests encode synthetic HEIC
+    # inputs with it. The shipped runtime decodes through pi-heif only.
+    "pillow-heif>=1.0",
     "reportlab>=4.2",
     "ruff>=0.6",
     "httpx>=0.27",
@@ -122,6 +130,7 @@ warn_unused_configs = true
 [[tool.mypy.overrides]]
 module = [
     "PIL.*",
+    "pi_heif.*",
     "pikepdf.*",
     "pypdf.*",
     "pypdfium2.*",

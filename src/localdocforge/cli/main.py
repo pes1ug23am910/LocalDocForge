@@ -663,6 +663,88 @@ def pdf_to_images_cmd(
     _run(image_ops.pdf_to_images, input_file, output_dir, options=options)
 
 
+@app.command("convert-images")
+def convert_images_cmd(
+    inputs: Annotated[
+        list[Path],
+        typer.Argument(help="Image files (globs allowed), including iPhone HEIC/HEIF."),
+    ],
+    output_dir: Annotated[Path, typer.Option("--output-dir", "-d")],
+    image_format: Annotated[
+        str | None,
+        typer.Option("--format", help="png | jpeg | webp | tiff (default jpeg)."),
+    ] = None,
+    quality: Annotated[
+        int | None,
+        typer.Option(
+            "--quality", min=1, max=100, help="JPEG/WebP quality (default 90)."
+        ),
+    ] = None,
+    max_dimension: Annotated[
+        int | None,
+        typer.Option(
+            "--max-dimension",
+            min=16,
+            max=30000,
+            help="Downscale so the long edge is at most this many pixels; "
+            "never upscales.",
+        ),
+    ] = None,
+    preset: Annotated[
+        str | None,
+        typer.Option(
+            "--preset",
+            help="'llm' = JPEG quality 85, long edge ≤ 1568 px, metadata "
+            "stripped — sized for compatible AI image inputs. "
+            "Explicit flags override preset values.",
+        ),
+    ] = None,
+    keep_metadata: Annotated[
+        bool,
+        typer.Option(
+            "--keep-metadata",
+            help="Retain EXIF metadata (including any GPS position) instead of "
+            "stripping it.",
+        ),
+    ] = False,
+    background: Annotated[
+        str,
+        typer.Option(
+            "--background",
+            help="Background color used when transparency is flattened for JPEG.",
+        ),
+    ] = "white",
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Convert images (incl. iPhone HEIC) to shareable PNG/JPEG/WebP/TIFF."""
+    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
+        available = ", ".join(sorted(image_ops.CONVERT_PRESETS))
+        typer.secho(
+            f"Error: --preset {preset!r} is not available. Available: {available}.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
+        typer.secho(
+            f"Error: --format {image_format!r} is not supported; use png, jpeg, "
+            "webp, or tiff.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    options = image_ops.ConvertImagesOptions(
+        image_format=image_format,
+        quality=quality,
+        max_dimension=max_dimension,
+        preset=preset,
+        keep_metadata=keep_metadata,
+        background=background,
+        collision=collision,
+    )
+    _run(image_ops.convert_images, _expand_inputs(inputs), output_dir, options=options)
+
+
 def app_entry() -> None:  # console_scripts entry point
     # Legacy Windows consoles default to a narrow codepage; our output contains
     # ✓/⚠ marks and Unicode filenames. Never crash over display encoding.

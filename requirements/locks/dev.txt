@@ -469,6 +469,37 @@ pathspec==1.1.1 ; (implementation_name == 'cpython' and sys_platform == 'darwin'
     --hash=sha256:17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a \
     --hash=sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189
     # via mypy
+pi-heif==1.4.0 ; (implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32') \
+    --hash=sha256:04d5b253bc463839beb50ac9fdf9f13a79125ee80346a53030f43962e565f928 \
+    --hash=sha256:04f5648d670e33aef5d0bc6a0f1875efd6093217a826a6d123cbac6022434a70 \
+    --hash=sha256:055610c9eceb621f51117ab1900d4a9a519824427428c93a3c546b4e39e72df3 \
+    --hash=sha256:0cd041cdf552019737f665fdcdf9c831ef354785a92d930d7f546ba9959a0284 \
+    --hash=sha256:0da6168084d6c50f6a44538273f58d3aa2ec96ebdc3539efd65ecb98a1bb08e8 \
+    --hash=sha256:13eceb34f2bfe06b1e59296e958a67cbe864adb10d30e825890e54111b895aa0 \
+    --hash=sha256:1c7d6829532ff6ac195e63879b399530de8e693a621d3755581574da7ef74676 \
+    --hash=sha256:21a907c3ba6b72ffa97c308aa5678764be82b5510b4f0b67a9d50fdb99e0935e \
+    --hash=sha256:229af3701358ccc3428081586fe4c11d7badc8dbf995aa686cc4f0344c3966dd \
+    --hash=sha256:298a84c8865a2fa6a795bdd9e532bfa07dd87a6b289caff03b26a0993c06558b \
+    --hash=sha256:2fd498fabcdc77159414cccfd966ca48735497fd8c038d1b0135025f3cceac90 \
+    --hash=sha256:3d5396f500e70de167307e0cabcc2b3895d2e623ad4243811f44d578b55c9e1c \
+    --hash=sha256:406584a8f6d1d59f6d401af3d434f3e6a9df5c49681f87023c602f755c647b4e \
+    --hash=sha256:482bf2d9b26f4e3399a304bb8d14e01aaf0b806f22615e2cc98a0bdbda895d22 \
+    --hash=sha256:4fab02de6b0e445d8e7ab2f232338e242d6b5b54c0bddf12959ede248f176518 \
+    --hash=sha256:55f9b4567b84b72e39fd62982ab780631cad71ebe082b6834ce300fe46fcc389 \
+    --hash=sha256:58320bee5fac8923aa8e09439c7e8778ba4afb146d2cd658be9f4160cb72aec3 \
+    --hash=sha256:5b58514d1b76fb488e4f78ac4717371c8077f6422298d0fc9a21c2fa72d8907b \
+    --hash=sha256:6c791710e3d152637123ad204016fa6154040b1957e95fb1cb234014c423a0a3 \
+    --hash=sha256:743b971b9c0d35be8435702443596e3e9280084e68fc8d5c4de4b31fb12a1417 \
+    --hash=sha256:7692b50e0305170502fdd0657b31818e724f9630629bdbc05a91b10a7979d786 \
+    --hash=sha256:81cb473227b2da35bfd7c69a12764f664d91e44b0ec2547cdfe5ca6b8b52cab9 \
+    --hash=sha256:939f8eeb63a3897357807766cf0eea3fca3310427ec66a000b86ba1f30af21ab \
+    --hash=sha256:9400e8f27b13646bcb3bac2fbdcd8903b6f8e03dc269aabb3d852f15245b85ee \
+    --hash=sha256:b4cc3a6a55d31f7961d7bf16103a47704adf33c06209d9f86351caea2084c40a \
+    --hash=sha256:c95f5cf99285403698fc48436a05af01d4c38cbedc01949dd4d96f53590fbd33 \
+    --hash=sha256:d0f2512d2e03ea33777c2ca3f1bec33db260bb9dd013ffd350a20fe28452d33f \
+    --hash=sha256:e1199d9d41d9ecc877cf3ae7322ff099f6404574f2e62da47590cd4ecb9ec554 \
+    --hash=sha256:f5ecc06e86a0170ed3782ec27c854b5b334d44d7651d5c0bbff0c123ea44d5f9
+    # via localdocforge
 pikepdf==10.10.0 ; (implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32') \
     --hash=sha256:19c14b76a240f3cd067abc77b62843268d56dce45b7787ea70fd8cceb11cc5dc \
     --hash=sha256:2333431f739205de480e547fab5dcc512668ea4af8f3f02f0d620730413d3772 \
@@ -546,8 +577,41 @@ pillow==12.3.0 ; (implementation_name == 'cpython' and sys_platform == 'darwin')
     --hash=sha256:ffd0c5368496f41b0944be820fcb7a838aa6e623d250b01acf2643939c3f99d7
     # via
     #   localdocforge
+    #   pi-heif
     #   pikepdf
+    #   pillow-heif
     #   reportlab
+pillow-heif==1.4.0 ; (implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32') \
+    --hash=sha256:08026afd5f90628e029fe88aaa222280428ba7cc485a7cae553e78f7bb289b74 \
+    --hash=sha256:107d598a1b1694ba6f371927ffd6d72d6f9af2ca4082577d9edbfdeed465f940 \
+    --hash=sha256:1207b6b0819654262811a0cb74730cca1ced1ab7786a0fcd92f55b84ca07a05c \
+    --hash=sha256:19a2d9bd52b1f6dabed5305b8b5c4962b2bf7c21e8195c909e9425e4ca8ebf72 \
+    --hash=sha256:387b16e826ec29ab31101f257f362ed33e9b6aecec77d4f7d19caeb33fed0f1a \
+    --hash=sha256:4849dfceeec19d12c819bd12e138f91f1aa181eb2fd21231644bda91d2d0b292 \
+    --hash=sha256:4bd30446e025e682ac1450446e0b9a9a06efc27b5417c81b18d26aa40b97cd70 \
+    --hash=sha256:500bc4ea048ed8f2e7167451737539c2763c2d157357d1706024b2a9e6910c61 \
+    --hash=sha256:55a7c0cb5321538d1ca74037be54b48d147017735a766eb29bcca4761253a1f1 \
+    --hash=sha256:5c6181fb25c7d28f98702160b98967d1d7d432d71decac9351f5a47ee33554e0 \
+    --hash=sha256:6789fc4fe9ffa7beafcf0e287ea355de3a3c0c84e3adfabbbfdf8b46b83f223a \
+    --hash=sha256:6b772360a412df897ed59d56d2ef30d52b6cce7c3f7b8b170a9578deb311953b \
+    --hash=sha256:84f138c31d34a8bab5ffa07ffbcf9b865b8ad34e6c495dcb6e01fb29574e218d \
+    --hash=sha256:8f90b500ec1ae3a59d6613fd96123de35457f69fb9b3cd314d4b5a6799ba9843 \
+    --hash=sha256:9299b4e6cfa3d49c0495680011d224db69e41687c0e2de81a38ea6c39276e15b \
+    --hash=sha256:93de4bdb496c5f509911b57b057c16ec1ed10f3617b87f03f7f152745758691b \
+    --hash=sha256:972c68fae8379c158aad222defa8b8f10c858a5f7f9cc99942f34b9667a516cd \
+    --hash=sha256:a3debca82964ba4080277620601f274a8c9d509d52fd3e1faacb314dc0678ee4 \
+    --hash=sha256:ade286eeadb361773604e294f98c4a1b64b577aca271faa6971e2fbd018918c7 \
+    --hash=sha256:b31a152471c757eb02b71c9944a5973b818a21dea7980bfc57fe13945d051326 \
+    --hash=sha256:be955358e501ab03cd83331a49d331c16b8ea1a4f5751d46c24e6b28d8aa6a56 \
+    --hash=sha256:c699f8a3e845839bba590d3459ce59dba16c82c38e799955bef7042c54443eba \
+    --hash=sha256:c8d001996e3a4687551385c2fe4d3fb84293727052fca1c0f50528c78b8327c7 \
+    --hash=sha256:cdd3ebd552b50d0221bf525e033fbe3e83130b05c81bfd53d50ed4eafbb77a7c \
+    --hash=sha256:cfcd611a09dbb949715d5f25063bd3668e0daa06b53a3ed5bbd92d36b4f6b2a9 \
+    --hash=sha256:d6d907f454afa1958a688902e53f50ed7a98c8cbd6261d20f84b15e25f068020 \
+    --hash=sha256:d9d05477d67b3d63d601254ddca6b1e1943b0f5e5934cb5ed123c9b89e0fc60d \
+    --hash=sha256:f75faab30c0b1f20d266e0c8a1a746f7aa56694baf3fd5cc4d86f2f242bb58de \
+    --hash=sha256:ffbed970ea96485f96874604d3df298c06e89475dea09c217b8b901cc7ed7d1a
+    # via localdocforge
 pluggy==1.6.0 ; (implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32') \
     --hash=sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3 \
     --hash=sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746

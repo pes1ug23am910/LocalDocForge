@@ -50,6 +50,43 @@ def test_live_docs_describe_worker_and_packaging_state_consistently() -> None:
     assert "arbitrary same-user code can create a new session" in live_docs
 
 
+def test_heic_convert_images_slice_is_documented_consistently() -> None:
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    assert "| Convert images (HEIC/JPG/PNG/TIFF/BMP/WebP → PNG/JPEG/WebP/TIFF) | ✅ |" in feature
+    assert "HEIC/auto-crop/deskew unavailable" not in feature  # HEIC input shipped
+    assert "HEIF is decode-only (no HEIC output)" in feature
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    assert "ldf convert-images" in cli
+    assert "`convert-images`" in cli  # listed as an API job operation
+    assert "keep_metadata" in cli
+    assert "location-metadata-retained" in cli
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(encoding="utf-8")
+    for code in (
+        "image-reencoded",
+        "image-downscaled",
+        "alpha-flattened",
+        "metadata-stripped",
+        "xmp-metadata-dropped",
+        "color-profile-converted",
+        "color-profile-retained",
+        "location-metadata-retained",
+    ):
+        assert code in fidelity, code
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "convert-images slice" in status
+    assert "libheif 1.23.0" in status  # the advisory finding is not hidden
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf convert-images" in readme
+
+    engines = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
+    assert "pi-heif" in engines
+    assert "decode-only" in engines
+
+
 def test_compression_slice_is_documented_consistently() -> None:
     feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
     assert "| Compress PDF | ✅ lossless preset |" in feature

@@ -166,6 +166,62 @@ def make_images(directory: Path) -> None:
     exif = Image.Exif()
     exif[274] = 6  # orientation: rotate 90 CW to display
     rotated.save(images_dir / "exif-rotated.jpg", exif=exif, quality=90)
+    # ICC-tagged JPEGs for the convert-images color paths: a genuine sRGB
+    # profile (dropped without conversion) and bytes no CMS can parse
+    # (conversion impossible, so the profile is retained with a warning).
+    from PIL import ImageCms
+
+    srgb_bytes = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+    draw_sample((240, 180), (200, 180, 220), "srgb-tagged.jpg").save(
+        images_dir / "srgb-tagged.jpg", quality=90, icc_profile=srgb_bytes
+    )
+    draw_sample((240, 180), (180, 220, 200), "bad-profile.jpg").save(
+        images_dir / "bad-profile.jpg",
+        quality=90,
+        icc_profile=b"synthetic-bytes-that-are-not-an-icc-profile",
+    )
+
+
+def make_heif(directory: Path) -> None:
+    """Synthetic HEIC inputs, encoded with the dev-only pillow-heif package.
+
+    The shipped runtime decodes HEIF through pi-heif (decode-only); encoding
+    exists here purely so fixtures stay generated-from-code. libheif applies
+    EXIF orientation at encode time — matching real iPhone output, where
+    pixels arrive pre-rotated and the orientation tag reads 1.
+    """
+    import pillow_heif
+    from PIL import Image, ImageDraw
+
+    images_dir = directory / "images"
+    images_dir.mkdir(exist_ok=True)
+
+    def draw_sample(size, color, label, mode="RGB"):
+        image = Image.new(mode, size, color)
+        draw = ImageDraw.Draw(image)
+        draw.rectangle([8, 8, size[0] - 8, size[1] - 8], outline="black", width=2)
+        draw.text((16, 16), label, fill="black")
+        return image
+
+    # A "camera photo": RGB with EXIF GPS coordinates (synthetic location).
+    exif = Image.Exif()
+    exif[272] = "LocalDocForge synthetic camera"  # Model
+    gps = exif.get_ifd(0x8825)
+    gps[1] = "N"
+    gps[2] = (12.0, 58.0, 12.0)
+    gps[3] = "E"
+    gps[4] = (77.0, 35.0, 42.0)
+    photo = draw_sample((640, 480), (90, 140, 60), "photo.heic")
+    pillow_heif.from_pillow(photo).save(
+        images_dir / "photo.heic", quality=85, exif=exif.tobytes()
+    )
+    # A "screenshot": RGBA, so alpha handling is exercised from a real HEIF.
+    overlay = draw_sample((320, 240), (40, 90, 160, 200), "alpha.heic", mode="RGBA")
+    pillow_heif.from_pillow(overlay).save(images_dir / "alpha.heic", quality=85)
+    # A two-image HEIF container ("burst"), for frame naming.
+    burst = pillow_heif.from_pillow(draw_sample((300, 200), (220, 120, 80), "burst 1"))
+    burst.add_from_pillow(draw_sample((300, 200), (80, 120, 220), "burst 2"))
+    burst.save(images_dir / "burst.heic", quality=85)
 
 
 def make_unicode_name(directory: Path) -> None:
@@ -175,10 +231,13 @@ def make_unicode_name(directory: Path) -> None:
     )
 
 
+FIXTURES_VERSION = "fixtures generated v2 (heif + icc)\n"
+
+
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
-    """Generate fixtures if missing; cheap no-op when present."""
+    """Generate fixtures if missing or stale; cheap no-op when current."""
     sentinel = directory / ".complete"
-    if sentinel.exists():
+    if sentinel.exists() and sentinel.read_text(encoding="utf-8") == FIXTURES_VERSION:
         return directory
     directory.mkdir(parents=True, exist_ok=True)
     make_simple(directory)
@@ -188,8 +247,9 @@ def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
     make_encrypted(directory)
     make_malformed(directory)
     make_images(directory)
+    make_heif(directory)
     make_unicode_name(directory)
-    sentinel.write_text("fixtures generated\n", encoding="utf-8")
+    sentinel.write_text(FIXTURES_VERSION, encoding="utf-8")
     return directory
 
 

@@ -259,6 +259,13 @@ Base sources were accessed 2026-07-19 and are recorded in
 `docs/ADVISORY_REPORT.json`: PyPA packaging guidance, uv lock/resolution/export
 documentation, and official PyPI metadata for pinned release tools. On
 2026-07-20, official `https://pypi.org/pypi/setuptools/83.0.0/json` was checked
-for the exact build-backend files and hashes above. PyPI's current classifier
+for the exact build-backend files and hashes above. On 2026-08-08, the HEIF
+input dependency was added and reviewed: pi-heif 1.4.0 (decode-only; bundled
+libheif 1.23.0 and libde265 1.1.1) was queried against OSV and GitHub reviewed
+advisories with exact versions, its exact-tag license texts were verified, and
+the results — including two applicable OSS-Fuzz records against libheif — are
+recorded in the report's 2026-08-08 verification run. The full pillow-heif
+encoder package (GPLv2 wheels) is a dev-profile fixture tool only and is
+excluded from every runtime profile, SBOM, and notice. PyPI's current classifier
 list was also checked before replacing the OS-independent classifier with
 `Operating System :: Microsoft :: Windows :: Windows 11`.

@@ -1,7 +1,7 @@
 # Third-Party Notices — Full profile
 
 Generated offline by `scripts/generate_release_artifacts.py` from the hash-bearing `full` lock and `docs/ADVISORY_REPORT.json`.
-License/advisory sources were accessed 2026-07-19; verification sources were refreshed 2026-07-20. A no-finding disposition is not a safety guarantee or legal advice.
+License/advisory sources were accessed 2026-07-19; verification sources were refreshed 2026-08-08. A no-finding disposition is not a safety guarantee or legal advice.
 
 ## Runtime Python distributions
 
@@ -19,6 +19,7 @@ License/advisory sources were accessed 2026-07-19; verification sources were ref
 | markdown-it-py | 4.2.0 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE), [release](https://pypi.org/project/markdown-it-py/4.2.0/), [advisories](https://github.com/executablebooks/markdown-it-py/security/advisories) |
 | mdurl | 0.1.2 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE), [release](https://pypi.org/project/mdurl/0.1.2/), [advisories](https://github.com/executablebooks/mdurl/security/advisories) |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pypa/packaging/26.2/LICENSE), [release](https://pypi.org/project/packaging/26.2/), [advisories](https://github.com/pypa/packaging/security/advisories) |
+| pi-heif | 1.4.0 | BSD-3-Clause | contains-affected-component | [license](https://raw.githubusercontent.com/bigcat88/pillow_heif/v1.4.0/LICENSE.txt), [release](https://pypi.org/project/pi-heif/1.4.0/), [advisories](https://github.com/bigcat88/pillow_heif/releases) |
 | pikepdf | 10.10.0 | MPL-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pikepdf/pikepdf/v10.10.0/LICENSE.txt), [release](https://pypi.org/project/pikepdf/10.10.0/), [advisories](https://github.com/pikepdf/pikepdf/security/advisories) |
 | pillow | 12.3.0 | MIT-CMU | contains-affected-component | [license](https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE), [release](https://pypi.org/project/pillow/12.3.0/), [advisories](https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html) |
 | pydantic | 2.13.4 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/LICENSE), [release](https://pypi.org/project/pydantic/2.13.4/), [advisories](https://github.com/pydantic/pydantic/security/advisories) |
@@ -46,6 +47,8 @@ License/advisory sources were accessed 2026-07-19; verification sources were ref
 | harfbuzz | 14.2.1 | Pillow codec bundle | MIT with bundled notice terms | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING), [advisories](https://github.com/harfbuzz/harfbuzz/security/advisories) |
 | lcms2 | 2.19.1 | Pillow codec bundle | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/mm2/Little-CMS/lcms2.19.1/LICENSE), [advisories](https://github.com/mm2/Little-CMS/security/advisories) |
 | libavif | 1.4.2 | Pillow codec bundle | BSD-2-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/AOMediaCodec/libavif/v1.4.2/LICENSE), [advisories](https://github.com/AOMediaCodec/libavif/security/advisories) |
+| libde265 | 1.1.1 | pi-heif | LGPL-3.0-or-later | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/strukturag/libde265/v1.1.1/COPYING), [advisories](https://github.com/strukturag/libde265/releases) |
+| libheif | 1.23.0 | pi-heif | LGPL-3.0-or-later | affected | [license](https://raw.githubusercontent.com/strukturag/libheif/v1.23.0/COPYING), [advisories](https://github.com/strukturag/libheif/releases) |
 | libjpeg-turbo | 3.1.4.1 | Pillow codec bundle | BSD-3-Clause AND IJG AND Zlib | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.4.1/LICENSE.md), [advisories](https://github.com/libjpeg-turbo/libjpeg-turbo/security/advisories) |
 | libpng | 1.6.58 | Pillow codec bundle | libpng-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pnggroup/libpng/v1.6.58/LICENSE), [advisories](https://github.com/pnggroup/libpng/security/advisories) |
 | libwebp | 1.6.0 | Pillow codec bundle | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/webmproject/libwebp/1.6.0/COPYING), [advisories](https://github.com/webmproject/libwebp/security/advisories) |
@@ -86,12 +89,14 @@ These children are enumerated because aggregate wheel evidence names or links th
 ## Security dispositions requiring release action
 
 - **OpenJPEG 2.5.4 is affected by [OSV-2025-219](https://osv.dev/vulnerability/OSV-2025-219).** Current media gates reject JP2/J2K, but the vulnerable codec remains bundled. Replace it with a build containing upstream fix `d33cbecc148d3affcdf403211fddc2cc5d442379` or a later fixed release.
+- **libheif 1.23.0 is affected by the OSS-Fuzz records [OSV-2020-2308](https://osv.dev/vulnerability/OSV-2020-2308) and [OSV-2023-1129](https://osv.dev/vulnerability/OSV-2023-1129)** (MEDIUM read-class memory-safety crashes with no fixed release enumerated), and untrusted HEIC/HEIF inputs reach this decoder by design of the HEIF input feature. Adopt a pi-heif build that resolves both records; contained workers and resource limits bound the exposure meanwhile.
 - **PDFium 152.0.7947.0 is advisory-unknown.** The wheel records no source commit, and public Chromium/PDFium information cannot prove which private security fixes this build contains. It directly parses untrusted PDFs and must not be represented as cleared.
 - **All 18 enumerated version-unknown native children remain advisory-unknown.** Their aggregate notices are retained, but no affected/not-affected conclusion is possible without exact provenance.
 
 ## Redistribution and platform notes
 
-- Preserve complete license/notice directories from pikepdf, pypdfium2, Pillow, and all other redistributed wheels; summary labels here do not replace those texts.
+- Preserve complete license/notice directories from pikepdf, pypdfium2, Pillow, pi-heif, and all other redistributed wheels; summary labels here do not replace those texts.
+- pi-heif wheels are decode-only builds of pillow-heif with an LGPLv3 license ceiling (libheif + libde265). They bundle no GPLv2 x265 encoder; the full pillow-heif package is a dev-profile test-fixture tool only and ships in no runtime profile.
 - This notice and its universal-profile SBOM use native evidence from Windows x86-64 / CPython 3.14 wheels only. They do not assert identical native composition on Linux or macOS; re-inventory every target wheel.
-- The CycloneDX composition is explicitly `incomplete`: 16 native records have versions, 18 known children do not, and additional static or platform-specific children may exist.
+- The CycloneDX composition is explicitly `incomplete`: 18 native records have versions, 18 known children do not, and additional static or platform-specific children may exist.
 - No optional external executable was enabled or distributed, so Typst, qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are outside this report's reviewed component set.

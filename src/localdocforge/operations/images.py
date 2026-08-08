@@ -1,9 +1,12 @@
-"""Image ⇄ PDF conversion.
+"""Image ⇄ PDF and image ⇄ image conversion.
 
 images-to-pdf composes pages with Pillow (EXIF orientation respected,
 multipage TIFF expanded, decompression-bomb limits enforced). pdf-to-images
-renders through PDFium at a chosen DPI. Both run through the standard
-pipeline: isolated workspace, validation, atomic publish, reports.
+renders through PDFium at a chosen DPI. convert-images transcodes images —
+including iPhone HEIC/HEIF via the decode-only pi-heif plugin — to
+PNG/JPEG/WebP/TIFF, with an ``llm`` preset sized for AI-assistant ingestion.
+All run through the standard pipeline: isolated workspace, validation,
+atomic publish, reports.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import (
@@ -23,7 +27,11 @@ from localdocforge.domain.models import (
     WarningSeverity,
 )
 from localdocforge.domain.pages import PageRange
-from localdocforge.engines.adapters import OP_IMAGES_TO_PDF, OP_PDF_TO_IMAGES
+from localdocforge.engines.adapters import (
+    OP_CONVERT_IMAGES,
+    OP_IMAGES_TO_PDF,
+    OP_PDF_TO_IMAGES,
+)
 from localdocforge.engines.registry import default_registry
 from localdocforge.jobs.workspace import CollisionPolicy
 from localdocforge.pipelines.runner import (
@@ -40,7 +48,30 @@ IMAGE_MEDIA_TYPES = (
     "image/tiff",
     "image/bmp",
     "image/webp",
+    "image/heif",
 )
+
+_heif_opener_registered = False
+
+
+def _ensure_heif_opener() -> None:
+    """Register the decode-only HEIF plugin with Pillow exactly once.
+
+    Raises PipelineError with an actionable message if the pi-heif engine is
+    missing, so a HEIC input fails clearly instead of as an unidentified image.
+    """
+    global _heif_opener_registered
+    if _heif_opener_registered:
+        return
+    try:
+        from pi_heif import register_heif_opener
+    except ImportError as exc:
+        raise PipelineError(
+            "HEIC/HEIF input requires the pi-heif engine, which failed to "
+            "import. Reinstall LocalDocForge or run: pip install pi-heif"
+        ) from exc
+    register_heif_opener()
+    _heif_opener_registered = True
 
 #: Named page sizes in PDF points (1 pt = 1/72 in).
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
@@ -95,10 +126,12 @@ class ImagesToPdfOptions:
     progress: ProgressCallback | None = None
 
 
-def _load_image_pages(path: Path, max_pixels: int | None):
+def _load_image_pages(path: Path, max_pixels: int | None, media_type: str = ""):
     """Yield PIL images for every frame (multipage TIFF aware), EXIF-corrected."""
     from PIL import Image, ImageOps, ImageSequence
 
+    if media_type == "image/heif":
+        _ensure_heif_opener()
     previous_limit = Image.MAX_IMAGE_PIXELS
     Image.MAX_IMAGE_PIXELS = max_pixels
     try:
@@ -207,7 +240,9 @@ def images_to_pdf(
                 context.emit(
                     "compose", current=index, total=len(artifacts), message=artifact.path.name
                 )
-                for frame in _load_image_pages(artifact.path, context.limits.max_image_pixels):
+                for frame in _load_image_pages(
+                    artifact.path, context.limits.max_image_pixels, artifact.media_type
+                ):
                     context.check_cancelled()
                     try:
                         page = (
@@ -305,6 +340,9 @@ _FORMAT_INFO = {
     "webp": ("WEBP", "image/webp", ".webp"),
     "tiff": ("TIFF", "image/tiff", ".tiff"),
 }
+
+#: Raster output formats accepted by pdf-to-images and convert-images.
+OUTPUT_IMAGE_FORMATS = tuple(_FORMAT_INFO)
 
 
 def pdf_to_images(
@@ -464,6 +502,439 @@ def pdf_to_images(
         execute=execute,
         engine_name=engine.name,
         engine_version=engine_info.version,
+        collision=options.collision,
+        settings=options.settings,
+        progress=options.progress,
+    )
+
+
+#: Presets fill only the convert-images options the caller left unset.
+#: ``llm`` targets compatible AI-image ingestion: JPEG keeps
+#: photo outputs small, quality 85 is visually clean, and 1568 px on the long
+#: edge is the largest size no current assistant downscales before reading.
+CONVERT_PRESETS: dict[str, dict[str, Any]] = {
+    "llm": {"image_format": "jpeg", "quality": 85, "max_dimension": 1568},
+}
+
+_CONVERT_DEFAULTS: dict[str, Any] = {
+    "image_format": "jpeg",
+    "quality": 90,
+    "max_dimension": None,
+}
+
+
+@dataclass
+class ConvertImagesOptions:
+    #: None means "use the preset's value, else the documented default".
+    image_format: str | None = None  # png | jpeg | webp | tiff
+    quality: int | None = None  # JPEG/WebP quality
+    max_dimension: int | None = None  # long-edge bound in px; never upscales
+    preset: str | None = None
+    keep_metadata: bool = False
+    background: str = "white"  # used when alpha must be flattened
+    collision: CollisionPolicy | None = None
+    settings: Settings | None = None
+    progress: ProgressCallback | None = None
+
+
+def resolve_convert_options(options: ConvertImagesOptions) -> dict[str, Any]:
+    """Merge explicit values over the preset over the defaults."""
+    if options.preset is not None and options.preset not in CONVERT_PRESETS:
+        available = ", ".join(sorted(CONVERT_PRESETS))
+        raise PipelineError(
+            f"Unknown preset {options.preset!r}; available presets: {available}"
+        )
+    resolved = dict(_CONVERT_DEFAULTS)
+    if options.preset is not None:
+        resolved.update(CONVERT_PRESETS[options.preset])
+    for key in ("image_format", "quality", "max_dimension"):
+        value = getattr(options, key)
+        if value is not None:
+            resolved[key] = value
+    return resolved
+
+
+def _profile_is_srgb(icc_bytes: bytes) -> bool:
+    from io import BytesIO
+
+    from PIL import ImageCms
+
+    try:
+        profile = ImageCms.ImageCmsProfile(BytesIO(icc_bytes))
+        description = ImageCms.getProfileDescription(profile)
+    except Exception:
+        return False
+    return "srgb" in (description or "").lower()
+
+
+def _convert_to_srgb(image, icc_bytes: bytes):
+    """Return the image with pixels converted to sRGB, or None on failure."""
+    from io import BytesIO
+
+    from PIL import ImageCms
+
+    if image.mode not in ("RGB", "RGBA"):
+        return None
+    try:
+        source = ImageCms.ImageCmsProfile(BytesIO(icc_bytes))
+        target = ImageCms.createProfile("sRGB")
+        return ImageCms.profileToProfile(image, source, target, outputMode=image.mode)
+    except Exception:
+        return None
+
+
+def _output_stem(path: Path, used: set[str]) -> str:
+    stem = sanitize_filename(path.stem, fallback="image")
+    candidate = stem
+    suffix = 2
+    while candidate.lower() in used:
+        candidate = f"{stem}-{suffix}"
+        suffix += 1
+    used.add(candidate.lower())
+    return candidate
+
+
+def convert_images(
+    inputs: list[Path],
+    output_dir: Path,
+    *,
+    options: ConvertImagesOptions | None = None,
+) -> ConversionReport:
+    """Convert images (HEIC/JPG/PNG/TIFF/BMP/WebP) to PNG/JPEG/WebP/TIFF files.
+
+    Defaults are chosen for sharing with people and AI assistants: EXIF
+    orientation is applied, pixels tagged with a non-sRGB ICC profile are
+    converted to sRGB, and EXIF/XMP metadata — including any GPS position —
+    is stripped unless ``keep_metadata`` is set.
+    """
+    options = options or ConvertImagesOptions()
+    resolved = resolve_convert_options(options)
+    format_key = str(resolved["image_format"]).lower()
+    if format_key not in _FORMAT_INFO:
+        raise PipelineError(
+            f"Unsupported image format {resolved['image_format']!r}; "
+            "use png, jpeg, webp, or tiff"
+        )
+    pil_format, media_type, extension = _FORMAT_INFO[format_key]
+    quality = int(resolved["quality"])
+    if not 1 <= quality <= 100:
+        raise PipelineError("Image quality must be between 1 and 100")
+    max_dimension: int | None = resolved["max_dimension"]
+    if max_dimension is not None:
+        max_dimension = int(max_dimension)
+        if not 16 <= max_dimension <= 30000:
+            raise PipelineError("--max-dimension must be between 16 and 30000 pixels")
+
+    registry = default_registry()
+    engine = registry.engine_for(OP_CONVERT_IMAGES)
+    engine_info = engine.probe()
+
+    def execute(context: JobContext, artifacts: list[InputArtifact]) -> ExecuteResult:
+        from PIL import Image, ImageOps, ImageSequence
+
+        candidates: list[CandidateOutput] = []
+        used_stems: set[str] = set()
+        decompressed_bytes = 0
+        output_bytes = 0
+        outputs_written = 0
+        downscaled = 0
+        alpha_flattened = 0
+        profiles_converted = 0
+        profiles_retained = 0
+        stripped_outputs = 0
+        stripped_gps_inputs = 0
+        xmp_dropped = 0
+        kept_gps_inputs = 0
+        heif_decoded = False
+
+        for index, artifact in enumerate(artifacts):
+            context.emit(
+                "convert", current=index, total=len(artifacts), message=artifact.path.name
+            )
+            context.check_cancelled()
+            if artifact.media_type == "image/heif":
+                _ensure_heif_opener()
+                heif_decoded = True
+            stem = _output_stem(artifact.path, used_stems)
+            previous_limit = Image.MAX_IMAGE_PIXELS
+            Image.MAX_IMAGE_PIXELS = context.limits.max_image_pixels
+            try:
+                with Image.open(artifact.path) as source:
+                    frame_total = getattr(source, "n_frames", 1)
+                    for frame_index, raw_frame in enumerate(
+                        ImageSequence.Iterator(source)
+                    ):
+                        context.check_cancelled()
+
+                        def swap(current, replacement):
+                            """Adopt a derived image, closing the one it replaces."""
+                            if replacement is not current and current is not raw_frame:  # noqa: B023
+                                current.close()
+                            return replacement
+
+                        # exif_transpose returns a copy with the orientation
+                        # applied and the orientation tag cleared.
+                        frame = ImageOps.exif_transpose(raw_frame)
+                        try:
+                            exif_bytes = frame.info.get("exif")
+                            icc_bytes = frame.info.get("icc_profile")
+                            has_xmp = bool(
+                                frame.info.get("xmp")
+                                or frame.info.get("XML:com.adobe.xmp")
+                            )
+                            gps_present = False
+                            if exif_bytes:
+                                try:
+                                    gps_present = bool(frame.getexif().get_ifd(0x8825))
+                                except Exception:
+                                    gps_present = False
+
+                            if icc_bytes and not _profile_is_srgb(icc_bytes):
+                                if options.keep_metadata:
+                                    pass  # profile travels with the pixels untouched
+                                else:
+                                    converted = _convert_to_srgb(frame, icc_bytes)
+                                    if converted is not None:
+                                        frame = swap(frame, converted)
+                                        icc_bytes = None
+                                        profiles_converted += 1
+                                    else:
+                                        profiles_retained += 1
+                            elif icc_bytes and not options.keep_metadata:
+                                icc_bytes = None  # already sRGB; the tag adds nothing
+
+                            if max_dimension is not None and (
+                                frame.width > max_dimension
+                                or frame.height > max_dimension
+                            ):
+                                frame = swap(
+                                    frame,
+                                    ImageOps.contain(
+                                        frame,
+                                        (max_dimension, max_dimension),
+                                        Image.Resampling.LANCZOS,
+                                    ),
+                                )
+                                downscaled += 1
+
+                            has_alpha = (
+                                "A" in frame.getbands() or "transparency" in frame.info
+                            )
+                            if pil_format == "JPEG":
+                                if has_alpha:
+                                    flattened = Image.new(
+                                        "RGB", frame.size, options.background
+                                    )
+                                    rgba = frame.convert("RGBA")
+                                    try:
+                                        flattened.paste(rgba, (0, 0), rgba)
+                                    finally:
+                                        if rgba is not frame:
+                                            rgba.close()
+                                    frame = swap(frame, flattened)
+                                    alpha_flattened += 1
+                                elif frame.mode not in ("RGB", "L"):
+                                    frame = swap(frame, frame.convert("RGB"))
+                            elif frame.mode == "P":
+                                frame = swap(
+                                    frame,
+                                    frame.convert("RGBA" if has_alpha else "RGB"),
+                                )
+
+                            decompressed_bytes += (
+                                frame.width * frame.height * len(frame.getbands())
+                            )
+                            byte_limit = context.limits.max_decompressed_bytes
+                            if byte_limit is not None and decompressed_bytes > byte_limit:
+                                raise PipelineError(
+                                    f"Decoded images exceed the configured "
+                                    f"{byte_limit:,}-byte decompressed limit"
+                                )
+
+                            # Pillow's writers fall back to image.info for EXIF
+                            # and ICC data, so stripping must clear it explicitly.
+                            for key in (
+                                "exif",
+                                "icc_profile",
+                                "xmp",
+                                "XML:com.adobe.xmp",
+                            ):
+                                frame.info.pop(key, None)
+                            save_kwargs: dict[str, object] = {"format": pil_format}
+                            if pil_format in ("JPEG", "WEBP"):
+                                save_kwargs["quality"] = quality
+                            if options.keep_metadata:
+                                if exif_bytes:
+                                    save_kwargs["exif"] = exif_bytes
+                                if gps_present:
+                                    kept_gps_inputs += 1
+                            else:
+                                stripped_outputs += 1
+                                if gps_present:
+                                    stripped_gps_inputs += 1
+                            if has_xmp:
+                                xmp_dropped += 1
+                            if icc_bytes:
+                                save_kwargs["icc_profile"] = icc_bytes
+
+                            name = (
+                                f"{stem}{extension}"
+                                if frame_total == 1
+                                else f"{stem}-frame-{frame_index + 1:03d}{extension}"
+                            )
+                            staging = context.workspace / name
+                            frame.save(staging, **save_kwargs)
+                        finally:
+                            if frame is not raw_frame:
+                                frame.close()
+                        outputs_written += 1
+                        output_bytes += staging.stat().st_size
+                        output_limit = context.limits.max_output_bytes
+                        if output_limit is not None and output_bytes > output_limit:
+                            raise PipelineError(
+                                f"Converted images exceed the configured "
+                                f"{output_limit:,}-byte output limit"
+                            )
+                        candidates.append(
+                            CandidateOutput(
+                                workspace_path=staging,
+                                destination=output_dir / name,
+                                media_type=media_type,
+                            )
+                        )
+            finally:
+                Image.MAX_IMAGE_PIXELS = previous_limit
+
+        if not candidates:
+            raise PipelineError("No images could be read")
+
+        fidelity: list[FidelityWarning] = [
+            FidelityWarning(
+                code="image-reencoded",
+                message=(
+                    f"Outputs are re-encoded as {format_key.upper()}"
+                    + (
+                        f" at quality {quality} (lossy)"
+                        if pil_format in ("JPEG", "WEBP")
+                        else ""
+                    )
+                ),
+                severity=WarningSeverity.INFO,
+            )
+        ]
+        if downscaled:
+            fidelity.append(
+                FidelityWarning(
+                    code="image-downscaled",
+                    message=(
+                        f"{downscaled} image(s) were downscaled to at most "
+                        f"{max_dimension} px on the long edge"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        if alpha_flattened:
+            fidelity.append(
+                FidelityWarning(
+                    code="alpha-flattened",
+                    message=(
+                        f"{alpha_flattened} image(s) had transparency flattened "
+                        f"onto a {options.background} background (JPEG is opaque)"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        if profiles_converted:
+            fidelity.append(
+                FidelityWarning(
+                    code="color-profile-converted",
+                    message=(
+                        f"{profiles_converted} image(s) were converted from an "
+                        "embedded color profile (for iPhone photos, typically "
+                        "Display P3) to sRGB so colors stay correct without "
+                        "the profile"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        if profiles_retained:
+            fidelity.append(
+                FidelityWarning(
+                    code="color-profile-retained",
+                    message=(
+                        f"{profiles_retained} embedded color profile(s) could not "
+                        "be converted to sRGB and were kept in the output instead"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        if stripped_outputs:
+            gps_note = (
+                f", including GPS position data in {stripped_gps_inputs} file(s)"
+                if stripped_gps_inputs
+                else ""
+            )
+            fidelity.append(
+                FidelityWarning(
+                    code="metadata-stripped",
+                    message=(
+                        f"EXIF metadata{gps_note} was removed from "
+                        f"{stripped_outputs} output(s); use --keep-metadata to "
+                        "retain it"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        if xmp_dropped:
+            fidelity.append(
+                FidelityWarning(
+                    code="xmp-metadata-dropped",
+                    message=(
+                        f"XMP metadata present in {xmp_dropped} input(s) is not "
+                        "carried into converted outputs"
+                    ),
+                    severity=WarningSeverity.INFO,
+                )
+            )
+        security: list[SecurityWarning] = []
+        if kept_gps_inputs:
+            security.append(
+                SecurityWarning(
+                    code="location-metadata-retained",
+                    message=(
+                        f"--keep-metadata preserved EXIF GPS position data from "
+                        f"{kept_gps_inputs} input(s) in the converted outputs"
+                    ),
+                    severity=WarningSeverity.WARNING,
+                )
+            )
+
+        details: dict[str, object] = {
+            "format": format_key,
+            "quality": quality,
+            "max_dimension": max_dimension,
+            "preset": options.preset,
+            "metadata": "kept" if options.keep_metadata else "stripped",
+            "images_converted": outputs_written,
+        }
+        if heif_decoded:
+            import pi_heif
+
+            details["heif_decoder"] = f"pi-heif {pi_heif.__version__}"
+        return ExecuteResult(
+            candidates=candidates,
+            fidelity_warnings=fidelity,
+            security_warnings=security,
+            details=details,
+        )
+
+    return run_pipeline(
+        operation="convert-images",
+        input_paths=inputs,
+        execute=execute,
+        engine_name=engine.name,
+        engine_version=engine_info.version,
+        input_types=IMAGE_MEDIA_TYPES,
         collision=options.collision,
         settings=options.settings,
         progress=options.progress,

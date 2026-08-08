@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportId": "localdocforge-advisory-license-review-2026-07-19",
   "accessDate": "2026-07-19",
-  "amendedDate": "2026-07-20",
+  "amendedDate": "2026-08-08",
   "scope": {
     "sbom": "docs/SBOM.cdx.json",
     "profileSboms": {
@@ -20,15 +20,15 @@
       "standard": "requirements/locks/standard.txt",
       "full": "requirements/locks/full.txt"
     },
-    "runtimePythonComponents": 29,
+    "runtimePythonComponents": 30,
     "runtimePythonComponentsByProfile": {
-      "lite": 20,
-      "standard": 28,
-      "full": 29
+      "lite": 21,
+      "standard": 29,
+      "full": 30
     },
-    "versionedBundledNativeComponents": 16,
+    "versionedBundledNativeComponents": 18,
     "unversionedNestedNativeComponents": 18,
-    "versionedReviewRecordCount": 45,
+    "versionedReviewRecordCount": 48,
     "optionalEngines": {
       "reviewed": false,
       "reason": "No optional external executable is enabled or distributed. Typst is locally detectable but its capability is unwired; qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
@@ -36,18 +36,20 @@
   },
   "summary": {
     "dispositionCounts": {
-      "affected": 1,
-      "contains-affected-component": 2,
+      "affected": 2,
+      "contains-affected-component": 3,
       "contains-unknown-component": 1,
-      "no-known-applicable-advisory": 40,
+      "no-known-applicable-advisory": 41,
       "unknown": 1
     },
-    "uniqueApplicableAdvisories": 1,
+    "uniqueApplicableAdvisories": 3,
     "applicableAdvisoryIds": [
+      "OSV-2020-2308",
+      "OSV-2023-1129",
       "OSV-2025-219"
     ],
     "releaseDisposition": "not-cleared",
-    "releaseRationale": "Bundled OpenJPEG 2.5.4 is affected by OSV-2025-219 even though JP2/J2K is rejected by the current LocalDocForge media-type boundary. PDFium 152.0.7947.0 and all enumerated version-unknown nested children remain advisory-unknown. Empty exact-version database results are not treated as proof of safety, and the Windows-native inventory is compositionally incomplete for other target platforms."
+    "releaseRationale": "Bundled OpenJPEG 2.5.4 is affected by OSV-2025-219 even though JP2/J2K is rejected by the current LocalDocForge media-type boundary. Bundled libheif 1.23.0 is enumerated as affected by the OSS-Fuzz memory-safety records OSV-2020-2308 and OSV-2023-1129 (introduced with no fixed release enumerated), and untrusted HEIC/HEIF inputs reach that decoder by design of the HEIF input feature. PDFium 152.0.7947.0 and all enumerated version-unknown nested children remain advisory-unknown. Empty exact-version database results are not treated as proof of safety, and the Windows-native inventory is compositionally incomplete for other target platforms."
   },
   "verificationRuns": [
     {
@@ -88,6 +90,38 @@
       ],
       "releaseDisposition": "not-cleared",
       "releaseRationale": "The refresh did not remove the affected OpenJPEG result or resolve PDFium and unversioned-child provenance."
+    },
+    {
+      "accessDate": "2026-08-08",
+      "scope": "HEIF input dependency addition: exact-version license and advisory review of pi-heif 1.4.0 and its bundled libheif 1.23.0 and libde265 1.1.1 native decoders",
+      "dataBoundary": "Only public component names and exact public versions were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "pi-heif 1.4.0 (PyPI), libheif 1.23.0 and libde265 1.1.1 (OSS-Fuzz)",
+          "conclusion": "The official OSV batch API returned no records for pi-heif 1.4.0 or libde265 1.1.1 and two applicable OSS-Fuzz records for libheif 1.23.0: OSV-2020-2308 and OSV-2023-1129, both introduced-with-no-fixed-release memory-safety read defects.",
+          "disposition": "libheif is recorded affected; pi-heif is recorded contains-affected-component; the libde265 empty result remains a time-bounded no-finding, not a safety guarantee."
+        },
+        {
+          "url": "https://api.github.com/advisories",
+          "exactVersions": "pi-heif 1.4.0, libheif 1.23.0, libde265 1.1.1",
+          "conclusion": "GitHub reviewed global advisories returned no matches for the three exact queries.",
+          "disposition": "Empty results corroborate but do not override the OSS-Fuzz findings recorded above."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/bigcat88/pillow_heif/v1.4.0/LICENSE.txt",
+          "exactVersions": "pi-heif 1.4.0",
+          "conclusion": "The exact release-tag license text is the BSD-3-Clause text; the pi-heif wheel LICENSES_bundled.txt declares an LGPLv3 wheel ceiling from libheif and libde265 and, unlike the full pillow-heif wheels, bundles no GPLv2 x265 encoder.",
+          "disposition": "verified-upstream"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/strukturag/libheif/v1.23.0/COPYING",
+          "exactVersions": "libheif 1.23.0 and libde265 1.1.1",
+          "conclusion": "Both exact-tag COPYING files and source headers grant LGPL version 3 or (at your option) any later version for the libraries; sample applications carry MIT terms that do not apply to the bundled library binaries.",
+          "disposition": "verified-upstream"
+        }
+      ],
+      "releaseDisposition": "not-cleared"
     }
   ],
   "method": {
@@ -248,6 +282,53 @@
         "advisoryPortal": "https://msrc.microsoft.com/update-guide/",
         "results": [],
         "limitation": "Microsoft's public advisory portal does not provide a stable exact-DLL-version API mapping. No matching applicable advisory was identified on 2026-07-19; this is not proof of safety."
+      },
+      "osv-pypi-exact-2026-08-08": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "PyPI",
+        "accessDate": "2026-08-08",
+        "results": {
+          "pkg:pypi/pi-heif@1.4.0": []
+        }
+      },
+      "github-reviewed-pip-exact-2026-08-08": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "pip",
+        "accessDate": "2026-08-08",
+        "queriedBomRefs": [
+          "pkg:pypi/pi-heif@1.4.0"
+        ],
+        "results": []
+      },
+      "osv-oss-fuzz-exact-2026-08-08": {
+        "authority": "official advisory database and OSS-Fuzz evidence",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "OSS-Fuzz",
+        "accessDate": "2026-08-08",
+        "results": {
+          "pkg:generic/libheif@1.23.0": [
+            "OSV-2020-2308",
+            "OSV-2023-1129"
+          ],
+          "pkg:generic/libde265@1.1.1": []
+        }
+      },
+      "github-reviewed-other-exact-2026-08-08": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "other",
+        "accessDate": "2026-08-08",
+        "queriedBomRefs": [
+          "pkg:generic/libheif@1.23.0",
+          "pkg:generic/libde265@1.1.1"
+        ],
+        "results": []
       }
     },
     "limitations": [
@@ -812,9 +893,7 @@
             "relationship": "Pillow 12.3.0 Windows wheels bundle OpenJPEG 2.5.4"
           }
         ],
-        "affectedVersionRanges": [
-          "OpenJPEG versions v2.*, v2.5.3, and v2.5.4 as enumerated by OSV-2025-219"
-        ],
+        "affectedVersionRanges": ["OpenJPEG versions v2.*, v2.5.3, and v2.5.4 as enumerated by OSV-2025-219"],
         "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-oss-fuzz-exact"],
         "upstream": "https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html",
         "applicability": "Allowed JPEG/PNG/TIFF/BMP/WebP inputs reach Pillow. JP2/J2K is not recognized by sniff.py and is excluded from images-to-PDF accepted types, so the affected OpenJPEG codec is bundled but not directly reachable through declared formats.",
@@ -1416,19 +1495,19 @@
                 "versions": ["v2.*", "v2.5.3", "v2.5.4"]
               }
             ],
-        "sources": [
-          "https://osv.dev/vulnerability/OSV-2025-219",
-          "https://github.com/uclouvain/openjpeg/commit/d33cbecc148d3affcdf403211fddc2cc5d442379",
-          "https://github.com/python-pillow/Pillow/blob/12.3.0/depends/install_openjpeg.sh",
-          "https://github.com/python-pillow/Pillow/blob/12.3.0/winbuild/build_prepare.py"
-        ],
-        "provenanceConclusion": "The Pillow 12.3.0 tag selects OpenJPEG 2.5.4; the Windows build downloads the exact upstream v2.5.4 archive and declares no OpenJPEG patch. No checksum evidence establishes that a same-version pillow-depends archive is patched, so it is not credited as remediated."
+            "sources": [
+              "https://osv.dev/vulnerability/OSV-2025-219",
+              "https://github.com/uclouvain/openjpeg/commit/d33cbecc148d3affcdf403211fddc2cc5d442379",
+              "https://github.com/python-pillow/Pillow/blob/12.3.0/depends/install_openjpeg.sh",
+              "https://github.com/python-pillow/Pillow/blob/12.3.0/winbuild/build_prepare.py"
+            ],
+            "provenanceConclusion": "The Pillow 12.3.0 tag selects OpenJPEG 2.5.4; the Windows build downloads the exact upstream v2.5.4 archive and declares no OpenJPEG patch. No checksum evidence establishes that a same-version pillow-depends archive is patched, so it is not credited as remediated."
           }
         ],
         "affectedVersionRanges": ["GIT 954c6e3cb9d79aaa08c6666373d2bfa04f89ead1 to before d33cbecc148d3affcdf403211fddc2cc5d442379; OSV enumerates v2.5.4 as affected"],
         "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
         "upstream": "https://github.com/uclouvain/openjpeg/security/advisories",
-    "applicability": "The exact Windows-wheel nested component is affected. Direct exploitability currently requires reaching JPEG2000 decode, but sniff.py and images-to-PDF reject JP2/J2K; PDF JPEG2000 rendering uses PDFium rather than Pillow's OpenJPEG. Other target-platform wheels require equivalent native provenance review.",
+        "applicability": "The exact Windows-wheel nested component is affected. Direct exploitability currently requires reaching JPEG2000 decode, but sniff.py and images-to-PDF reject JP2/J2K; PDF JPEG2000 rendering uses PDFium rather than Pillow's OpenJPEG. Other target-platform wheels require equivalent native provenance review.",
         "remediation": "Replace the Pillow native build with one containing fix d33cbecc148d3affcdf403211fddc2cc5d442379 or a later fixed OpenJPEG release; keep JP2/J2K rejected and retain hard worker/resource isolation meanwhile.",
         "residualRisk": "An allowlist bypass, plugin behavior change, or future JPEG2000 support would make hostile decoding reachable."
       }
@@ -1511,7 +1590,7 @@
         "affectedVersionRanges": ["OpenJPEG v2.5.4 is enumerated as affected by OSV-2025-219"],
         "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
         "upstream": "https://pillow.readthedocs.io/en/stable/handbook/security.html",
-        "applicability": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF/HEIF remain rejected by the current operation allowlist.",
+        "applicability": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF remain rejected by the current operation allowlist. HEIF/HEIC input is accepted by the application but is decoded by the separately inventoried pi-heif/libheif/libde265 components, never by this bundle.",
         "remediation": "Ship a Pillow build with a fixed OpenJPEG and keep all native codec versions, licenses, and format reachability explicitly inventoried.",
         "residualRisk": "The aggregate status cannot be clearer than its affected/unknown children; future wheel composition can change without a Python version change."
       }
@@ -1614,6 +1693,116 @@
         "applicability": "Attacker-controlled compressed image data can reach zlib-ng through Pillow.",
         "remediation": "Keep the exact native build current and enforce compressed/decompressed byte, pixel, timeout, and worker limits.",
         "residualRisk": "Decompression bombs and native defects remain possible even without an exact published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pi-heif@1.4.0",
+      "name": "pi-heif",
+      "version": "1.4.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-08",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Decode-only HEIF/HEIC Pillow plugin (the pillow-heif codebase built without encoders) enabling iPhone-photo input for image conversion.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/bigcat88/pillow_heif/v1.4.0/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/pi-heif/1.4.0/",
+        "localVersionEvidence": "pi_heif.__version__ == 1.4.0; wheel licenses/LICENSES_bundled.txt declares the LGPLv3 wheel ceiling (libheif + libde265, no x265 encoder)"
+      },
+      "security": {
+        "disposition": "contains-affected-component",
+        "advisories": [
+          {
+            "id": "OSV-2020-2308",
+            "relationship": "pi-heif 1.4.0 Windows wheels bundle libheif 1.23.0"
+          },
+          {
+            "id": "OSV-2023-1129",
+            "relationship": "pi-heif 1.4.0 Windows wheels bundle libheif 1.23.0"
+          }
+        ],
+        "affectedVersionRanges": ["libheif builds after the introducing commits recorded by OSV-2020-2308 and OSV-2023-1129; neither record enumerates a fixed release"],
+        "sourceRefs": ["osv-pypi-exact-2026-08-08", "github-reviewed-pip-exact-2026-08-08", "osv-oss-fuzz-exact-2026-08-08"],
+        "upstream": "https://github.com/bigcat88/pillow_heif/releases",
+        "applicability": "Untrusted HEIC/HEIF bytes reach the bundled libheif and libde265 decoders whenever HEIF inputs are accepted by image conversion; the plugin itself is thin Python/C binding code.",
+        "remediation": "Track pi-heif releases so bundled libheif/libde265 pick up upstream fixes, keep HEIF decoding inside the contained worker with resource limits, and re-run this exact-version review on every upgrade.",
+        "residualRisk": "The plugin's status cannot be clearer than its bundled native decoders; wheel composition can change without a Python-visible version change."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libheif@1.23.0",
+      "name": "libheif",
+      "version": "1.23.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-08",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "pi-heif",
+      "role": "Native HEIF/HEIC container parser and decode orchestrator used through the pi-heif Pillow plugin.",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "license": {
+        "concluded": "LGPL-3.0-or-later",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/strukturag/libheif/v1.23.0/COPYING",
+        "localVersionEvidence": "pi_heif.libheif_info() reports libheif 1.23.0; the inspected wheel ships a delvewheel-mangled libheif DLL"
+      },
+      "security": {
+        "disposition": "affected",
+        "advisories": [
+          {
+            "id": "OSV-2020-2308",
+            "severity": "MEDIUM",
+            "summary": "Heap-buffer-overflow in derive_collocated_motion_vectors",
+            "sources": [
+              "https://osv.dev/vulnerability/OSV-2020-2308",
+              "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=30568"
+            ],
+            "provenanceConclusion": "The OSS-Fuzz range starts at an introducing commit in the libheif repository with no fixed event, so OSV enumerates 1.23.0 as affected; the crash frames lie in the embedded libde265 HEVC motion-vector path exercised through libheif decoding."
+          },
+          {
+            "id": "OSV-2023-1129",
+            "severity": "MEDIUM",
+            "summary": "UNKNOWN READ in HeifPixelImage::overlay",
+            "sources": [
+              "https://osv.dev/vulnerability/OSV-2023-1129",
+              "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63990"
+            ],
+            "provenanceConclusion": "The OSS-Fuzz range starts at an introducing commit in the libheif repository with no fixed event, so OSV enumerates 1.23.0 as affected; overlay-image derivation is reachable from untrusted HEIF input."
+          }
+        ],
+        "affectedVersionRanges": ["libheif commits after 2490273566a1690d7ca28f7bd30fd3ac0977796f (OSV-2020-2308) and 8bec5d258e1e6a1a9a6b04fd15716925cceadd17 (OSV-2023-1129); no fixed release is enumerated by either record"],
+        "sourceRefs": ["osv-oss-fuzz-exact-2026-08-08", "github-reviewed-other-exact-2026-08-08"],
+        "upstream": "https://github.com/strukturag/libheif/releases",
+        "applicability": "Untrusted HEIC/HEIF inputs directly reach libheif container parsing and decode when HEIF input features are used; both recorded defects are read-class memory-safety crashes in decode paths.",
+        "remediation": "Adopt a pi-heif build whose libheif resolves both OSS-Fuzz records or documents them fixed, keep HEIF decoding inside contained workers with memory/CPU/output limits, and treat decoder crashes as expected hostile-input behavior.",
+        "residualRisk": "Introduced-with-no-fixed-release OSS-Fuzz records cannot prove current-version reachability or exploitability either way; additional unpublished decoder defects can exist."
+      }
+    },
+    {
+      "bomRef": "pkg:generic/libde265@1.1.1",
+      "name": "libde265",
+      "version": "1.1.1",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-08",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "pi-heif",
+      "role": "Native HEVC (H.265) still-image decoder invoked by libheif for HEIC payloads.",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 wheel",
+      "license": {
+        "concluded": "LGPL-3.0-or-later",
+        "status": "verified-upstream",
+        "upstreamText": "https://raw.githubusercontent.com/strukturag/libde265/v1.1.1/COPYING",
+        "localVersionEvidence": "pi_heif.libheif_info() reports libde265 HEVC decoder 1.1.1; the inspected wheel ships a delvewheel-mangled libde265-0 DLL"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-oss-fuzz-exact-2026-08-08", "github-reviewed-other-exact-2026-08-08"],
+        "upstream": "https://github.com/strukturag/libde265/releases",
+        "applicability": "Untrusted HEVC payloads inside HEIC files reach libde265 through libheif. The libheif-project OSS-Fuzz record OSV-2020-2308 shows crash frames inside libde265 motion-vector code; that finding is recorded on the libheif component because OSV attributes it there.",
+        "remediation": "Track libde265 releases together with pi-heif/libheif and keep HEVC decoding inside contained workers with resource limits.",
+        "residualRisk": "HEVC decoders have an extensive historical CVE record; an empty exact-version result is a time-bounded no-finding, not a safety verdict."
       }
     }
   ]
