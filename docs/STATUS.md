@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (463 tests as of
+SBOM/notices drift, the complete collected test suite (464 tests as of
 2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -244,13 +244,13 @@ result applies only to the recorded OS, architecture, and interpreter.
   hidden TTY prompt remains last. One resolved password is tried for every
   encrypted input, differing input passwords fail clearly, and outputs remain
   unencrypted.
-- Seventeen focused CLI outcomes cover UTF-8, CRLF, a significant trailing
+- Eighteen focused CLI outcomes cover UTF-8, CRLF, a significant trailing
   space, source precedence in both directions, EOF, invalid UTF-8, explicit
   raw-TTY input, hidden-prompt JSON purity and multi-input guidance,
   wrong/empty passwords, state/environment cleanup,
   `inspect`, `pdf-to-images`, and multi-input failure. Secret canaries are
   absent from stdout, stderr, JSON/human reports, and report-file bytes.
-- The complete suite collected 463 outcomes: 461 passed and two expected
+- The complete suite collected 464 outcomes: 462 passed and two expected
   platform/capability skips. Ruff, three-platform mypy over 32 source files,
   generated release-artifact drift, reproducible build, Twine,
   sdist-to-wheel equivalence, and clean Base/Lite/Standard/Full profile checks
@@ -262,13 +262,27 @@ result applies only to the recorded OS, architecture, and interpreter.
   regression now derives and compares the exact declared base set. The
   remediation gate then passed end-to-end in 351.7 seconds with
   `release_manifest_verified: true`.
-- Independent review then caught and drove fixes for explicit raw-TTY flag
+- Internal pre-review then caught and drove fixes for explicit raw-TTY flag
   semantics, subcommand-help stdin consumption, and prompted multi-input
-  guidance. The definitive full gate on that final 463-outcome tree passed in
-  339.2 seconds. Its source/wheel/sdist SHA-256 values are respectively
-  `227d7f77114ad8d01df92896f537632984043230c00f4fe11d1f6501b0b6a035`,
-  `0ffdc9f62f31b6c8cd0c3cf04d5ed99f12d272b178e52965c5acf2806c86e937`,
-  and `b6177813982649c31b5886e5cc35bdfb487a904eefa785a62390aaa89954339f`.
+  guidance. The full gate on that 463-outcome tree passed in 339.2 seconds.
+- The required independent cross-family review requested changes after proving
+  that the Windows NUL device reports `isatty()` true despite having no console,
+  which could leave a non-interactive caller blocked in the hidden prompt. The
+  remediation now requires both `isatty()` and a successful `GetConsoleMode`
+  call for the actual stdin handle, and a real `stdin=subprocess.DEVNULL`
+  subprocess regression verifies exit 2 plus both actionable mechanisms. It
+  also documents that a present-but-empty `LDF_PASSWORD` deliberately supplies
+  the empty password and removes an unreachable prompt-then-discard path.
+- The first remediation-gate attempt refreshed the source/wheel/sdist identity
+  to `d4b78a0b520f029eb94f6aba4e7ecdc1fc9dc2f4ffa625a9b12ea692ce34ff86`,
+  `7f3e6689ece12b7eba18ec6ec20d7546f49ad67cb4ae3af5bac1c54a7d934476`,
+  and `f7ad3852530f1ff6ca6d1f701ddaadf94fb2775d4aa5f97f403474aee53c978d`.
+  It passed all preceding checks and installed profiles, then the final Dev
+  full-suite correctly rejected the still-previous hashes in this document.
+  Protected evidence remained untouched. After documentation synchronization,
+  the definitive complete-gate rerun passed end to end in 341.1 seconds on
+  Windows-AMD64 CPython 3.14.4, including the fresh Dev full-suite and
+  `release_manifest_verified: true`.
 - Per the multi-model plan's protected-evidence rule, S1's gates used fresh
   temporary dist and profile-evidence paths. Existing `packaging-evidence/`
   and `dist/windows-11-x64/` records were neither overwritten nor relabelled;

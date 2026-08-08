@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
+from pathlib import Path
 
 import pikepdf
 import pytest
@@ -414,6 +417,56 @@ class TestPasswordSources:
         assert "--password-stdin" in result.stderr
         assert "LDF_PASSWORD" in result.stderr
         assert result.stdout == ""
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="Windows NUL is a character device that is not an interactive console",
+    )
+    def test_windows_devnull_stdin_is_noninteractive(
+        self, fixtures_dir, fixture_password, tmp_path
+    ):
+        environment = os.environ.copy()
+        environment.pop("LDF_PASSWORD", None)
+        environment["LDF_JOBS_ROOT"] = str(tmp_path / "jobs")
+        source_root = Path(__file__).resolve().parents[2] / "src"
+        prior_pythonpath = environment.get("PYTHONPATH")
+        environment["PYTHONPATH"] = (
+            str(source_root)
+            if not prior_pythonpath
+            else f"{source_root}{os.pathsep}{prior_pythonpath}"
+        )
+        output = tmp_path / "must-not-exist.pdf"
+        reports = tmp_path / "must-not-exist-reports"
+        completed = subprocess.run(  # noqa: S603 - repository-owned CLI under test
+            [
+                sys.executable,
+                "-m",
+                "localdocforge.cli.main",
+                "--report-dir",
+                str(reports),
+                "merge",
+                str(fixtures_dir / "encrypted.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(output),
+            ],
+            cwd=Path(__file__).resolve().parents[2],
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        assert completed.returncode == EXIT_USAGE
+        assert completed.stdout == b""
+        assert b"--password-stdin" in completed.stderr
+        assert b"LDF_PASSWORD" in completed.stderr
+        assert b"PDF password" not in completed.stderr
+        secret = fixture_password.encode("utf-8")
+        assert secret not in completed.stdout
+        assert secret not in completed.stderr
+        assert not output.exists()
+        assert not reports.exists()
 
     def test_pdf_to_images_honors_environment_and_missing_password_is_usage_error(
         self, fixtures_dir, out_dir, tmp_path, fixture_password

@@ -269,9 +269,12 @@ instead of mutating the environment.
   4 output validation failed · 5 collision · 130 cancelled/timeout.
 - Encrypted-input precedence is UTF-8 `--password-stdin` →
   `LDF_PASSWORD` → one hidden TTY prompt/retry. Password values are never CLI
-  arguments or report/log output; a non-TTY invocation without either source
-  exits 2. One value applies to every encrypted input. Globs are expanded by
-  the CLI itself (PowerShell does not). Startup sweeps stale workspaces.
+  arguments or report/log output; a non-interactive invocation without either
+  source exits 2. Windows interactivity requires `GetConsoleMode` success for
+  stdin rather than `isatty()` alone, excluding NUL. An empty-but-present
+  `LDF_PASSWORD` is an explicit empty credential. One value applies to every
+  encrypted input. Globs are expanded by the CLI itself (PowerShell does not).
+  Startup sweeps stale workspaces.
   Security warnings echo to stderr; `--report-dir` writes
   `<op>-<job-id>.report.{json,txt}`.
 - `ldf web` refuses non-loopback binds without `--allow-nonlocal`, refuses

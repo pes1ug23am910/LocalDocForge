@@ -151,8 +151,10 @@ inherit these controls automatically.
   stdin flag remains authoritative on a TTY as its documented surface
   requires; an interactive user who needs echo suppression must omit the flag
   and use the hidden prompt. The CLI removes the environment value from its
-  own process after reading it and clears its
-  per-invocation credential state on context close. The parent shell still
+  own process after reading it and clears its per-invocation credential state
+  on context close. Presence is authoritative even when the value is empty:
+  an empty `LDF_PASSWORD` suppresses prompt fallback and is attempted as an
+  empty credential. The parent shell still
   retains an exported environment value, and same-user process inspection is
   outside this application's boundary, so redirected stdin is preferable when
   environment-secret exposure matters. Stdin resolution is deferred until a
