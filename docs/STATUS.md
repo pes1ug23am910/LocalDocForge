@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-03 (first Phase 2 slice — lossless compression — on the
-Windows release-hardening baseline).
+Last updated: 2026-08-08 (HEIC input and convert-images slice on the Windows
+release-hardening baseline).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,8 +20,8 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (407 tests as of
-2026-08-03) normally and with Python DNS/non-loopback sockets denied,
+SBOM/notices drift, the complete collected test suite (444 tests as of
+2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
 result applies only to the recorded OS, architecture, and interpreter.
@@ -197,6 +197,44 @@ result applies only to the recorded OS, architecture, and interpreter.
   designated Linux executor and its rows stay non-evidence until a green
   run's artifacts are retained.
 
+## Executed evidence — 2026-08-08 (HEIC input and convert-images slice)
+
+- The dependency change followed the documented lock flow: `pi-heif` 1.4.0
+  (the decode-only distribution of pillow-heif) joined the base dependency
+  set, `uv` re-resolved under the existing `exclude-newer` policy with wheel
+  coverage across every required environment (win/linux/musllinux/macOS ×
+  CPython 3.12–3.14), and `lock_profiles.py --check` verified the exports
+  offline. The full pillow-heif package — whose binary wheels are GPLv2
+  because they bundle the x265 HEVC encoder — was deliberately kept out of
+  the runtime closure and added to the dev profile only, where the test
+  fixture generator uses it to encode synthetic HEIC inputs (the same role
+  ReportLab plays for PDF fixtures). The pi-heif wheel ceiling is LGPLv3
+  (libheif 1.23.0 + libde265 1.1.1, verified from the installed wheel's
+  license inventory and runtime probe).
+- The advisory review was executed the same day (recorded as the 2026-08-08
+  verification run in `docs/ADVISORY_REPORT.json`): exact-version OSV and
+  GitHub reviewed-advisory queries for pi-heif 1.4.0, libheif 1.23.0, and
+  libde265 1.1.1, plus exact-tag license-text verification. OSV returned two
+  applicable OSS-Fuzz records for libheif 1.23.0 — OSV-2020-2308 and
+  OSV-2023-1129, MEDIUM read-class memory-safety crashes with introducing
+  commits and no fixed release enumerated — so libheif is recorded
+  `affected`, pi-heif `contains-affected-component`, and the release
+  blockers below gained an entry. SBOMs and notices were regenerated
+  (48 versioned review records: 30 runtime Python + 18 versioned native).
+- The convert-images slice landed as one change: pipeline
+  (`operations/images.py::convert_images`), the pi-heif engine probe and
+  `convert-images` capability flip (gated on both pillow and pi-heif), HEIC
+  input for images-to-pdf, CLI command, API operation with its multipart
+  field allowlist, synthetic HEIC/ICC fixtures generated from code, and 35
+  new tests (operation, CLI contract, API job, registry honesty,
+  release-artifact counts).
+- Real end-to-end smokes on this machine: four genuine iPhone HEIC files
+  (heix brand, Display P3, EXIF/XMP) converted through `ldf convert-images
+  --preset llm` — orientation applied, P3→sRGB conversion, metadata
+  stripped with the GPS-aware report codes, long edge bounded to 1568 px,
+  ~100 KB JPEG outputs, validation reopening every output — and one HEIC
+  composed into a PDF page via `ldf images-to-pdf`.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -273,7 +311,10 @@ for profiles, reproducible builds, Windows worker containment, cancellation,
 queueing, transport containment, and the two executed Windows Python versions
 are closed. Release remains blocked by:
 
-1. affected bundled OpenJPEG 2.5.4 (and Pillow aggregates that contain it);
+1. affected bundled OpenJPEG 2.5.4 (and Pillow aggregates that contain it),
+   and — since 2026-08-08 — affected bundled libheif 1.23.0 (OSS-Fuzz
+   OSV-2020-2308 and OSV-2023-1129, no fixed release enumerated), which
+   untrusted HEIC inputs reach by design of the HEIF input feature;
 2. advisory-unknown PDFium 152.0.7947.0 and 18 unversioned native children;
 3. no complete Windows OS-enforced outbound-plus-DNS denial result;
 4. partially closed on 2026-08-03 by the first executed CI runs (see the
@@ -294,10 +335,13 @@ not executed here.
 Phase 2 began on 2026-08-03 with the lossless compression slice: pipeline,
 CLI, API, tests, documentation, and sampled render-identity verification
 against the source landed together, and the capability is engine-gated like
-every other. Lossy compression presets, repair, OCR, Office/HTML/Markdown
-conversion, PDF/A/PDF/UA, editing/forms, protection, secure redaction,
-signatures, compare, scanner/camera acquisition, and the React UI remain
-unavailable.
+every other. The 2026-08-08 convert-images slice followed the same golden
+path: iPhone HEIC/HEIF input (decode-only via pi-heif) for image conversion
+and images-to-pdf, with an `llm` preset producing AI-assistant-ready JPEGs
+and privacy-default GPS/EXIF stripping. Lossy compression presets, repair,
+OCR, Office/HTML/Markdown conversion, PDF/A/PDF/UA, editing/forms,
+protection, secure redaction, signatures, compare, scanner/camera
+acquisition, and the React UI remain unavailable.
 
 ## Stable interface decisions
 

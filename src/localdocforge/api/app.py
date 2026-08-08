@@ -1217,6 +1217,32 @@ def _run_pdf_to_images(paths, output_dir, params, settings, progress=None):
     return image_ops.pdf_to_images(source, output_dir, options=options)
 
 
+def _run_convert_images(paths, output_dir, params, settings, progress=None):
+    image_format = params.get("format") or None
+    if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
+        raise _ApiError(422, "'format' must be one of: png, jpeg, webp, tiff")
+    preset = params.get("preset") or None
+    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
+        raise _ApiError(
+            422, "'preset' must be one of: " + ", ".join(sorted(image_ops.CONVERT_PRESETS))
+        )
+    keep_raw = params.get("keep_metadata", "false").strip().lower()
+    if keep_raw not in ("true", "false", "1", "0"):
+        raise _ApiError(422, "'keep_metadata' must be true or false")
+    options = image_ops.ConvertImagesOptions(
+        image_format=image_format,
+        quality=_int_param(params, "quality", minimum=1, maximum=100),
+        max_dimension=_int_param(params, "max_dimension", minimum=16, maximum=30000),
+        preset=preset,
+        keep_metadata=keep_raw in ("true", "1"),
+        background=params.get("background", "white"),
+        collision=CollisionPolicy.RENAME,
+        settings=settings,
+        progress=progress,
+    )
+    return image_ops.convert_images(paths, output_dir, options=options)
+
+
 _OPERATIONS = {
     "merge": _run_merge,
     "split": _run_split,
@@ -1228,6 +1254,7 @@ _OPERATIONS = {
     "compress": _run_compress,
     "images-to-pdf": _run_images_to_pdf,
     "pdf-to-images": _run_pdf_to_images,
+    "convert-images": _run_convert_images,
 }
 
 _OPERATION_PARAMS: dict[str, frozenset[str]] = {
@@ -1241,4 +1268,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "compress": frozenset({"preset", "password"}),
     "images-to-pdf": frozenset({"page_size", "fit", "margin", "background", "dpi", "quality"}),
     "pdf-to-images": frozenset({"format", "dpi", "pages", "quality", "password"}),
+    "convert-images": frozenset(
+        {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}
+    ),
 }

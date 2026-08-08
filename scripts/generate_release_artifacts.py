@@ -50,6 +50,7 @@ SPDX_LICENSE_IDS = {
     "FTL",
     "GPL-2.0-or-later",
     "ISC",
+    "LGPL-3.0-or-later",
     "MIT",
     "MIT-CMU",
     "MPL-2.0",
@@ -139,11 +140,11 @@ def load_report(path: Path) -> dict[str, Any]:
         raise ValueError("unsupported advisory report schema")
     if report.get("accessDate") != "2026-07-19":
         raise ValueError("advisory report access date must be 2026-07-19")
-    if report.get("amendedDate") != "2026-07-20":
-        raise ValueError("advisory report amended date must be 2026-07-20")
+    if report.get("amendedDate") != "2026-08-08":
+        raise ValueError("advisory report amended date must be 2026-08-08")
     components = report.get("components")
-    if not isinstance(components, list) or len(components) != 45:
-        raise ValueError("advisory report must contain 45 versioned review records")
+    if not isinstance(components, list) or len(components) != 48:
+        raise ValueError("advisory report must contain 48 versioned review records")
     unversioned = report.get("unversionedNestedComponents")
     if not isinstance(unversioned, list) or len(unversioned) != 18:
         raise ValueError("advisory report must enumerate 18 unversioned native children")
@@ -297,7 +298,7 @@ def common_component_properties(
         "localdocforge:advisoryApplicability": security["applicability"],
         "localdocforge:advisoryDisposition": security["disposition"],
         "localdocforge:advisoryRemediation": security["remediation"],
-        "localdocforge:advisoryReviewDate": "2026-07-19",
+        "localdocforge:advisoryReviewDate": component.get("reviewDate", "2026-07-19"),
         "localdocforge:componentKind": component["kind"],
         "localdocforge:licenseConclusion": license_info["concluded"],
         "localdocforge:licenseVerification": license_info["status"],
@@ -438,6 +439,10 @@ def build_dependencies(
         "pkg:pypi/pillow@12.3.0": {
             "pkg:generic/pillow%20codec%20bundle@12.3.0"
         },
+        "pkg:pypi/pi-heif@1.4.0": {"pkg:generic/libheif@1.23.0"},
+        # libde265 ships as its own DLL in the pi-heif wheel but is loaded
+        # and driven exclusively by libheif's HEVC decode path.
+        "pkg:generic/libheif@1.23.0": {"pkg:generic/libde265@1.1.1"},
         "pkg:generic/pillow%20codec%20bundle@12.3.0": {
             reference
             for reference in all_refs
@@ -448,6 +453,8 @@ def build_dependencies(
                 "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
                 "pkg:generic/pillow%20codec%20bundle@12.3.0",
                 "pkg:generic/qpdf@12.3.2",
+                "pkg:generic/libheif@1.23.0",
+                "pkg:generic/libde265@1.1.1",
             }
         },
     }
@@ -466,29 +473,54 @@ def build_dependencies(
 
 
 def build_vulnerabilities(indexed: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    openjpeg = indexed["pkg:generic/openjpeg@2.5.4"]
-    affected_refs = [
-        "pkg:generic/openjpeg@2.5.4",
-        "pkg:generic/pillow%20codec%20bundle@12.3.0",
-        "pkg:pypi/pillow@12.3.0",
-    ]
-    return [
-        {
-            "id": "OSV-2025-219",
-            "source": {
-                "name": "OSV",
-                "url": "https://osv.dev/vulnerability/OSV-2025-219",
-            },
-            "ratings": [{"severity": "high"}],
-            "description": openjpeg["security"]["advisories"][0]["summary"],
-            "analysis": {
-                "state": "in_triage",
-                "detail": openjpeg["security"]["applicability"],
-            },
-            "affects": [{"ref": reference} for reference in affected_refs],
-            "recommendation": openjpeg["security"]["remediation"],
-        }
-    ]
+    """One SBOM entry per applicable advisory, derived from the curated report.
+
+    The component with disposition ``affected`` that names an advisory id owns
+    that advisory's description, severity, applicability, and remediation;
+    every component whose record lists the same id (aggregates and bundling
+    wheels) joins the ``affects`` list.
+    """
+    owners: dict[str, dict[str, Any]] = {}
+    affects: dict[str, set[str]] = {}
+    for reference, component in indexed.items():
+        security = component["security"]
+        for advisory in security.get("advisories", []):
+            advisory_id = advisory["id"]
+            affects.setdefault(advisory_id, set()).add(reference)
+            if security["disposition"] == "affected":
+                if advisory_id in owners:
+                    raise ValueError(
+                        f"advisory {advisory_id} has more than one affected owner"
+                    )
+                owners[advisory_id] = {"component": component, "advisory": advisory}
+    if set(owners) != set(affects):
+        unowned = ", ".join(sorted(set(affects) - set(owners)))
+        raise ValueError(f"advisories without an affected owner record: {unowned}")
+    entries = []
+    for advisory_id in sorted(owners):
+        component = owners[advisory_id]["component"]
+        advisory = owners[advisory_id]["advisory"]
+        entries.append(
+            {
+                "id": advisory_id,
+                "source": {
+                    "name": "OSV",
+                    "url": f"https://osv.dev/vulnerability/{advisory_id}",
+                },
+                "ratings": [{"severity": advisory["severity"].lower()}],
+                "description": advisory["summary"],
+                "analysis": {
+                    "state": "in_triage",
+                    "detail": component["security"]["applicability"],
+                },
+                "affects": [
+                    {"ref": reference}
+                    for reference in sorted(affects[advisory_id])
+                ],
+                "recommendation": component["security"]["remediation"],
+            }
+        )
+    return entries
 
 
 def build_sbom(
@@ -525,6 +557,10 @@ def build_sbom(
     ]
     unversioned_components.sort(key=lambda item: item["bom-ref"])
     direct_names, python_edges = uv_dependency_edges(uv_lock, profile, locked)
+    versioned_native_count = sum(
+        1 for component in report["components"] if component["kind"] == "bundled-native"
+    )
+    unversioned_count = len(report["unversionedNestedComponents"])
     root_name = canonicalize(project["project"]["name"])
     root_version = project["project"]["version"]
     root_ref = f"pkg:pypi/{root_name}@{root_version}"
@@ -537,7 +573,7 @@ def build_sbom(
         "specVersion": "1.6",
         "version": 1,
         "metadata": {
-            "timestamp": "2026-07-20T00:00:00Z",
+            "timestamp": "2026-08-08T00:00:00Z",
             "tools": {
                 "components": [
                     {
@@ -580,8 +616,9 @@ def build_sbom(
                         "target wheel requires equivalent re-inventory."
                     ),
                     "localdocforge:nativeComposition": (
-                        "incomplete: 16 versioned records plus 18 known unversioned "
-                        "children; additional statically linked or platform-specific "
+                        f"incomplete: {versioned_native_count} versioned records "
+                        f"plus {unversioned_count} known unversioned children; "
+                        "additional statically linked or platform-specific "
                         "children may exist"
                     ),
                 }
@@ -733,6 +770,14 @@ def build_profile_notices(
             "Current media gates reject JP2/J2K, but the vulnerable codec remains "
             "bundled. Replace it with a build containing upstream fix "
             "`d33cbecc148d3affcdf403211fddc2cc5d442379` or a later fixed release.",
+            "- **libheif 1.23.0 is affected by the OSS-Fuzz records "
+            "[OSV-2020-2308](https://osv.dev/vulnerability/OSV-2020-2308) and "
+            "[OSV-2023-1129](https://osv.dev/vulnerability/OSV-2023-1129)** "
+            "(MEDIUM read-class memory-safety crashes with no fixed release "
+            "enumerated), and untrusted HEIC/HEIF inputs reach this decoder by "
+            "design of the HEIF input feature. Adopt a pi-heif build that "
+            "resolves both records; contained workers and resource limits bound "
+            "the exposure meanwhile.",
             "- **PDFium 152.0.7947.0 is advisory-unknown.** The wheel records no "
             "source commit, and public Chromium/PDFium information cannot prove which "
             "private security fixes this build contains. It directly parses untrusted "
@@ -744,14 +789,18 @@ def build_profile_notices(
             "## Redistribution and platform notes",
             "",
             "- Preserve complete license/notice directories from pikepdf, pypdfium2, "
-            "Pillow, and all other redistributed wheels; summary labels here do not "
-            "replace those texts.",
+            "Pillow, pi-heif, and all other redistributed wheels; summary labels "
+            "here do not replace those texts.",
+            "- pi-heif wheels are decode-only builds of pillow-heif with an LGPLv3 "
+            "license ceiling (libheif + libde265). They bundle no GPLv2 x265 "
+            "encoder; the full pillow-heif package is a dev-profile test-fixture "
+            "tool only and ships in no runtime profile.",
             "- This notice and its universal-profile SBOM use native evidence from "
             "Windows x86-64 / CPython 3.14 wheels only. They do not assert identical "
             "native composition on Linux or macOS; re-inventory every target wheel.",
-            "- The CycloneDX composition is explicitly `incomplete`: 16 native records "
-            "have versions, 18 known children do not, and additional static or "
-            "platform-specific children may exist.",
+            f"- The CycloneDX composition is explicitly `incomplete`: {len(native)} "
+            f"native records have versions, {len(unversioned)} known children do "
+            "not, and additional static or platform-specific children may exist.",
             "- No optional external executable was enabled or distributed, so Typst, "
             "qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and "
             "veraPDF are outside this report's reviewed component set.",
@@ -771,6 +820,10 @@ def build_combined_notices(report: dict[str, Any]) -> str:
         )
         for profile in PROFILES
     }
+    native_count = sum(
+        1 for component in report["components"] if component["kind"] == "bundled-native"
+    )
+    unversioned_count = len(report["unversionedNestedComponents"])
     lines = [
         "# Third-Party Notices",
         "",
@@ -783,7 +836,8 @@ def build_combined_notices(report: dict[str, Any]) -> str:
     ]
     for profile in PROFILES:
         lines.append(
-            f"| {profile.title()} | {counts[profile]} | 16 | 18 | "
+            f"| {profile.title()} | {counts[profile]} | {native_count} | "
+            f"{unversioned_count} | "
             f"[notices](THIRD_PARTY_NOTICES.{profile}.md) | "
             f"[SBOM](docs/SBOM.{profile}.cdx.json) |"
         )
@@ -795,10 +849,14 @@ def build_combined_notices(report: dict[str, Any]) -> str:
             "",
             "All profiles currently bundle affected OpenJPEG 2.5.4 "
             "([OSV-2025-219](https://osv.dev/vulnerability/OSV-2025-219)) through "
-            "Pillow and advisory-unknown PDFium 152.0.7947.0 through pypdfium2. "
+            "Pillow, affected libheif 1.23.0 "
+            "([OSV-2020-2308](https://osv.dev/vulnerability/OSV-2020-2308), "
+            "[OSV-2023-1129](https://osv.dev/vulnerability/OSV-2023-1129)) through "
+            "pi-heif, and advisory-unknown PDFium 152.0.7947.0 through pypdfium2. "
             "See the profile notice and `docs/ADVISORY_REPORT.json` for applicability, "
             "remediation, residual risk, and authoritative sources.",
-            "The 16 versioned native records are not exhaustive: 18 known unversioned "
+            f"The {native_count} versioned native records are not exhaustive: "
+            f"{unversioned_count} known unversioned "
             "PDFium/libavif children remain advisory-unknown, and each SBOM's "
             "CycloneDX composition is `incomplete`.",
             "",

@@ -13,8 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 GENERATOR_PATH = ROOT / "scripts" / "generate_release_artifacts.py"
 REPORT_PATH = ROOT / "docs" / "ADVISORY_REPORT.json"
 PROFILES = ("lite", "standard", "full")
-PYTHON_COUNTS = {"lite": 20, "standard": 28, "full": 29}
+PYTHON_COUNTS = {"lite": 21, "standard": 29, "full": 30}
+NATIVE_COUNT = 18
+UNVERSIONED_COUNT = 18
+REVIEW_DATES = {"2026-07-19", "2026-08-08"}
 BASE_DIRECT = {
+    "pkg:pypi/pi-heif@1.4.0",
     "pkg:pypi/pikepdf@10.10.0",
     "pkg:pypi/pillow@12.3.0",
     "pkg:pypi/pydantic@2.13.4",
@@ -93,8 +97,8 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         metadata_properties = _properties(sbom["metadata"])
         assert metadata_properties["localdocforge:profile"] == profile
         assert metadata_properties["localdocforge:advisoryAccessDate"] == "2026-07-19"
-        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-07-20"
-        assert sbom["metadata"]["timestamp"] == "2026-07-20T00:00:00Z"
+        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-08-08"
+        assert sbom["metadata"]["timestamp"] == "2026-08-08T00:00:00Z"
         assert "SHA-256 artifact hashes" in metadata_properties[
             "localdocforge:lockEvidence"
         ]
@@ -115,7 +119,7 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         ]
 
         components = sbom["components"]
-        assert len(components) == PYTHON_COUNTS[profile] + 16 + 18
+        assert len(components) == PYTHON_COUNTS[profile] + NATIVE_COUNT + UNVERSIONED_COUNT
         references = {component["bom-ref"] for component in components}
         assert len(references) == len(components)
         python_components = [
@@ -128,16 +132,16 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         assert sum(
             _properties(component)["localdocforge:componentKind"] == "bundled-native"
             for component in components
-        ) == 16
+        ) == NATIVE_COUNT
         assert sum(
             _properties(component)["localdocforge:componentKind"]
             == "bundled-native-unversioned"
             for component in components
-        ) == 18
+        ) == UNVERSIONED_COUNT
         for component in components:
             properties = _properties(component)
             assert properties["localdocforge:advisoryDisposition"]
-            assert properties["localdocforge:advisoryReviewDate"] == "2026-07-19"
+            assert properties["localdocforge:advisoryReviewDate"] in REVIEW_DATES
             assert properties["localdocforge:licenseConclusion"]
             assert properties["localdocforge:licenseVerification"]
             if properties["localdocforge:componentKind"] == "runtime-python":
@@ -180,21 +184,55 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         assert dependency_map["pkg:pypi/pillow@12.3.0"] == {
             "pkg:generic/pillow%20codec%20bundle@12.3.0"
         }
+        assert dependency_map["pkg:pypi/pi-heif@1.4.0"] == {
+            "pkg:generic/libheif@1.23.0",
+            "pkg:pypi/pillow@12.3.0",
+        }
+        assert dependency_map["pkg:generic/libheif@1.23.0"] == {
+            "pkg:generic/libde265@1.1.1"
+        }
+        assert "pkg:generic/libheif@1.23.0" not in dependency_map[
+            "pkg:generic/pillow%20codec%20bundle@12.3.0"
+        ]
+        assert "pkg:generic/libde265@1.1.1" not in dependency_map[
+            "pkg:generic/pillow%20codec%20bundle@12.3.0"
+        ]
 
-        assert len(sbom["vulnerabilities"]) == 1
-        vulnerability = sbom["vulnerabilities"][0]
-        assert vulnerability["id"] == "OSV-2025-219"
+        vulnerabilities = {item["id"]: item for item in sbom["vulnerabilities"]}
+        assert set(vulnerabilities) == {
+            "OSV-2020-2308",
+            "OSV-2023-1129",
+            "OSV-2025-219",
+        }
+        vulnerability = vulnerabilities["OSV-2025-219"]
         assert vulnerability["ratings"] == [{"severity": "high"}]
         assert {item["ref"] for item in vulnerability["affects"]} == {
             "pkg:generic/openjpeg@2.5.4",
             "pkg:generic/pillow%20codec%20bundle@12.3.0",
             "pkg:pypi/pillow@12.3.0",
         }
+        for heif_advisory in ("OSV-2020-2308", "OSV-2023-1129"):
+            entry = vulnerabilities[heif_advisory]
+            assert entry["ratings"] == [{"severity": "medium"}]
+            assert {item["ref"] for item in entry["affects"]} == {
+                "pkg:generic/libheif@1.23.0",
+                "pkg:pypi/pi-heif@1.4.0",
+            }
+            assert entry["recommendation"]
 
         by_ref = {component["bom-ref"]: component for component in components}
         assert _properties(by_ref["pkg:generic/openjpeg@2.5.4"])[
             "localdocforge:advisoryDisposition"
         ] == "affected"
+        assert _properties(by_ref["pkg:generic/libheif@1.23.0"])[
+            "localdocforge:advisoryDisposition"
+        ] == "affected"
+        assert _properties(by_ref["pkg:pypi/pi-heif@1.4.0"])[
+            "localdocforge:advisoryDisposition"
+        ] == "contains-affected-component"
+        assert _properties(by_ref["pkg:generic/libde265@1.1.1"])[
+            "localdocforge:advisoryDisposition"
+        ] == "no-known-applicable-advisory"
         assert _properties(by_ref["pkg:generic/pdfium@152.0.7947.0"])[
             "localdocforge:advisoryDisposition"
         ] == "unknown"
@@ -219,23 +257,23 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     assert report["schemaVersion"] == 1
     assert report["accessDate"] == "2026-07-19"
-    assert report["amendedDate"] == "2026-07-20"
+    assert report["amendedDate"] == "2026-08-08"
     refresh = report["verificationRuns"][-1]
-    assert refresh["accessDate"] == "2026-07-20"
+    assert refresh["accessDate"] == "2026-08-08"
     assert refresh["releaseDisposition"] == "not-cleared"
     assert all(source["url"].startswith("https://") for source in refresh["sources"])
     assert all(source["exactVersions"] for source in refresh["sources"])
     assert all(source["conclusion"] for source in refresh["sources"])
     assert all(source["disposition"] for source in refresh["sources"])
-    assert report["scope"]["versionedReviewRecordCount"] == 45
-    assert report["scope"]["versionedBundledNativeComponents"] == 16
-    assert report["scope"]["unversionedNestedNativeComponents"] == 18
+    assert report["scope"]["versionedReviewRecordCount"] == 48
+    assert report["scope"]["versionedBundledNativeComponents"] == NATIVE_COUNT
+    assert report["scope"]["unversionedNestedNativeComponents"] == UNVERSIONED_COUNT
     assert report["scope"]["optionalEngines"]["reviewed"] is False
     components = report["components"]
-    assert len({component["bomRef"] for component in components}) == 45
+    assert len({component["bomRef"] for component in components}) == 48
     assert Counter(component["kind"] for component in components) == {
-        "runtime-python": 29,
-        "bundled-native": 16,
+        "runtime-python": 30,
+        "bundled-native": NATIVE_COUNT,
     }
     assert Counter(
         component["security"]["disposition"] for component in components
@@ -281,6 +319,31 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     assert pdfium["security"]["disposition"] == "unknown"
     assert pdfium["security"]["affectedVersionRanges"] is None
     assert "hash=null" in pdfium["license"]["localVersionEvidence"]
+
+    libheif = by_ref["pkg:generic/libheif@1.23.0"]
+    assert libheif["security"]["disposition"] == "affected"
+    assert libheif["reviewDate"] == "2026-08-08"
+    assert [advisory["id"] for advisory in libheif["security"]["advisories"]] == [
+        "OSV-2020-2308",
+        "OSV-2023-1129",
+    ]
+    for advisory in libheif["security"]["advisories"]:
+        assert advisory["severity"] == "MEDIUM"
+        assert advisory["provenanceConclusion"]
+        assert any("osv.dev" in url for url in advisory["sources"])
+    assert libheif["license"]["concluded"] == "LGPL-3.0-or-later"
+
+    pi_heif_record = by_ref["pkg:pypi/pi-heif@1.4.0"]
+    assert pi_heif_record["security"]["disposition"] == "contains-affected-component"
+    assert pi_heif_record["bomRef"] in {
+        f"pkg:pypi/pi-heif@{pi_heif_record['version']}"
+    }
+    assert "no x265 encoder" in pi_heif_record["license"]["localVersionEvidence"]
+
+    libde265 = by_ref["pkg:generic/libde265@1.1.1"]
+    assert libde265["security"]["disposition"] == "no-known-applicable-advisory"
+    assert "OSV-2020-2308" in libde265["security"]["applicability"]
+    assert libde265["license"]["concluded"] == "LGPL-3.0-or-later"
 
     msvc = by_ref["pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0"]
     assert msvc["bundledBy"] == "pikepdf"
@@ -334,6 +397,9 @@ def test_notice_index_and_profile_notices_disclose_required_uncertainty():
         assert "universal-profile SBOM" in notices
         assert "CycloneDX composition is explicitly `incomplete`" in notices
         assert "OpenJPEG 2.5.4 is affected" in notices
+        assert "libheif 1.23.0 is affected" in notices
+        assert "pi-heif wheels are decode-only builds" in notices
+        assert "no GPLv2 x265" in notices
         assert "PDFium 152.0.7947.0 is advisory-unknown" in notices
         assert "not a safety guarantee" in notices
         assert "No vulnerability or security-advisory lookup was performed" not in notices

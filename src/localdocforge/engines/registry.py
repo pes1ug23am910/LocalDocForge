@@ -13,6 +13,7 @@ from localdocforge.domain.models import Capability, EngineInfo
 from localdocforge.engines import adapters
 from localdocforge.engines.adapters import (
     PdfiumEngine,
+    PiHeifEngine,
     PikepdfEngine,
     PillowEngine,
     PypdfEngine,
@@ -68,6 +69,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         "Convert to PDF",
         adapters.OP_IMAGES_TO_PDF,
         True,
+        notes="HEIC/HEIF input additionally requires the pi-heif decode engine.",
     ),
     CapabilitySpec(
         "pdf-to-images",
@@ -75,6 +77,20 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         "Convert from PDF",
         adapters.OP_PDF_TO_IMAGES,
         True,
+    ),
+    CapabilitySpec(
+        "convert-images",
+        "Convert images",
+        "Convert images",
+        adapters.OP_CONVERT_IMAGES,
+        True,
+        extra_engines=("pi-heif",),
+        notes=(
+            "HEIC/JPG/PNG/TIFF/BMP/WebP to PNG/JPEG/WebP/TIFF. HEIF decoding "
+            "is decode-only via pi-heif. The llm preset (JPEG quality 85, "
+            "long edge <= 1568 px, metadata stripped) targets AI-assistant "
+            "ingestion."
+        ),
     ),
     # ---- Not yet implemented; listed so doctor can say exactly what is missing ----
     CapabilitySpec("repair", "Repair PDF", "Optimize PDF", None, False, notes="planned: Phase 2"),
@@ -144,6 +160,7 @@ class EngineRegistry:
             PypdfEngine(),
             PdfiumEngine(),
             PillowEngine(),
+            PiHeifEngine(),
             *build_external_engines(),
         ]
 

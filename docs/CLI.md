@@ -79,7 +79,12 @@ ldf compress input.pdf -o smaller.pdf              # lossless structural preset
 
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4 --fit fit
 ldf images-to-pdf photo.png -o photo.pdf --page-size image
+ldf images-to-pdf photos/*.HEIC -o photos.pdf            # iPhone HEIC input
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300 --pages odd
+
+ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-ready JPEGs
+ldf convert-images scan.heic -d out/ --format png --keep-metadata
+ldf convert-images big.png -d out/ --max-dimension 1024
 ```
 
 Notes:
@@ -93,6 +98,18 @@ Notes:
 - Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and
   PNG/JPEG/WebP/TIFF output. Resource limits may reject a value that would
   exceed configured pixel, decompressed-byte, page, or output bounds.
+- Image inputs (images-to-pdf and convert-images) may be HEIC/HEIF, JPG, PNG,
+  TIFF, BMP, or WebP; HEIC decoding runs through the decode-only pi-heif
+  engine, so HEIF *output* is never offered.
+- `convert-images` applies EXIF orientation, converts pixels tagged with a
+  non-sRGB color profile (iPhone photos are typically Display P3) to sRGB, and
+  strips EXIF/XMP metadata — including GPS positions — by default;
+  `--keep-metadata` retains EXIF and emits a `location-metadata-retained`
+  warning when GPS data is kept. `--preset llm` is shorthand for JPEG at
+  quality 85 with the long edge bounded to 1568 px — the largest size current
+  Compatible AI systems ingest without
+  server-side downscaling. Explicit flags override preset values; images are
+  never upscaled.
 - Crop sets the PDF CropBox. Hidden content remains; it is not redaction.
 - `compress` implements only the `lossless` preset: streams are recompressed,
   object streams generated, and unused page resources pruned — image data is
@@ -147,7 +164,8 @@ URLs. States are `queued`, `running`, `success`, `failed`, `cancelled`,
 poll-based; this release does not claim a streaming/SSE channel.
 
 `operation` is one of `merge`, `split`, `remove-pages`, `extract-pages`,
-`organize`, `rotate`, `crop`, `compress`, `images-to-pdf`, or `pdf-to-images`.
+`organize`, `rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images`,
+or `convert-images`.
 Upload each
 source under multipart field `files`. The server, not the request, chooses all
 output paths. Supported string form fields are:
@@ -163,6 +181,7 @@ output paths. Supported string form fields are:
 | compress | optional `preset` (only `lossless` exists), optional `password` |
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
 | pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), and `password` |
+| convert-images | optional `format` (png/jpeg/webp/tiff), `quality` (1–100), `max_dimension` (16–30000), `preset` (`llm`), boolean `keep_metadata`, and `background` |
 
 Unknown, duplicated, invalid, or out-of-range parameters return 422. Upload
 bytes are counted cumulatively against the lower of

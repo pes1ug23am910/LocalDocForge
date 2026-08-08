@@ -83,11 +83,12 @@ Only `preset="lossless"` exists; planned lossy presets raise `PipelineError`.
 `compare_page_renders(a, b, page_count)` — the pixel-comparison helper — is
 public and usable on its own.
 
-### Images ↔ PDF (`operations.images`)
+### Images ↔ PDF and image → image (`operations.images`)
 
 ```python
 from localdocforge.operations.images import (
-    ImagesToPdfOptions, PdfToImagesOptions, images_to_pdf, pdf_to_images,
+    ConvertImagesOptions, ImagesToPdfOptions, PdfToImagesOptions,
+    convert_images, images_to_pdf, pdf_to_images,
 )
 
 images_to_pdf([photo1, photo2], out_dir / "album.pdf",
@@ -96,6 +97,12 @@ images_to_pdf([photo1, photo2], out_dir / "album.pdf",
 report = pdf_to_images(merged_pdf, out_dir / "pages",
                        options=PdfToImagesOptions(image_format="png", dpi=72))
 page_files = [artifact.path for artifact in report.outputs]
+
+# iPhone HEIC (decoded via pi-heif) → AI-assistant-ready JPEGs: EXIF
+# orientation applied, Display P3 converted to sRGB, GPS/EXIF stripped,
+# long edge bounded to 1568 px.
+report = convert_images([photo_heic], out_dir / "ready",
+                        options=ConvertImagesOptions(preset="llm"))
 ```
 
 ### Read-only inspection

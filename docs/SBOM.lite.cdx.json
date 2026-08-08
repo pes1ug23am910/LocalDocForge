@@ -603,6 +603,96 @@
       "version": "26.2"
     },
     {
+      "bom-ref": "pkg:pypi/pi-heif@1.4.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/bigcat88/pillow_heif/releases"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pi-heif/1.4.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/bigcat88/pillow_heif/v1.4.0/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "pi-heif",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted HEIC/HEIF bytes reach the bundled libheif and libde265 decoders whenever HEIF inputs are accepted by image conversion; the plugin itself is thin Python/C binding code."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "contains-affected-component"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Track pi-heif releases so bundled libheif/libde265 pick up upstream fixes, keep HEIF decoding inside the contained worker with resource limits, and re-run this exact-version review on every upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-08"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pi_heif.__version__ == 1.4.0; wheel licenses/LICENSES_bundled.txt declares the LGPLv3 wheel ceiling (libheif + libde265, no x265 encoder)"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "29"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:04d5b253bc463839beb50ac9fdf9f13a79125ee80346a53030f43962e565f928,sha256:04f5648d670e33aef5d0bc6a0f1875efd6093217a826a6d123cbac6022434a70,sha256:055610c9eceb621f51117ab1900d4a9a519824427428c93a3c546b4e39e72df3,sha256:0cd041cdf552019737f665fdcdf9c831ef354785a92d930d7f546ba9959a0284,sha256:0da6168084d6c50f6a44538273f58d3aa2ec96ebdc3539efd65ecb98a1bb08e8,sha256:13eceb34f2bfe06b1e59296e958a67cbe864adb10d30e825890e54111b895aa0,sha256:1c7d6829532ff6ac195e63879b399530de8e693a621d3755581574da7ef74676,sha256:21a907c3ba6b72ffa97c308aa5678764be82b5510b4f0b67a9d50fdb99e0935e,sha256:229af3701358ccc3428081586fe4c11d7badc8dbf995aa686cc4f0344c3966dd,sha256:298a84c8865a2fa6a795bdd9e532bfa07dd87a6b289caff03b26a0993c06558b,sha256:2fd498fabcdc77159414cccfd966ca48735497fd8c038d1b0135025f3cceac90,sha256:3d5396f500e70de167307e0cabcc2b3895d2e623ad4243811f44d578b55c9e1c,sha256:406584a8f6d1d59f6d401af3d434f3e6a9df5c49681f87023c602f755c647b4e,sha256:482bf2d9b26f4e3399a304bb8d14e01aaf0b806f22615e2cc98a0bdbda895d22,sha256:4fab02de6b0e445d8e7ab2f232338e242d6b5b54c0bddf12959ede248f176518,sha256:55f9b4567b84b72e39fd62982ab780631cad71ebe082b6834ce300fe46fcc389,sha256:58320bee5fac8923aa8e09439c7e8778ba4afb146d2cd658be9f4160cb72aec3,sha256:5b58514d1b76fb488e4f78ac4717371c8077f6422298d0fc9a21c2fa72d8907b,sha256:6c791710e3d152637123ad204016fa6154040b1957e95fb1cb234014c423a0a3,sha256:743b971b9c0d35be8435702443596e3e9280084e68fc8d5c4de4b31fb12a1417,sha256:7692b50e0305170502fdd0657b31818e724f9630629bdbc05a91b10a7979d786,sha256:81cb473227b2da35bfd7c69a12764f664d91e44b0ec2547cdfe5ca6b8b52cab9,sha256:939f8eeb63a3897357807766cf0eea3fca3310427ec66a000b86ba1f30af21ab,sha256:9400e8f27b13646bcb3bac2fbdcd8903b6f8e03dc269aabb3d852f15245b85ee,sha256:b4cc3a6a55d31f7961d7bf16103a47704adf33c06209d9f86351caea2084c40a,sha256:c95f5cf99285403698fc48436a05af01d4c38cbedc01949dd4d96f53590fbd33,sha256:d0f2512d2e03ea33777c2ca3f1bec33db260bb9dd013ffd350a20fe28452d33f,sha256:e1199d9d41d9ecc877cf3ae7322ff099f6404574f2e62da47590cd4ecb9ec554,sha256:f5ecc06e86a0170ed3782ec27c854b5b334d44d7651d5c0bbff0c123ea44d5f9"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The plugin's status cannot be clearer than its bundled native decoders; wheel composition can change without a Python-visible version change."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Decode-only HEIF/HEIC Pillow plugin (the pillow-heif codebase built without encoders) enabling iPhone-photo input for image conversion."
+        }
+      ],
+      "purl": "pkg:pypi/pi-heif@1.4.0",
+      "type": "library",
+      "version": "1.4.0"
+    },
+    {
       "bom-ref": "pkg:pypi/pikepdf@10.10.0",
       "externalReferences": [
         {
@@ -2097,6 +2187,178 @@
       "version": "1.4.2"
     },
     {
+      "bom-ref": "pkg:generic/libde265@1.1.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/strukturag/libde265/releases"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/strukturag/libde265/v1.1.1/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "libde265",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted HEVC payloads inside HEIC files reach libde265 through libheif. The libheif-project OSS-Fuzz record OSV-2020-2308 shows crash frames inside libde265 motion-vector code; that finding is recorded on the libheif component because OSV attributes it there."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Track libde265 releases together with pi-heif/libheif and keep HEVC decoding inside contained workers with resource limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-08"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pi-heif"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "LGPL-3.0-or-later"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pi_heif.libheif_info() reports libde265 HEVC decoder 1.1.1; the inspected wheel ships a delvewheel-mangled libde265-0 DLL"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "HEVC decoders have an extensive historical CVE record; an empty exact-version result is a time-bounded no-finding, not a safety verdict."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native HEVC (H.265) still-image decoder invoked by libheif for HEIC payloads."
+        }
+      ],
+      "purl": "pkg:generic/libde265@1.1.1",
+      "type": "library",
+      "version": "1.1.1"
+    },
+    {
+      "bom-ref": "pkg:generic/libheif@1.23.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=30568"
+        },
+        {
+          "type": "advisories",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63990"
+        },
+        {
+          "type": "advisories",
+          "url": "https://github.com/strukturag/libheif/releases"
+        },
+        {
+          "type": "advisories",
+          "url": "https://osv.dev/vulnerability/OSV-2020-2308"
+        },
+        {
+          "type": "advisories",
+          "url": "https://osv.dev/vulnerability/OSV-2023-1129"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/strukturag/libheif/v1.23.0/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "libheif",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted HEIC/HEIF inputs directly reach libheif container parsing and decode when HEIF input features are used; both recorded defects are read-class memory-safety crashes in decode paths."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "affected"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Adopt a pi-heif build whose libheif resolves both OSS-Fuzz records or documents them fixed, keep HEIF decoding inside contained workers with memory/CPU/output limits, and treat decoder crashes as expected hostile-input behavior."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-08"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pi-heif"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "LGPL-3.0-or-later"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pi_heif.libheif_info() reports libheif 1.23.0; the inspected wheel ships a delvewheel-mangled libheif DLL"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Introduced-with-no-fixed-release OSS-Fuzz records cannot prove current-version reachability or exploitability either way; additional unpublished decoder defects can exist."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native HEIF/HEIC container parser and decode orchestrator used through the pi-heif Pillow plugin."
+        }
+      ],
+      "purl": "pkg:generic/libheif@1.23.0",
+      "type": "library",
+      "version": "1.23.0"
+    },
+    {
       "bom-ref": "pkg:generic/libjpeg-turbo@3.1.4.1",
       "externalReferences": [
         {
@@ -2591,7 +2853,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF/HEIF remain rejected by the current operation allowlist."
+          "value": "JPEG, PNG, TIFF, BMP, and WebP paths reach selected native children; JP2/J2K and AVIF remain rejected by the current operation allowlist. HEIF/HEIC input is accepted by the application but is decoded by the separately inventoried pi-heif/libheif/libde265 components, never by this bundle."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4235,6 +4497,16 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:generic/libde265@1.1.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/libde265@1.1.1"
+      ],
+      "ref": "pkg:generic/libheif@1.23.0"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:generic/libjpeg-turbo@3.1.4.1"
     },
     {
@@ -4319,6 +4591,7 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/pi-heif@1.4.0",
         "pkg:pypi/pikepdf@10.10.0",
         "pkg:pypi/pillow@12.3.0",
         "pkg:pypi/pydantic-settings@2.14.2",
@@ -4345,6 +4618,13 @@
     {
       "dependsOn": [],
       "ref": "pkg:pypi/packaging@26.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/libheif@1.23.0",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/pi-heif@1.4.0"
     },
     {
       "dependsOn": [
@@ -4524,7 +4804,7 @@
       },
       {
         "name": "localdocforge:advisoryAmendedDate",
-        "value": "2026-07-20"
+        "value": "2026-08-08"
       },
       {
         "name": "localdocforge:advisoryReport",
@@ -4532,7 +4812,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "51ab03e8bad31822e0ca35004e5b84020688871145dde1c623097ff1ffe58032"
+        "value": "f5ed2be1336031dc8904098225531dc1c7ec6b8368ff7d8817c7538989ecf004"
       },
       {
         "name": "localdocforge:advisoryReview",
@@ -4544,7 +4824,7 @@
       },
       {
         "name": "localdocforge:nativeComposition",
-        "value": "incomplete: 16 versioned records plus 18 known unversioned children; additional statically linked or platform-specific children may exist"
+        "value": "incomplete: 18 versioned records plus 18 known unversioned children; additional statically linked or platform-specific children may exist"
       },
       {
         "name": "localdocforge:profile",
@@ -4559,7 +4839,7 @@
         "value": "This universal-profile SBOM uses Windows x86-64 / CPython 3.14 evidence for every native component. It does not claim the same native composition on Linux or macOS; every other target wheel requires equivalent re-inventory."
       }
     ],
-    "timestamp": "2026-07-20T00:00:00Z",
+    "timestamp": "2026-08-08T00:00:00Z",
     "tools": {
       "components": [
         {
@@ -4573,6 +4853,58 @@
   "specVersion": "1.6",
   "version": 1,
   "vulnerabilities": [
+    {
+      "affects": [
+        {
+          "ref": "pkg:generic/libheif@1.23.0"
+        },
+        {
+          "ref": "pkg:pypi/pi-heif@1.4.0"
+        }
+      ],
+      "analysis": {
+        "detail": "Untrusted HEIC/HEIF inputs directly reach libheif container parsing and decode when HEIF input features are used; both recorded defects are read-class memory-safety crashes in decode paths.",
+        "state": "in_triage"
+      },
+      "description": "Heap-buffer-overflow in derive_collocated_motion_vectors",
+      "id": "OSV-2020-2308",
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "Adopt a pi-heif build whose libheif resolves both OSS-Fuzz records or documents them fixed, keep HEIF decoding inside contained workers with memory/CPU/output limits, and treat decoder crashes as expected hostile-input behavior.",
+      "source": {
+        "name": "OSV",
+        "url": "https://osv.dev/vulnerability/OSV-2020-2308"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:generic/libheif@1.23.0"
+        },
+        {
+          "ref": "pkg:pypi/pi-heif@1.4.0"
+        }
+      ],
+      "analysis": {
+        "detail": "Untrusted HEIC/HEIF inputs directly reach libheif container parsing and decode when HEIF input features are used; both recorded defects are read-class memory-safety crashes in decode paths.",
+        "state": "in_triage"
+      },
+      "description": "UNKNOWN READ in HeifPixelImage::overlay",
+      "id": "OSV-2023-1129",
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "Adopt a pi-heif build whose libheif resolves both OSS-Fuzz records or documents them fixed, keep HEIF decoding inside contained workers with memory/CPU/output limits, and treat decoder crashes as expected hostile-input behavior.",
+      "source": {
+        "name": "OSV",
+        "url": "https://osv.dev/vulnerability/OSV-2023-1129"
+      }
+    },
     {
       "affects": [
         {

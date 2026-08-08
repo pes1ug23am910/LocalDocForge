@@ -2,13 +2,19 @@
 
 import pytest
 
-from localdocforge.engines.adapters import OP_MERGE, OP_PDF_TO_IMAGES, OP_RENDER
+from localdocforge.engines.adapters import (
+    OP_CONVERT_IMAGES,
+    OP_MERGE,
+    OP_PDF_TO_IMAGES,
+    OP_RENDER,
+)
 from localdocforge.engines.base import EngineUnavailableError
 from localdocforge.engines.registry import CAPABILITY_SPECS, EngineRegistry
 
 IMPLEMENTED_IDS = {
     "merge", "split", "remove-pages", "extract-pages", "organize",
     "rotate", "crop", "inspect", "compress", "images-to-pdf", "pdf-to-images",
+    "convert-images",
 }
 
 
@@ -20,9 +26,14 @@ def registry():
 class TestProbes:
     def test_python_engines_available_here(self, registry):
         infos = {info.name: info for info in registry.all_infos()}
-        for name in ("pikepdf", "pypdf", "pdfium", "pillow"):
+        for name in ("pikepdf", "pypdf", "pdfium", "pillow", "pi-heif"):
             assert infos[name].available, f"{name} must be importable in the test environment"
             assert infos[name].version
+
+    def test_pi_heif_probe_is_honest_about_decode_only(self, registry):
+        info = registry.get("pi-heif").probe()
+        assert "decode-only" in info.notes
+        assert "libheif" in info.notes
 
     def test_probe_never_raises_for_externals(self, registry):
         # Whatever is or is not installed, probing must return info, not throw.
@@ -42,6 +53,22 @@ class TestSelection:
 
     def test_engine_for_render_is_pdfium(self, registry):
         assert registry.engine_for(OP_RENDER).name == "pdfium"
+
+    def test_engine_for_convert_images_is_pillow(self, registry):
+        assert registry.engine_for(OP_CONVERT_IMAGES).name == "pillow"
+
+    def test_heif_plugin_is_not_an_operation_engine(self, registry):
+        # The decode plugin backs capabilities via extra_engines, never by
+        # claiming operations of its own.
+        assert registry.get("pi-heif").supported_operations() == frozenset()
+        with pytest.raises(EngineUnavailableError):
+            registry.engine_for(OP_CONVERT_IMAGES, preferred="pi-heif")
+
+    def test_convert_images_capability_requires_the_heif_plugin(self, registry):
+        capability = {c.id: c for c in registry.capabilities()}["convert-images"]
+        assert capability.available
+        spec = next(item for item in CAPABILITY_SPECS if item.id == "convert-images")
+        assert spec.extra_engines == ("pi-heif",)
 
     def test_unwired_library_cannot_be_selected_as_an_engine(self, registry):
         with pytest.raises(EngineUnavailableError):

@@ -307,6 +307,46 @@ class TestJobErrors:
             )
         assert outputs[0] != outputs[1]
 
+    def test_convert_images_job_converts_heic_with_llm_preset(
+        self, client, fixtures_dir
+    ):
+        response = client.post(
+            "/api/jobs/convert-images",
+            headers=auth(),
+            files=[upload(fixtures_dir / "images" / "photo.heic")],
+            data={"preset": "llm"},
+        )
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        details = payload["report"]["details"]
+        assert details["format"] == "jpeg"
+        assert details["quality"] == 85
+        assert details["max_dimension"] == 1568
+        assert details["metadata"] == "stripped"
+        assert details["heif_decoder"].startswith("pi-heif ")
+        downloaded = client.get(
+            f"/api/jobs/{payload['job_id']}/outputs/0", headers=auth()
+        )
+        assert downloaded.status_code == 200
+        assert downloaded.content[:3] == b"\xff\xd8\xff"
+
+    def test_convert_images_job_rejects_bad_parameters(self, client, fixtures_dir):
+        for data in (
+            {"preset": "tiny"},
+            {"format": "gif"},
+            {"keep_metadata": "maybe"},
+            {"quality": "0"},
+            {"max_dimension": "8"},
+            {"password": "nope"},
+        ):
+            response = client.post(
+                "/api/jobs/convert-images",
+                headers=auth(),
+                files=[upload(fixtures_dir / "images" / "photo.jpg")],
+                data=data,
+            )
+            assert response.status_code == 422, (data, response.text)
+
     def test_hostile_upload_filename_neutralized(self, client, fixtures_dir):
         response = client.post(
             "/api/jobs/extract-pages",

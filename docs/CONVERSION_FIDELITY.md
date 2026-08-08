@@ -96,6 +96,39 @@ build and are refused; nothing labelled "compress" silently degrades images.
 - Inputs with parser-reported structural syntax damage are refused rather
   than silently repaired by PDFium.
 
+## convert-images
+
+Every output is a re-encode (`image-reencoded`, info; lossy for JPEG/WebP at
+the configured quality, lossless for PNG/TIFF). HEIC/HEIF inputs decode
+through the decode-only pi-heif engine; HEIF output is never offered.
+
+Preserved:
+- Pixel geometry after EXIF orientation is applied (the orientation tag is
+  consumed, not carried forward pointing at unrotated pixels).
+- Color appearance: pixels tagged with a non-sRGB ICC profile (iPhone photos
+  are typically Display P3) are converted to sRGB before the profile is
+  dropped, so viewers that assume sRGB see the intended colors.
+- Alpha channels, for output formats that support them (PNG/WebP/TIFF).
+
+Intentionally not preserved (defaults chosen for sharing, each reported):
+- `metadata-stripped` (info) — EXIF metadata, explicitly including any GPS
+  position, is removed by default. `--keep-metadata` retains EXIF; when that
+  keeps GPS data the report carries the `location-metadata-retained`
+  **security** warning instead.
+- `xmp-metadata-dropped` (info) — XMP blocks are never carried into outputs,
+  with or without `--keep-metadata`.
+- `alpha-flattened` (info) — JPEG output composites transparency onto the
+  chosen background color.
+- `image-downscaled` (info) — `--max-dimension` (and the `llm` preset's
+  1568 px bound) shrank at least one image; images are never upscaled.
+- `color-profile-converted` (info) — the sRGB conversion above happened.
+- `color-profile-retained` (info) — a profile could not be parsed or
+  converted, so it was kept in the output rather than silently dropped.
+
+The `llm` preset (JPEG quality 85, long edge ≤ 1568 px, metadata stripped)
+is sized so current AI assistants ingest the file without further
+server-side downscaling; it is a convenience default, not a fidelity claim.
+
 ## Encrypted inputs and active content
 
 - A supplied password authorizes reading an encrypted input. Generated PDFs

@@ -21,6 +21,7 @@ OP_COMPRESS = "compress"
 OP_RENDER = "render"
 OP_PDF_TO_IMAGES = "pdf-to-images"
 OP_IMAGES_TO_PDF = "images-to-pdf"
+OP_CONVERT_IMAGES = "convert-images"
 
 _STRUCTURAL_OPS = frozenset(
     {
@@ -160,7 +161,45 @@ class PillowEngine(EngineAdapter):
             )
 
     def supported_operations(self) -> frozenset[str]:
-        return frozenset({OP_IMAGES_TO_PDF})
+        return frozenset({OP_IMAGES_TO_PDF, OP_CONVERT_IMAGES})
+
+
+class PiHeifEngine(EngineAdapter):
+    """HEIF/HEIC decode plugin for Pillow (pi-heif, BSD-3-Clause wrapper).
+
+    A codec plugin, not an operation engine: Pillow runs the image
+    operations and calls into this plugin for HEIF input, so
+    ``supported_operations`` stays empty and capabilities that need HEIF
+    decoding list this engine in ``extra_engines`` instead.
+    """
+
+    name = "pi-heif"
+
+    @cache  # noqa: B019
+    def probe(self) -> EngineInfo:
+        try:
+            import pi_heif
+
+            info = pi_heif.libheif_info()
+            return EngineInfo(
+                name=self.name,
+                kind=EngineKind.PYTHON_LIBRARY,
+                available=True,
+                version=pi_heif.__version__,
+                license="BSD-3-Clause (bundles LGPL-3.0-or-later libheif/libde265)",
+                notes=f"libheif {info.get('libheif', 'unknown')}, decode-only",
+            )
+        except Exception as exc:
+            return EngineInfo(
+                name=self.name,
+                kind=EngineKind.PYTHON_LIBRARY,
+                available=False,
+                notes=f"import failed: {exc}",
+                install_hint="pip install pi-heif",
+            )
+
+    def supported_operations(self) -> frozenset[str]:
+        return frozenset()
 
 
 class ExternalToolEngine(EngineAdapter):
