@@ -19,8 +19,10 @@ from localdocforge.cli.main import (
     EXIT_USAGE,
     app,
 )
+from localdocforge.engines.registry import CAPABILITY_SPECS, default_registry
 
 runner = CliRunner()
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def combined_output(result) -> str:
@@ -64,6 +66,111 @@ class TestDoctor:
         assert "Strict-offline mode is enabled" in result.output
 
 
+class TestAgentBrief:
+    def test_human_markdown_lists_only_implemented_specs_and_feedback_path(self):
+        result = runner.invoke(app, ["agent-brief"])
+        assert result.exit_code == 0, combined_output(result)
+        assert result.stderr_bytes == b""
+        assert result.output.startswith("# LocalDocForge agent brief\n")
+        for spec in CAPABILITY_SPECS:
+            marker = f"`{spec.id}`"
+            if spec.implemented:
+                assert marker in result.output
+            else:
+                assert marker not in result.output
+        feedback = (ROOT / "docs" / "AGENT_FEEDBACK.md").resolve()
+        assert str(feedback) in result.output
+        assert "## Exit codes" in result.output
+        assert "## Agent gotchas" in result.output
+        assert "## Verify -> fallback -> review" in result.output
+
+    def test_json_is_machine_readable_and_mirrors_one_live_registry_snapshot(self):
+        result = runner.invoke(app, ["--json", "agent-brief"])
+        assert result.exit_code == 0, combined_output(result)
+        assert result.stderr_bytes == b""
+        payload = json.loads(result.output)
+        assert payload["schema_version"] == 1
+        assert payload["generated_from"].startswith("CAPABILITY_SPECS")
+        expected_specs = [spec for spec in CAPABILITY_SPECS if spec.implemented]
+        assert [entry["id"] for entry in payload["capabilities"]] == [
+            spec.id for spec in expected_specs
+        ]
+        live_by_id = {capability.id: capability for capability in default_registry().capabilities()}
+        for entry in payload["capabilities"]:
+            live = live_by_id[entry["id"]].model_dump()
+            for field in (
+                "id",
+                "title",
+                "category",
+                "available",
+                "engines",
+                "missing_requirements",
+                "install_hint",
+                "notes",
+            ):
+                assert entry[field] == live[field]
+            assert entry["implemented"] is True
+            assert entry["usage"].startswith("ldf ")
+        assert Path(payload["feedback"]["path"]).is_absolute()
+        assert {item["id"] for item in payload["gotchas"]} >= {
+            "encrypted-inputs",
+            "collision-policy",
+            "glob-expansion",
+            "warning-codes",
+        }
+        assert [step["id"] for step in payload["workflow"]] == [
+            "verify",
+            "fallback",
+            "review",
+        ]
+
+    def test_global_options_preserve_stdout_only_read_only_behavior(
+        self, tmp_path, monkeypatch
+    ):
+        def forbidden_call(*_args, **_kwargs):
+            raise AssertionError("agent-brief must not read a password or sweep workspaces")
+
+        monkeypatch.setattr(cli_main, "_read_password_stdin", forbidden_call)
+        monkeypatch.setattr(cli_main, "cleanup_stale_workspaces", forbidden_call)
+        report_dir = tmp_path / "reports-must-not-exist"
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "--quiet",
+                "--strict-offline",
+                "--password-stdin",
+                "--report-dir",
+                str(report_dir),
+                "agent-brief",
+            ],
+            input=b"credential-canary\n",
+            env={"LDF_PASSWORD": None},
+        )
+        assert result.exit_code == 0, combined_output(result)
+        json.loads(result.output)
+        assert result.stderr_bytes == b""
+        assert b"credential-canary" not in result.output_bytes
+        assert not report_dir.exists()
+
+    def test_contract_error_is_stderr_only(self, monkeypatch):
+        def fail_closed(**_kwargs):
+            raise cli_main.AgentBriefError("synthetic contract drift")
+
+        monkeypatch.setattr(cli_main, "build_agent_brief", fail_closed)
+        result = runner.invoke(app, ["agent-brief"])
+        assert result.exit_code == EXIT_FAILED
+        assert result.stdout_bytes == b""
+        assert "synthetic contract drift" in result.stderr
+
+    def test_output_is_byte_stable_across_repeated_invocations(self):
+        first = runner.invoke(app, ["--json", "agent-brief"])
+        second = runner.invoke(app, ["--json", "agent-brief"])
+        assert first.exit_code == second.exit_code == 0
+        assert first.stdout_bytes == second.stdout_bytes
+        assert first.stderr_bytes == second.stderr_bytes == b""
+
+
 class TestVersionAndHelp:
     def test_version(self):
         result = runner.invoke(app, ["--version"])
@@ -73,7 +180,7 @@ class TestVersionAndHelp:
     def test_help_lists_commands(self):
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        for command in ("merge", "split", "rotate", "doctor", "inspect"):
+        for command in ("merge", "split", "rotate", "doctor", "inspect", "agent-brief"):
             assert command in result.output
         assert "--password-stdin" in result.output
         assert "LDF_PASSWORD" in result.output

@@ -159,6 +159,16 @@ server-side downscaling; it is a convenience default, not a fidelity claim.
   Single-document rotate/crop can retain active objects, while page-moving
   operations warn when document-level active content is dropped.
 
+## agent-brief (read-only diagnostics)
+
+`ldf agent-brief` opens and converts no document, publishes no output, and
+therefore introduces no fidelity warning code. It takes one normal live
+capability-probe snapshot and reports which registry-defined operations are
+implemented and whether their engines are currently available. Its guidance to
+inspect `warnings[]` uses that term as shorthand for the real conversion-report
+arrays, `security_warnings[]` and `fidelity_warnings[]`, whose entries carry
+stable `code` values.
+
 ## Validation floor for every operation
 Every generated PDF is reopened with pikepdf/libqpdf, parser syntax warnings
 are rejected, expected page counts are checked, and pages are rendered through
