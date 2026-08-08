@@ -20,6 +20,7 @@ OP_INSPECT = "inspect"
 OP_COMPRESS = "compress"
 OP_RENDER = "render"
 OP_PDF_TO_IMAGES = "pdf-to-images"
+OP_PDF_TO_MD = "pdf-to-md"
 OP_IMAGES_TO_PDF = "images-to-pdf"
 OP_CONVERT_IMAGES = "convert-images"
 
@@ -119,7 +120,10 @@ class PdfiumEngine(EngineAdapter):
                 available=True,
                 version=str(version),
                 license="Apache-2.0 OR BSD-3-Clause",
-                notes="used for render validation, previews, and PDF-to-image export",
+                notes=(
+                    "used for render validation, previews, PDF-to-image export, "
+                    "and text extraction"
+                ),
             )
         except Exception as exc:  # pragma: no cover
             return EngineInfo(
@@ -131,7 +135,7 @@ class PdfiumEngine(EngineAdapter):
             )
 
     def supported_operations(self) -> frozenset[str]:
-        return frozenset({OP_RENDER, OP_PDF_TO_IMAGES})
+        return frozenset({OP_RENDER, OP_PDF_TO_IMAGES, OP_PDF_TO_MD})
 
 
 class PillowEngine(EngineAdapter):

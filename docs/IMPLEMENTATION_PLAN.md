@@ -39,9 +39,13 @@ Live progress: `docs/STATUS.md`. Honest capability state: `docs/FEATURE_MATRIX.m
   veraPDF validation.
 
 ### Phase 3 — Markdown workflows
-- PDF→Markdown (semantic / layout-aware / RAG / archival bundle) with
-  provenance JSON and review UI; Markdown→PDF (Typst present on this machine
-  is the candidate renderer; WeasyPrint fallback to evaluate).
+- ✅ PDF→Markdown/plain-text/JSONL core extraction via PDFium: explicit UTF-8,
+  page provenance, per-page coverage, deterministic heading/reading-order
+  heuristics, and stable uncertainty warnings. Structured table extraction,
+  richer semantic/layout reconstruction, RAG/archival bundles, and a review UI
+  remain pending.
+- Markdown→PDF remains pending (Typst present on this machine is the candidate
+  renderer; WeasyPrint fallback to evaluate).
 
 ### Phase 4 — Editing, forms, security features
 - Visual editor (overlay vs existing-content honesty), AcroForm workflows,
@@ -61,7 +65,10 @@ Live progress: `docs/STATUS.md`. Honest capability state: `docs/FEATURE_MATRIX.m
 ## Standing rules (from the spec, enforced in code and tests)
 - No placeholder features: `CAPABILITY_SPECS.implemented` flips only with the
   pipeline + tests in the same change; capability tests assert the honest set.
-- Every generated PDF is reopened; risky outputs render all pages.
+- Every generated PDF is reopened; risky outputs render all pages. Non-PDF
+  candidates use operation-specific validators before publication; PDF text
+  output requires strict UTF-8, provenance/record cardinality, exact JSONL
+  schema, and report-coverage consistency.
 - Sources immutable; outputs atomic; collisions explicit.
 - No shipped outbound client; `--strict-offline` enforces the documented
   application boundary but is not represented as an OS network sandbox.

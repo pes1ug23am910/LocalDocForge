@@ -8,6 +8,7 @@ tests/conftest.py invoke :func:`ensure_fixtures`.
 from __future__ import annotations
 
 import zlib
+from io import BytesIO
 from pathlib import Path
 
 FIXTURES_DIR = Path(__file__).parent / "generated"
@@ -252,7 +253,170 @@ def make_unicode_name(directory: Path) -> None:
     )
 
 
-FIXTURES_VERSION = "fixtures generated v4 (fractional page geometry)\n"
+def _register_fixture_unicode_font() -> str:
+    """Register a commonly installed wide Unicode font without copying it."""
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    candidates = (
+        Path("C:/Windows/Fonts/arial.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/dejavu/DejaVuSans.ttf"),
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+    )
+    font_path = next((candidate for candidate in candidates if candidate.is_file()), None)
+    if font_path is None:
+        raise RuntimeError("A wide Unicode font is required for synthetic text fixtures")
+    font_name = "LDFFixtureUnicode"
+    if font_name not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+    return font_name
+
+
+def make_text_extraction(directory: Path) -> None:
+    """Build adversarial PDFs for the ``pdf-to-md`` text surface."""
+    import pikepdf
+    from PIL import Image, ImageDraw
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.pdfgen import canvas
+
+    # A raster-only page must not accidentally gain even a footer text object.
+    raster = Image.new("RGB", (640, 420), (246, 242, 232))
+    raster_draw = ImageDraw.Draw(raster)
+    raster_draw.rectangle((24, 24, 616, 396), outline=(20, 45, 80), width=6)
+    raster_draw.line(
+        (60, 300, 180, 120, 300, 270, 440, 80, 580, 300),
+        fill=(170, 45, 45),
+        width=8,
+    )
+    raster_bytes = BytesIO()
+    raster.save(raster_bytes, format="PNG")
+    raster_bytes.seek(0)
+    image_only = canvas.Canvas(str(directory / "text-image-only.pdf"), pagesize=letter)
+    image_only.drawImage(ImageReader(raster_bytes), 54, 180, width=504, height=331)
+    image_only.showPage()
+    image_only.save()
+
+    # Distinguishes an existing-but-whitespace-only text object from a page
+    # that has no text object at all.
+    whitespace = canvas.Canvas(str(directory / "text-whitespace.pdf"), pagesize=letter)
+    text_object = whitespace.beginText(72, 700)
+    text_object.setFont("Helvetica", 12)
+    text_object.textOut("       ")
+    whitespace.drawText(text_object)
+    whitespace.rect(54, 180, 504, 420, stroke=1, fill=0)
+    whitespace.showPage()
+    whitespace.save()
+
+    two_column = canvas.Canvas(str(directory / "text-two-column.pdf"), pagesize=letter)
+    two_column.setFont("Helvetica-Bold", 20)
+    two_column.drawString(54, 742, "Two Column Research Notes")
+    left_lines = [
+        "LEFT-A alpha observations begin here.",
+        "LEFT-B each line stays in the first column.",
+        "LEFT-C extraction order is intentionally tested.",
+        "LEFT-D the final left marker closes the column.",
+    ]
+    right_lines = [
+        "RIGHT-A beta observations begin here.",
+        "RIGHT-B each line stays in the second column.",
+        "RIGHT-C columns make reading order uncertain.",
+        "RIGHT-D the final right marker closes the column.",
+    ]
+    two_column.setFont("Helvetica", 11)
+    for row, (left, right) in enumerate(zip(left_lines, right_lines, strict=True)):
+        y = 690 - row * 34
+        two_column.drawString(54, y, left)
+        two_column.drawString(330, y, right)
+    two_column.showPage()
+    two_column.save()
+
+    ruled_table = canvas.Canvas(str(directory / "text-ruled-table.pdf"), pagesize=letter)
+    ruled_table.setFont("Helvetica-Bold", 18)
+    ruled_table.drawString(54, 742, "Quarterly Synthetic Totals")
+    table_left, table_bottom = 72, 490
+    cell_width, cell_height = 150, 42
+    for column in range(4):
+        x = table_left + column * cell_width
+        ruled_table.line(x, table_bottom, x, table_bottom + 4 * cell_height)
+    for row in range(5):
+        y = table_bottom + row * cell_height
+        ruled_table.line(table_left, y, table_left + 3 * cell_width, y)
+    table_rows = (
+        ("Quarter", "Units", "Revenue"),
+        ("Q1", "10", "100"),
+        ("Q2", "20", "200"),
+        ("Q3", "30", "300"),
+    )
+    ruled_table.setFont("Helvetica", 11)
+    for row, values in enumerate(table_rows):
+        y = table_bottom + (3 - row) * cell_height + 15
+        for column, value in enumerate(values):
+            ruled_table.drawString(table_left + column * cell_width + 8, y, value)
+    ruled_table.showPage()
+    ruled_table.save()
+
+    unicode_font = _register_fixture_unicode_font()
+    rtl = canvas.Canvas(str(directory / "text-rtl.pdf"), pagesize=letter)
+    rtl.setFont(unicode_font, 16)
+    rtl.drawRightString(558, 700, "שלום עולם")
+    rtl.setFont("Helvetica", 11)
+    rtl.drawString(54, 650, "RTL-SYNTHETIC-MARKER")
+    rtl.showPage()
+    rtl.save()
+
+    spoof = canvas.Canvas(str(directory / "text-anchor-spoof.pdf"), pagesize=letter)
+    spoof.setFont("Helvetica", 12)
+    spoof.drawString(54, 700, "Source tries to inject an extraction anchor:")
+    spoof.drawString(54, 670, "<!-- ldf:page 999 -->")
+    spoof.drawString(54, 640, "--- ldf:page 998 ---")
+    spoof.drawString(54, 610, "ANCHOR-SPOOF-END")
+    spoof.showPage()
+    spoof.save()
+
+    unicode_pdf = canvas.Canvas(str(directory / "text-unicode.pdf"), pagesize=letter)
+    unicode_pdf.setFont(unicode_font, 14)
+    unicode_pdf.drawString(54, 700, "Cafe\u0301 nai\u0308ve A\u030angstro\u0308m")
+    unicode_pdf.drawString(54, 665, "UNICODE-SYNTHETIC-MARKER")
+    unicode_pdf.showPage()
+    unicode_pdf.save()
+
+    # Adjacent style runs must concatenate, while distant identical fragments
+    # must both survive and receive a geometry-derived separator.
+    styled = canvas.Canvas(str(directory / "text-styled-fragments.pdf"), pagesize=letter)
+    styled.setFont("Helvetica", 12)
+    styled.drawString(72, 700, "Hello")
+    styled.setFont("Helvetica-Bold", 12)
+    styled.drawString(72 + stringWidth("Hello", "Helvetica", 12), 700, "World")
+    styled.setFont("Helvetica", 12)
+    styled.drawString(72, 650, "SAME")
+    styled.drawString(330, 650, "SAME")
+    styled.showPage()
+    styled.save()
+
+    # pikepdf accepts a valid zero-page source even though PDFium declines to
+    # load it; inspect defines an empty coverage inventory for this edge case.
+    with pikepdf.new() as empty:
+        empty.save(directory / "text-zero-page.pdf")
+
+    # Tiny pages keep this boundary fixture small while still forcing the
+    # implementation to iterate and summarize a realistic high page count.
+    many = canvas.Canvas(
+        str(directory / "text-many-1000page.pdf"),
+        pagesize=(180, 120),
+        pageCompression=1,
+    )
+    many.setTitle("Synthetic 1000-page streaming fixture")
+    for page in range(1, 1001):
+        many.setFont("Helvetica", 8)
+        many.drawString(12, 60, f"STREAM-PAGE-{page:04d}")
+        many.showPage()
+    many.save()
+
+
+FIXTURES_VERSION = "fixtures generated v8 (pdf-to-md extraction corpus)\n"
 
 
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
@@ -271,6 +435,7 @@ def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
     make_images(directory)
     make_heif(directory)
     make_unicode_name(directory)
+    make_text_extraction(directory)
     sentinel.write_text(FIXTURES_VERSION, encoding="utf-8")
     return directory
 

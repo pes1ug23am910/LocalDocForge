@@ -2,13 +2,15 @@
 
 The CLI and the local API are thin layers over a typed Python library. This
 reference covers that library surface for scripting and embedding. Every code
-sample below was executed against this repository on 2026-08-03 before being
-written down. Import paths are stable within 0.x only in the sense that
+original sample set below was executed against this repository on 2026-08-03;
+the S4 extraction sample is backed by its 2026-08-09 integration coverage.
+Import paths are stable within 0.x only in the sense that
 `docs/STATUS.md` records interface decisions; this is an early-alpha project.
 
 The same guarantees apply as everywhere else: sources are never modified,
-candidates are validated (structural reopen + PDFium render) before an atomic
-publish, reports never contain document text or passwords, and operations
+candidates are validated for their media type before an atomic publish (PDF
+reopen/render, image decode, or strict text schema/provenance checks), reports
+never contain document text or passwords, and operations
 raise instead of guessing.
 
 ## Install
@@ -31,7 +33,7 @@ Every operation returns a `localdocforge.domain.models.ConversionReport`:
 | `security_warnings` | e.g. `crop-is-not-redaction`, `input-encryption-removed` (codes: `docs/CONVERSION_FIDELITY.md`) |
 | `fidelity_warnings` | e.g. `outlines-dropped`, `compress-no-reduction` |
 | `validation` | the pre-publication check results (`passed`, per-check details) |
-| `details` | operation-specific data (e.g. compression statistics) |
+| `details` | operation-specific data (e.g. compression statistics or bounded text coverage) |
 
 `report.to_human()` renders the CLI's summary; `report.model_dump_json()` is
 the CLI's `--json` payload (it is a Pydantic v2 model).
@@ -105,6 +107,44 @@ report = convert_images([photo_heic], out_dir / "ready",
                         options=ConvertImagesOptions(preset="llm"))
 ```
 
+### PDF text extraction (`operations.text`)
+
+```python
+from localdocforge.domain.pages import PageRange
+from localdocforge.operations.text import PdfToMdOptions, pdf_to_md
+
+report = pdf_to_md(
+    source_pdf,
+    out_dir / "content.jsonl",
+    options=PdfToMdOptions(
+        output_format="jsonl",
+        pages=PageRange(spec="1-5,9"),
+        page_anchors=True,  # accepted but semantically ignored by JSONL
+    ),
+)
+coverage = report.details["coverage"]
+assert coverage["pages_total"] == 6
+assert len(coverage["per_page"]) == 6
+```
+
+`PdfToMdOptions` fields are `output_format` (`md`, `txt`, or `jsonl`, default
+`md`), optional `pages`, `page_anchors` (default true), `password`, `collision`,
+`settings`, and `progress`. Markdown uses exact `<!-- ldf:page N -->` anchors;
+TXT uses exact `--- ldf:page N ---` anchors or form-feed separators when
+anchors are disabled. JSONL always has one object per selected occurrence with
+keys, in order, `page`, `text`, `char_count`, `has_text_layer`.
+MD/TXT, with or without structural page anchors, escapes source lines matching
+either reserved marker syntax; JSONL preserves those lookalikes as ordinary
+`text` data.
+
+The report never contains the `text` values. `details.coverage` has the exact
+keys `pages_total`, `pages_with_text`, `pages_with_text_layer`,
+`char_count_min`, `char_count_median`, `char_count_max`, and `per_page`.
+Each ordered `per_page` record is `{page, char_count, has_text_layer,
+warning_codes}`. Aggregate `fidelity_warnings` contains at most one entry for
+each stable extraction code, while the per-page lists preserve exact
+attribution. See `docs/CONVERSION_FIDELITY.md` for the heuristic limits.
+
 ### Read-only inspection
 
 ```python
@@ -112,7 +152,13 @@ from localdocforge.operations.organize import inspect_pdf
 
 info = inspect_pdf(merged_pdf)          # dict: page_count, encrypted,
 info["has_outlines"], info["has_javascript"]  # annotations, docinfo, …
+info["page_text_stats"], info["text_coverage"]  # PDFium counts, no page text
 ```
+
+For a valid zero-page PDF, `page_text_stats` is `[]`; `text_coverage` reports
+zero page counters and `None` for character-count min/median/max. Pass
+`settings=Settings(...)` to override the configured page, decompressed-text,
+or memory limits; inspection refuses text statistics that exceed them.
 
 ## Error handling
 

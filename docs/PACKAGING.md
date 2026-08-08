@@ -36,8 +36,9 @@ Profiles describe shipped Python dependencies, not the feature roadmap.
 | `dev` | Full plus test, lint, type, build, and artifact tools | pytest, ReportLab, HTTPX, Ruff, mypy, build, Twine |
 
 “Full” means all shipped Python adapters. It does not add OCR,
-Office/Markdown conversion, PDF/A/PDF/UA, editing, signatures, scanner support,
-external executables, or the planned React UI. `ldf doctor` is the live
+Office/HTML/Markdown-to-PDF conversion, PDF/A/PDF/UA, editing, signatures,
+scanner support, external executables, or the planned React UI. PDF-to-Markdown
+text extraction is already part of every profile. `ldf doctor` is the live
 capability authority.
 
 The Windows-primary reproducible Standard install is:
@@ -256,6 +257,47 @@ mypy, generated-artifact drift, reproducible builds, all four source/wheel
 profiles, and the clean Dev full-suite passed; profile evidence records
 `full_tests.status: passed`, `release_manifest_verified: true`, and SHA-256
 `f2299b86791e6885a2775a1b4404e9bb80c5871cd17a744ee43f3d4f1efdb26a`.
+
+### 2026-08-09 S4 PDF text-extraction manifest identity
+
+S4 adds the packaged `localdocforge/operations/text.py` pipeline plus its
+registry, CLI, API, runner-validation, and inspect integrations. No runtime
+dependency or lock changed. The live Windows-AMD64 identity was refreshed by a
+build-only gate using disposable system-temporary artifacts; retained `dist/`
+and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `a9ad99e5ba9ed3c59f8076334074bb1e377b5a93d64bafe5fe074673f546909d` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `f8f032b845f954d68ec5d194ca0c34f522b2ff722b425254adaad229c5331856` | 124,962 |
+| `localdocforge-0.1.0.tar.gz` | `43670e82a7f990a8c00f890dd77291605175b1bce99f9a6f17b755cb30b0b234` | 111,797 |
+
+The build-only refresh passed reproducible direct builds, Twine/member/metadata
+checks, and sdist-to-wheel equivalence in 32.935 seconds. The definitive
+verify-mode gate and its fresh temporary profile-evidence identity are recorded
+in `docs/STATUS.md` and the S4 executor log.
+
+#### 2026-08-09 S4 F1/N1 remediation identity
+
+On 2026-08-09, the two non-blocking findings were addressed on
+S4. The inspect path now skips style sampling that its count-only result never
+consumes; package dependencies and locks remain unchanged. A build-only refresh
+again used disposable system-temporary artifacts and left retained `dist/` and
+`packaging-evidence/` records untouched.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `b3384fe440a96881a96d9617d4a5dd2a35ac2f03d8f7146055ff989024ee0f5f` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097` | 125,012 |
+| `localdocforge-0.1.0.tar.gz` | `42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4` | 111,839 |
+
+The remediation build-only refresh passed reproducible direct builds,
+Twine/member/metadata checks, and sdist-to-wheel equivalence in 25.3 seconds.
+The separate clean-tree verify-mode gate then passed in 434.112 seconds at
+revision `961e3e54bf9274d3f533bdce835aef9097e85206`; fresh temporary evidence
+records `release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and SHA-256
+`626d4885463d005d5a3611cdd625baee7f4d4b47bf7a396623da85375e74d3c9`.
 
 ## Clean profile/full-test matrices
 

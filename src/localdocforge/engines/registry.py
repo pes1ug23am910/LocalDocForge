@@ -54,7 +54,15 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         True,
         notes="Cropping hides content from view; it is NOT redaction.",
     ),
-    CapabilitySpec("inspect", "Inspect PDF", "Secure and inspect", adapters.OP_INSPECT, True),
+    CapabilitySpec(
+        "inspect",
+        "Inspect PDF",
+        "Secure and inspect",
+        adapters.OP_INSPECT,
+        True,
+        extra_engines=("pdfium",),
+        notes="Includes a per-page extracted-character inventory via PDFium.",
+    ),
     CapabilitySpec(
         "compress",
         "Compress PDF",
@@ -116,9 +124,12 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         "pdf-to-markdown",
         "PDF to Markdown",
         "Convert from PDF",
-        None,
-        False,
-        notes="planned: Phase 3",
+        adapters.OP_PDF_TO_MD,
+        True,
+        notes=(
+            "Best-effort text extraction to Markdown, text, or JSONL. Heading structure "
+            "and reading order are heuristic; inspect fidelity warnings and coverage stats."
+        ),
     ),
     CapabilitySpec(
         "markdown-to-pdf",

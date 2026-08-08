@@ -67,6 +67,7 @@ from localdocforge.jobs.workspace import (
 from localdocforge.operations import images as image_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
+from localdocforge.operations import text as text_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.security.filenames import sanitize_filename
 from localdocforge.security.paths import ensure_contained
@@ -535,6 +536,23 @@ def _float_param(
     if maximum is not None and value > maximum:
         raise _ApiError(422, f"'{key}' must be at most {maximum:g}")
     return value
+
+
+def _strict_bool_param(
+    params: dict[str, str],
+    key: str,
+    *,
+    default: bool,
+) -> bool:
+    raw = params.get(key)
+    if raw is None:
+        return default
+    normalized = raw.strip().casefold()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    raise _ApiError(422, f"'{key}' must be true or false")
 
 
 def _one_input(paths: list[Path], operation: str) -> Path:
@@ -1228,6 +1246,34 @@ def _run_pdf_to_images(paths, output_dir, params, settings, progress=None):
     return image_ops.pdf_to_images(source, output_dir, options=options)
 
 
+def _run_pdf_to_md(paths, output_dir, params, settings, progress=None):
+    source = _one_input(paths, "pdf-to-md")
+    output_format = (params.get("format") or "md").strip().lower()
+    if output_format not in text_ops.TEXT_OUTPUT_FORMATS:
+        raise _ApiError(
+            422,
+            "'format' must be one of: " + ", ".join(text_ops.TEXT_OUTPUT_FORMATS),
+        )
+    options = text_ops.PdfToMdOptions(
+        output_format=output_format,
+        pages=_range_or_none(params.get("pages"), what="pages"),
+        page_anchors=_strict_bool_param(
+            params,
+            "page_anchors",
+            default=True,
+        ),
+        collision=CollisionPolicy.RENAME,
+        settings=settings,
+        progress=progress,
+        password=params.get("password") or None,
+    )
+    return text_ops.pdf_to_md(
+        source,
+        output_dir / f"document.{output_format}",
+        options=options,
+    )
+
+
 def _run_convert_images(paths, output_dir, params, settings, progress=None):
     image_format = params.get("format") or None
     if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
@@ -1265,6 +1311,7 @@ _OPERATIONS = {
     "compress": _run_compress,
     "images-to-pdf": _run_images_to_pdf,
     "pdf-to-images": _run_pdf_to_images,
+    "pdf-to-md": _run_pdf_to_md,
     "convert-images": _run_convert_images,
 }
 
@@ -1281,6 +1328,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "pdf-to-images": frozenset(
         {"format", "dpi", "pages", "quality", "preset", "password"}
     ),
+    "pdf-to-md": frozenset({"pages", "format", "page_anchors", "password"}),
     "convert-images": frozenset(
         {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}
     ),

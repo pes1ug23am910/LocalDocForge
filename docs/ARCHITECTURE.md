@@ -9,7 +9,7 @@
 │             minimal HTML status shell (shipped)            │
 │             full browser job UI (planned)                  │
 ├────────────────────────────────────────────────────────────┤
-│ operations/  organize, edit, compress, image conversion    │
+│ operations/  organize, edit, compress, image/text convert  │
 │   build an execute() closure and hand it to the runner     │
 ├────────────────────────────────────────────────────────────┤
 │ pipelines/runner.py — shared job lifecycle                 │
@@ -19,7 +19,7 @@
 │ engines/     │ validation/         │ reporting/            │
 │ adapters,    │ pikepdf syntax +    │ JSON + human report   │
 │ probes, and  │ structure; PDFium   │ writers               │
-│ capability   │ render; image decode│                       │
+│ capability   │ render; image/text  │                       │
 │ gating       │                     │                       │
 ├──────────────┴─────────────────────┴───────────────────────┤
 │ jobs/ private workspaces, publication, cleanup             │
@@ -42,6 +42,14 @@ not interfaces, own document-engine calls.
 External executable presence is not an implementation claim. For example,
 Typst may probe successfully while Markdown-to-PDF remains unavailable because
 its capability implementation bit is false.
+
+The PDFium adapter declares both rendering and `pdf-to-md` text extraction.
+The extraction operation reads text rectangles, font geometry, rotation/angle,
+and page path geometry one page at a time. It normalizes Unicode to NFC and
+uses deterministic top-to-bottom/left-to-right ordering plus font-size
+clustering, while the report labels heading and layout conclusions as
+heuristics. `inspect` combines its pikepdf structural inventory with the same
+PDFium page text-count policy; the capability therefore requires both engines.
 
 ### Capability honesty (`engines/registry.py::CAPABILITY_SPECS`)
 
@@ -82,7 +90,10 @@ engines and planned capabilities remain data, not placeholder actions.
    high-risk candidates render every page; routine candidates render at most
    20 evenly sampled pages. Blank-page metrics are recorded, but blank output
    is not rejected unless a caller explicitly requests that policy. Generated
-   images must fully decode.
+   images must fully decode. A non-PDF operation may attach a deterministic,
+   non-mutating candidate validator to the same pre-publication stage.
+   `pdf-to-md` uses that hook for strict UTF-8, required coverage fields,
+   Markdown/TXT anchor cardinality, and exact JSONL schema/count consistency.
 7. **Publish.** No destination is touched until every candidate passes. Each
    candidate is copied to a hidden staging file in its destination directory
    and fsynced. Overwrite uses `os.replace`; fail and rename use `os.link` as an
@@ -97,11 +108,22 @@ engines and planned capabilities remain data, not placeholder actions.
    failure, and cancellation; an incomplete removal adds a critical warning.
    Startup sweeps CLI workspaces older than 24 hours.
 
+For `pdf-to-md`, `details.coverage` contains only bounded metadata:
+`pages_total`, `pages_with_text`, `pages_with_text_layer`, character-count
+min/median/max, and ordered per-page `{page, char_count, has_text_layer,
+warning_codes}` records. A stable fidelity code appears once in the aggregate
+warning array and on each affected page record; extracted text is never report
+data.
+
 ### Resource-limit coverage
 
 Implemented operations wire aggregate input/output bytes, PDF page counts,
 image pixels, decompressed image bytes, and cooperative timeout checks.
 PDF-to-image export also checks rendered pixels and output bytes incrementally.
+PDF text extraction resolves the selected page sequence up front, then owns and
+writes one PDFium page at a time; it never accumulates the whole document text
+in memory or copies text into the report. Output bytes remain bounded both
+during writing and by the runner before publication.
 The API admits a request before multipart parsing, creates a random
 `.transport-*` spool beneath the private API session, and applies cumulative
 upload/file/field bounds. The aggregate transport limit is the lower of the
@@ -195,6 +217,12 @@ whole root. Incomplete containment, output validation, or cleanup becomes a
 generic terminal failure and a critical report warning rather than being
 silently ignored.
 
+`pdf-to-md` is an ordinary worker-backed API conversion. The allowlisted form
+fields are `pages`, `format`, `page_anchors`, and `password`; the server chooses
+the contained output filename. Extracted text exists only in the candidate and
+published output artifact. Public job state/report IPC carries coverage counts
+and stable warning codes, never the document body.
+
 ### Error model
 
 Operations raise `PipelineError` with the failed `ConversionReport` where one
@@ -214,8 +242,9 @@ exception values, private paths, document fragments, or parser details.
 
 ## Runtime and state characteristics
 
-- CLI structural and image work runs in-process through pikepdf/libqpdf,
-  PDFium, and Pillow. API work uses one contained process per job. Both still
+- CLI structural, image, and text-extraction work runs in-process through
+  pikepdf/libqpdf, PDFium, and Pillow. API work uses one contained process per
+  job. Both still
   execute with the user's filesystem authority: process/resource containment
   limits crashes and denial of service but is not a restricted-token,
   filesystem, or kernel sandbox. Optional executable probes and future
