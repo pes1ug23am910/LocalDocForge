@@ -3,6 +3,9 @@
 import json
 from pathlib import Path
 
+from localdocforge.cli.agent_brief import USAGE_BY_CAPABILITY_ID
+from localdocforge.engines.registry import CAPABILITY_SPECS
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -164,7 +167,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "--password-stdin" in readme
     assert "LDF_PASSWORD" in readme
-    assert "test suite (476 tests)" in readme
+    assert "test suite (504 tests)" in readme
 
     threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
     assert "strict-UTF-8 line" in threat
@@ -209,3 +212,46 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     assert windows_identity["source_tree_sha256"] in packaging
     for artifact in windows_identity["artifacts"].values():
         assert artifact["sha256"] in packaging
+
+
+def test_agent_brief_slice_is_documented_consistently() -> None:
+    implemented_ids = {spec.id for spec in CAPABILITY_SPECS if spec.implemented}
+    assert set(USAGE_BY_CAPABILITY_ID) == implemented_ids
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf agent-brief" in readme
+    assert "ldf --json agent-brief" in readme
+    assert "test suite (504 tests)" in readme
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    for phrase in (
+        "CAPABILITY_SPECS",
+        "EngineRegistry.capabilities()",
+        "implemented=False",
+        "warnings[]",
+        "security_warnings[]",
+        "fidelity_warnings[]",
+        "verify` -> `fallback` -> `review",
+        "docs/AGENT_FEEDBACK.md",
+        "stdout-only",
+        "no local API job endpoint",
+        "standalone wheel or direct VCS install",
+    ):
+        assert phrase in cli, phrase
+
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    assert "| Registry-derived agent brief | ✅ |" in feature
+    assert "ldf doctor --json" not in feature
+    assert "every implemented command appears with live availability" in feature
+    assert "requires a discoverable source checkout" in feature
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "registry-derived agent brief, S3" in status
+    assert "implemented-but-unavailable state" in status
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
+        encoding="utf-8"
+    )
+    assert "agent-brief (read-only diagnostics)" in fidelity
+    assert "opens and converts no document" in fidelity
+    assert "introduces no fidelity warning code" in fidelity

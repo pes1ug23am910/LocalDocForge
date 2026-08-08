@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-08 (`pdf-to-images --preset llm` vision-ready page
-renders on the Windows release-hardening baseline).
+Last updated: 2026-08-08 (`pdf-to-images --preset llm` and the
+registry-derived agent brief on the Windows release-hardening baseline).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (476 tests as of
+SBOM/notices drift, the complete collected test suite (504 tests as of
 2026-08-08) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -338,6 +338,71 @@ result applies only to the recorded OS, architecture, and interpreter.
   (94,998 bytes). Build and profile evidence use fresh temporary paths;
   retained `dist/` and `packaging-evidence/` records remained unchanged and
   are not claimed as S2 evidence.
+
+## Executed evidence — 2026-08-08 (registry-derived agent brief, S3 pre-rebase)
+
+- `ldf agent-brief` now builds one immutable Markdown/JSON snapshot by
+  iterating `CAPABILITY_SPECS` in registry order and joining exactly one live
+  `EngineRegistry.capabilities()` result. Every `implemented=True` command is
+  present with one-line usage and live availability/reasons; every
+  `implemented=False` capability is structurally excluded even if a hostile
+  test result falsely marks it available.
+- Both output forms contain stable exit codes, five agent gotchas, the
+  `verify` -> `fallback` -> `review` workflow, and the existing absolute
+  `docs/AGENT_FEEDBACK.md` path plus its append-only, required-outcome,
+  write-scope, and privacy rules. JSON fields mirror the live registry, while
+  Markdown renders that same typed snapshot.
+- The command performs no conversion or engine execution beyond that normal
+  live probe path, opens no document, writes only stdout on success, creates no
+  report/output/job directory, does not consume `--password-stdin`, and
+  bypasses the inherited stale-workspace sweep so its read-only claim is
+  literal.
+- Thirty-four focused unit/CLI/documentation outcomes passed, including
+  missing/stale templates, duplicate/missing/extra registry ids, hostile
+  metadata and false-implementation state, implemented-but-unavailable state,
+  lazy CWD-independent feedback-path resolution, strict-offline remote-path
+  avoidance, byte stability, global option composition, and no-read/no-write
+  guards. Ruff over `src tests` and mypy over 33 source files also passed.
+- The definitive literal-invariant verify-mode full release gate passed in 382.7 seconds on
+  Windows-AMD64 CPython 3.14.4. It reproduced the tracked source/wheel/sdist
+  identity, passed both ordinary and blocked-network 492-outcome suites (490
+  passed plus two expected skips), Ruff, three-platform mypy, artifact drift,
+  reproducible builds, Twine, sdist-to-wheel equivalence, every source/wheel
+  install profile, and the clean Dev full-suite; fresh profile evidence records
+  `full_tests.status: passed` and `release_manifest_verified: true`. Its fresh
+  profile-evidence SHA-256 is
+  `83758a01cf851eee80f7d5597ae638e0e91aff74052076a6568f8d630cbfa878`.
+  Protected retained evidence and archived dist checkpoints were unchanged.
+
+## Executed evidence — 2026-08-08 (S3 integration onto shipped S2)
+
+- S3 rebased onto `main` `6b8f40b` after S2 merged as `6481fb7`. Shared CLI,
+  test, and documentation surfaces retain both features; main's S1/S2 DONE
+  ledger rows and full audit trail remain intact, while S3 remains IN-REVIEW
+  for a pending independent verification.
+- Review nit F1 is addressed: the registry-keyed `pdf-to-images` usage
+  template now includes `[--preset llm]`, with the existing template-coverage
+  test extended in place. Explicit numeric collection confirms exactly 504
+  merged outcomes (502 passed and two expected skips in the pre-refresh full
+  suite); the focused agent-brief/CLI/documentation set passed 35 outcomes,
+  and Ruff, mypy, and generated-artifact drift checks passed.
+- A fresh build-only manifest update produced combined package-source identity
+  `69354c7f9bb4d092661f0b29430de563362b3abfba34b4282f548aa49455a28a`,
+  wheel `a6831020d1e60321af4626b654d6739b17d616fc0eb4b4a9698d354bdca6c47a`
+  (112,760 bytes), and sdist
+  `3ed23059b2ff8e503ade9dfb2d416c2f95049f75007cb486f7bfe349f0f3b1e9`
+  (100,287 bytes). The build used only a fresh system-temp dist; retained
+  `dist/` and `packaging-evidence/` records remain historical and untouched.
+- The separate definitive verify-mode full gate reproduced that identity
+  without updating and passed in 331.7 seconds on Windows-AMD64 CPython 3.14.4.
+  It passed locks, Ruff, Windows/Linux/macOS mypy modes, generated-artifact
+  drift, ordinary and blocked-network 504-outcome suites, reproducible builds,
+  Twine, sdist-to-wheel equivalence, all Base/Lite/Standard/Full source/wheel
+  profiles, and the clean Dev full-suite. Fresh profile evidence records
+  `full_tests.status: passed`, `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, and SHA-256
+  `f2299b86791e6885a2775a1b4404e9bb80c5871cd17a744ee43f3d4f1efdb26a`.
+  Retained `dist/` and `packaging-evidence/` records remained untouched.
 
 ## Implemented hardening
 

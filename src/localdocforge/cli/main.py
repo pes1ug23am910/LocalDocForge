@@ -22,6 +22,7 @@ from typing import Annotated, NoReturn
 import typer
 
 from localdocforge import __version__
+from localdocforge.cli.agent_brief import AgentBriefError, build_agent_brief, render_markdown
 from localdocforge.config.settings import Settings, get_settings, set_settings
 from localdocforge.domain.models import ConversionReport
 from localdocforge.domain.pages import PageRange, PageRangeError
@@ -249,8 +250,10 @@ def main(
     if report_dir is not None and settings.strict_offline and is_remote_path(report_dir):
         raise typer.BadParameter("strict-offline mode forbids a network report directory")
     set_settings(settings)
-    # Sweep leftovers from interrupted sessions; cheap and safe.
-    cleanup_stale_workspaces(settings.jobs_root)
+    # agent-brief is contractually read-only; even startup cleanup would make
+    # it mutate the jobs tree. Conversion and serving commands retain the sweep.
+    if ctx.invoked_subcommand != "agent-brief":
+        cleanup_stale_workspaces(settings.jobs_root)
 
 
 def _emit_report(report: ConversionReport, *, failed: bool = False) -> None:
@@ -341,6 +344,23 @@ Collision = Annotated[
     CollisionPolicy,
     typer.Option("--collision", help="What to do when the output already exists."),
 ]
+
+
+# --------------------------------------------------------------------------- agent metadata
+
+
+@app.command("agent-brief")
+def agent_brief_cmd() -> None:
+    """Print registry-derived Markdown or JSON guidance for document agents."""
+    try:
+        brief = build_agent_brief(strict_offline=get_settings().strict_offline)
+    except AgentBriefError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_FAILED) from exc
+    if _state["json"]:
+        typer.echo(json.dumps(brief.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        typer.echo(render_markdown(brief))
 
 
 # --------------------------------------------------------------------------- doctor

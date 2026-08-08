@@ -40,7 +40,9 @@ source before anything was published.*
   implementation *and* a live engine probe both pass (`ldf doctor` is the
   truth, not a brochure). Cropping is never called redaction. Known
   preservation losses are reported with stable warning codes instead of
-  being dropped silently.
+  being dropped silently. `ldf agent-brief` turns the same registry and live
+  probe state into compact Markdown or JSON for coding agents; planned
+  capabilities cannot enter that output.
 
 ## What works today
 
@@ -51,9 +53,10 @@ source before anything was published.*
 | Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
 | Convert | images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
 | Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
+| Agent integration | deterministic `ldf agent-brief` Markdown/JSON generated from implemented `CAPABILITY_SPECS` plus one live capability probe, including usage, exit codes, gotchas, workflow, and feedback rules |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
-Everything above is covered by the repository's test suite (476 tests) and a
+Everything above is covered by the repository's test suite (504 tests) and a
 full release gate. OCR, Office conversion, lossy compression presets,
 redaction, signatures, and the rest of the roadmap are **not implemented
 yet** and are honestly reported as unavailable by `ldf doctor` — see
@@ -118,9 +121,16 @@ ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
 ldf convert-images photos/*.HEIC -d ready/ --preset llm  # iPhone photos → AI-ready JPEGs
 ldf inspect input.pdf
+ldf agent-brief                   # registry-derived Markdown for coding agents
+ldf --json agent-brief            # the same ordered snapshot as structured JSON
 ldf --json doctor
 ldf --strict-offline web   # localhost API + status page; prints the session token
 ```
+
+`agent-brief` must resolve the repository's writable
+`docs/AGENT_FEEDBACK.md`. It works with a discoverable source checkout (including
+the repository-local environment above); a detached wheel/direct VCS install
+outside any checkout exits 1 rather than pointing agents at a packaged imitation.
 
 Page ranges: `1-5,9,12-end`, `odd`, `even`, `reverse`, `last`, `last-5`
 (the last five pages). For encrypted PDFs, non-interactive callers use the
@@ -200,7 +210,7 @@ subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
 
 ```powershell
 pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
-.venv\Scripts\python.exe -m pytest tests -q    # 476 tests
+.venv\Scripts\python.exe -m pytest tests -q    # 504 tests
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```
