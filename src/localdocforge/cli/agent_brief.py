@@ -38,7 +38,10 @@ USAGE_BY_CAPABILITY_ID: Final[Mapping[str, str]] = MappingProxyType(
         "inspect": "ldf inspect INPUT.pdf",
         "compress": "ldf compress INPUT.pdf -o OUTPUT.pdf",
         "images-to-pdf": "ldf images-to-pdf IMAGE... -o OUTPUT.pdf [--page-size A4]",
-        "pdf-to-images": "ldf pdf-to-images INPUT.pdf -d OUTPUT_DIR [--format png --dpi 300]",
+        "pdf-to-images": (
+            "ldf pdf-to-images INPUT.pdf -d OUTPUT_DIR "
+            "[--format png --dpi 300] [--preset llm]"
+        ),
         "convert-images": "ldf convert-images IMAGE... -d OUTPUT_DIR [--preset llm]",
     }
 )
