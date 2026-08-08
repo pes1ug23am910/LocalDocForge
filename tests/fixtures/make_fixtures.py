@@ -13,6 +13,9 @@ from pathlib import Path
 FIXTURES_DIR = Path(__file__).parent / "generated"
 
 USER_PASSWORD = "fixture-pass"  # noqa: S105 - synthetic fixture credential, not a secret
+UNICODE_USER_PASSWORD = (  # noqa: S105 - synthetic fixture credential, not a secret
+    "fixture-päss-秘密 "
+)
 
 
 def _make_text_pdf(
@@ -116,6 +119,15 @@ def make_encrypted(directory: Path) -> None:
         pdf.save(
             directory / "encrypted.pdf",
             encryption=pikepdf.Encryption(user=USER_PASSWORD, owner=USER_PASSWORD, R=6),
+        )
+    with pikepdf.open(source) as pdf:
+        pdf.save(
+            directory / "encrypted-unicode.pdf",
+            encryption=pikepdf.Encryption(
+                user=UNICODE_USER_PASSWORD,
+                owner=UNICODE_USER_PASSWORD,
+                R=6,
+            ),
         )
 
 
@@ -231,7 +243,7 @@ def make_unicode_name(directory: Path) -> None:
     )
 
 
-FIXTURES_VERSION = "fixtures generated v2 (heif + icc)\n"
+FIXTURES_VERSION = "fixtures generated v3 (heif + icc + unicode password)\n"
 
 
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:

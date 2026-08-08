@@ -263,13 +263,17 @@ instead of mutating the environment.
 ## 11. CLI (`cli/main.py`)
 
 - Entry points `ldf` and `localdocforge`; global flags before the command:
-  `--json`, `--quiet`, `--strict-offline`, `--report-dir`, `--version`.
+  `--json`, `--quiet`, `--password-stdin`, `--strict-offline`, `--report-dir`,
+  `--version`.
 - Exit codes: 0 success · 1 operation failed · 2 usage · 3 no engine ·
   4 output validation failed · 5 collision · 130 cancelled/timeout.
-- Encrypted inputs prompt interactively (hidden) once and retry; passwords
-  are never CLI arguments. Globs are expanded by the CLI itself (PowerShell
-  does not). Startup sweeps stale workspaces. Security warnings echo to
-  stderr; `--report-dir` writes `<op>-<job-id>.report.{json,txt}`.
+- Encrypted-input precedence is UTF-8 `--password-stdin` →
+  `LDF_PASSWORD` → one hidden TTY prompt/retry. Password values are never CLI
+  arguments or report/log output; a non-TTY invocation without either source
+  exits 2. One value applies to every encrypted input. Globs are expanded by
+  the CLI itself (PowerShell does not). Startup sweeps stale workspaces.
+  Security warnings echo to stderr; `--report-dir` writes
+  `<op>-<job-id>.report.{json,txt}`.
 - `ldf web` refuses non-loopback binds without `--allow-nonlocal`, refuses
   them entirely under strict-offline, and translates Windows Ctrl+Break into
   the graceful shutdown path (exit 0, session lease released).
@@ -437,7 +441,7 @@ Authoritative: `docs/PACKAGING.md`. In brief:
 | CLI execution | in-process engines, cooperative timeouts only |
 | API execution | one fresh spawned worker per job; Windows Job Object (kill-on-close, memory, CPU, process count) established before document bytes; verified-empty tree exit or fail-closed |
 | Filesystem | per-job private workspaces; atomic no-clobber publication; alias refusal; Windows path-form/reparse/device/ADS rejection; optional output jail |
-| Secrets | passwords prompt-only (CLI) / form-only (API), never in argv/env/reports/IPC-returns; reports carry no document text |
+| Secrets | CLI password values come from stdin, an explicit environment variable, or a hidden prompt; API values are form-only; never in argv/reports/logs/IPC returns; reports carry no document text |
 | Network | no outbound client in the package; loopback-only API by default; token auth; strict-offline = app policy + Python socket guards — **not** an OS firewall |
 | Not provided | OS sandboxing of parsers, forensic erasure, crash-transactional multi-output publish, cross-platform execution evidence beyond Windows 11 x64 |
 

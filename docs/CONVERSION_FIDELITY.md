@@ -134,6 +134,11 @@ server-side downscaling; it is a convenience default, not a fidelity claim.
 - A supplied password authorizes reading an encrypted input. Generated PDFs
   and raster images are not password protected; reports carry the critical
   `input-encryption-removed` security warning.
+- CLI credential source does not change conversion semantics: global
+  `--password-stdin` outranks `LDF_PASSWORD`, which outranks the hidden TTY
+  prompt. One password is tried against all encrypted inputs in an invocation;
+  differing passwords are refused rather than guessed or requested through an
+  argv value.
 - No PDF JavaScript, launch action, attachment, or form script is executed.
   Single-document rotate/crop can retain active objects, while page-moving
   operations warn when document-level active content is dropped.
