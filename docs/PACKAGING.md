@@ -205,6 +205,31 @@ both 464-outcome suite modes, all quality and build checks, every clean install
 profile, the fresh Dev full-suite, and `release_manifest_verified: true`. The
 table is that reproducibly verified final identity.
 
+### 2026-08-08 S2 manifest identity
+
+The PDF-to-images LLM-preset slice intentionally changes packaged sources and
+the packaged README. Its live Windows-AMD64 manifest was refreshed only after
+the focused behavior, documentation, Ruff, mypy, generated-artifact, and full
+test checks passed. The refresh used a fresh temporary dist path; it did not
+modify the retained `dist/windows-11-x64/` or `packaging-evidence/` records,
+which remain historical evidence rather than S2 artifacts.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `6e0707f41f1a22be8876b4fdc1f1593f27063b09e1badc29be49df28366dc063` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `5d2dd0ceb978665fc4d89fb90d7ace35c00b98dd920267ab7cfe1d6bcb8b1b2f` | 106,628 |
+| `localdocforge-0.1.0.tar.gz` | `1b2630a8adb11082954038e81ea5189c619422e7a14dc14f7405be14db7581c0` | 94,998 |
+
+An initial S2 gate passed end to end in 316.206 seconds, but its package
+identity was intentionally superseded after the independent diff audit found
+and the executor corrected a typed-library compatibility defect. The table is
+the post-remediation build identity. The definitive post-audit gate verified
+it without updating in 392.978 seconds on Windows-AMD64 CPython 3.14.4, using
+another fresh temporary dist directory and profile-evidence file. Both
+476-outcome suite modes, reproducible builds, all four clean profiles, fresh
+Dev checks, and `release_manifest_verified: true` passed. This keeps manifest
+drift an independent assertion.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source

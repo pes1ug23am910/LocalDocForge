@@ -93,6 +93,20 @@ build and are refused; nothing labelled "compress" silently degrades images.
   (inherently lossy in editability, faithful in appearance).
 - JPEG output is lossy (quality configurable); PNG/TIFF lossless; WebP uses
   the configured quality.
+- `--preset llm` resolves to JPEG quality 85 and a 1568-px long-edge bound.
+  Each page is rendered at up to the ordinary 150-DPI default, then only pages
+  that would exceed the bound receive a lower per-page scale; smaller pages
+  are not enlarged to fill the bound. A capped job carries `image-downscaled`
+  (info). Explicit `--format`/`--quality` values replace those preset values;
+  explicit `--dpi` requests fixed-DPI output and disables the pixel cap.
+- Report details record the resolved format, configured quality, and applied
+  quality (`null` for lossless PNG/TIFF) plus an ordered `dimensions` entry for
+  every output (zero-based output index, source page/occurrence, actual pixel
+  width/height, and effective DPI). The stable index corresponds to the same
+  position in `report.outputs`, including when collision policy renames a
+  published file. The preflight uses PDFium's upward pixel rounding and
+  verifies the actual image edge before publication, preventing a nominal
+  1568-px cap from producing a 1569-px image.
 - Inputs with parser-reported structural syntax damage are refused rather
   than silently repaired by PDFium.
 
@@ -119,8 +133,10 @@ Intentionally not preserved (defaults chosen for sharing, each reported):
   with or without `--keep-metadata`.
 - `alpha-flattened` (info) — JPEG output composites transparency onto the
   chosen background color.
-- `image-downscaled` (info) — `--max-dimension` (and the `llm` preset's
-  1568 px bound) shrank at least one image; images are never upscaled.
+- `image-downscaled` (info) — `convert-images --max-dimension`, either
+  operation's `llm` preset, or the PDF per-page render cap shrank at least one
+  image/render relative to its ordinary size; preset processing never
+  upscales.
 - `color-profile-converted` (info) — the sRGB conversion above happened.
 - `color-profile-retained` (info) — a profile could not be parsed or
   converted, so it was kept in the output rather than silently dropped.
