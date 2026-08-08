@@ -293,8 +293,11 @@ again used disposable system-temporary artifacts and left retained `dist/` and
 
 The remediation build-only refresh passed reproducible direct builds,
 Twine/member/metadata checks, and sdist-to-wheel equivalence in 25.3 seconds.
-Its separate clean-tree verify-mode gate will be recorded in `docs/STATUS.md`
-and the append-only S4 executor log after the coherent remediation commit.
+The separate clean-tree verify-mode gate then passed in 434.112 seconds at
+revision `961e3e54bf9274d3f533bdce835aef9097e85206`; fresh temporary evidence
+records `release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and SHA-256
+`626d4885463d005d5a3611cdd625baee7f4d4b47bf7a396623da85375e74d3c9`.
 
 ## Clean profile/full-test matrices
 

@@ -1,8 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S4 `pdf-to-md` F1/N1 review remediation; the original
-definitive Windows-AMD64 gate passed on the 545-outcome tree and the
-547-outcome remediation tree is awaiting its clean-commit re-gate).
+Last updated: 2026-08-09 (S4 `pdf-to-md` F1/N1 review remediation; definitive
+Windows-AMD64 gate passed on the 547-outcome remediation tree).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -474,8 +473,8 @@ result applies only to the recorded OS, architecture, and interpreter.
 - The fidelity, CLI, and Windows getting-started documentation now state that
   the resource caps are memory/cardinality bounds rather than a speed guarantee:
   accepted rectangle-dense pages still take time proportional to their PDFium
-  text-rectangle count. The former unqualified `fast` inspect wording was
-  removed.
+  text-rectangle count. The former unqualified `fast` inspect wording and
+  generic PDFium speed rationale were removed.
 - The remediation candidate collects 547 outcomes. Its direct full run passed
   545 with the same two expected platform skips in 78.7 seconds; the focused
   text/fidelity set passed 40 outcomes. Ruff and native/Linux/macOS mypy are
@@ -486,8 +485,16 @@ result applies only to the recorded OS, architecture, and interpreter.
   `1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097`,
   and 111,839-byte sdist
   `42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4`.
-  Retained `dist/` and `packaging-evidence/` remain untouched. The definitive
-  clean-commit verify-mode re-gate is pending.
+  Retained `dist/` and `packaging-evidence/` remain untouched.
+- The definitive clean-tree verify-mode gate passed in 434.112 seconds on
+  Windows-AMD64 CPython 3.14.4 at revision
+  `961e3e54bf9274d3f533bdce835aef9097e85206`. It reran both ordinary and
+  blocked-network 547-outcome suites, all Base/Lite/Standard/Full source and
+  wheel profiles, and the fresh Dev full suite. Temporary evidence records
+  `working_tree_changes: false`, `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, and `full_tests.status: passed`; its
+  SHA-256 is
+  `626d4885463d005d5a3611cdd625baee7f4d4b47bf7a396623da85375e74d3c9`.
 
 ## Implemented hardening
 
