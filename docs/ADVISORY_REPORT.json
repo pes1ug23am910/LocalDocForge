@@ -782,7 +782,7 @@
       "version": "4.2.0",
       "kind": "runtime-python",
       "profiles": ["lite", "standard", "full"],
-      "role": "Rich Markdown rendering dependency for local CLI presentation; Markdown document conversion is not enabled.",
+      "role": "Rich Markdown rendering dependency for local CLI presentation; user-document Markdown input/rendering and Markdown-to-PDF are not enabled.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream-with-bundled-notice",
@@ -796,7 +796,7 @@
         "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
         "upstream": "https://github.com/executablebooks/markdown-it-py/security/advisories",
         "applicability": "User documents are not parsed as Markdown; only application-controlled CLI presentation uses this dependency.",
-        "remediation": "Keep the hash lock and repeat review before enabling Markdown conversion.",
+        "remediation": "Keep the hash lock and repeat review before enabling attacker-controlled Markdown input or rendering.",
         "residualRisk": "Future rendering of attacker-controlled Markdown would materially change reachability."
       }
     },
@@ -806,7 +806,7 @@
       "version": "0.1.2",
       "kind": "runtime-python",
       "profiles": ["lite", "standard", "full"],
-      "role": "URL parser used by markdown-it-py; document Markdown conversion is disabled.",
+      "role": "URL parser used by markdown-it-py; user-document Markdown input/rendering and Markdown-to-PDF are disabled.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream-with-derived-code-notice",

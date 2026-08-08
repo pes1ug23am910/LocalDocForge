@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 from localdocforge.cli.agent_brief import USAGE_BY_CAPABILITY_ID
+from localdocforge.engines.adapters import OP_PDF_TO_MD
 from localdocforge.engines.registry import CAPABILITY_SPECS
+from localdocforge.operations.text import WARNING_CODE_ORDER
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -167,7 +169,6 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "--password-stdin" in readme
     assert "LDF_PASSWORD" in readme
-    assert "test suite (504 tests)" in readme
 
     threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
     assert "strict-UTF-8 line" in threat
@@ -199,6 +200,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "non-interactive PDF passwords, S1" in status
     assert "464 outcomes: 462 passed and two expected" in status
+    assert "504 tests as of" in status and "2026-08-08" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging
@@ -221,7 +223,6 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "ldf agent-brief" in readme
     assert "ldf --json agent-brief" in readme
-    assert "test suite (504 tests)" in readme
 
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
     for phrase in (
@@ -248,6 +249,7 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "registry-derived agent brief, S3" in status
     assert "implemented-but-unavailable state" in status
+    assert "504-outcome suites" in status  # dated S3 evidence remains historical
 
     fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
         encoding="utf-8"
@@ -255,3 +257,91 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
     assert "agent-brief (read-only diagnostics)" in fidelity
     assert "opens and converts no document" in fidelity
     assert "introduces no fidelity warning code" in fidelity
+
+
+def test_pdf_to_md_slice_is_documented_consistently() -> None:
+    matching = [spec for spec in CAPABILITY_SPECS if spec.id == "pdf-to-markdown"]
+    assert len(matching) == 1
+    assert matching[0].implemented is True
+    assert matching[0].operation == OP_PDF_TO_MD
+    assert all(spec.id != "pdf-to-md" for spec in CAPABILITY_SPECS)
+    assert "ldf pdf-to-md" in USAGE_BY_CAPABILITY_ID["pdf-to-markdown"]
+
+    expected_codes = (
+        "no-text-layer",
+        "headings-inferred",
+        "reading-order-uncertain",
+        "tables-flattened",
+    )
+    assert WARNING_CODE_ORDER == expected_codes
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf pdf-to-md input.pdf -o content.md" in readme
+    assert "strict UTF-8" in readme
+    assert "not a text-fidelity channel" in readme
+    assert all(code in readme for code in expected_codes)
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    assert "ldf pdf-to-md INPUT.pdf -o OUTPUT" in cli
+    assert "[--format md|txt|jsonl] [--no-page-anchors]" in cli
+    assert "<!-- ldf:page N -->" in cli
+    assert "--- ldf:page N ---" in cli
+    api_row = next(line for line in cli.splitlines() if line.startswith("| pdf-to-md |"))
+    for field in ("`pages`", "`format`", "`page_anchors`", "`password`"):
+        assert field in api_row
+    planned = cli[cli.index("## Planned") :]
+    assert "`pdf-to-md`" not in planned
+    assert "`md-to-pdf`" in planned
+
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    row = next(
+        line for line in feature.splitlines() if line.startswith("| PDF → Markdown/text/JSONL")
+    )
+    assert "| ✅ | pdfium text API | Lib, CLI, API |" in row
+    assert "No OCR, bidi repair, or silent dehyphenation" in row
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
+        encoding="utf-8"
+    )
+    text_section = fidelity[fidelity.index("## pdf-to-md") :]
+    text_section_flat = " ".join(text_section.split())
+    assert all(f"`{code}`" in text_section for code in expected_codes)
+    for phrase in (
+        "Unicode is normalized to NFC",
+        "one selected page at a time",
+        "details.coverage.per_page[]",
+        '"warning_codes": [...]',
+        "pdf-to-images --preset llm",
+    ):
+        assert phrase in text_section_flat
+
+    engines = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
+    assert "| pypdfium2 (PDFium) | 5.12.1 / PDFium 152.0.7947.0 |" in engines
+    assert "PyMuPDF and" in engines and "pymupdf4llm are banned" in engines
+
+    architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    architecture_flat = " ".join(architecture.split())
+    for field in (
+        "pages_total",
+        "pages_with_text",
+        "pages_with_text_layer",
+        "char_count",
+        "has_text_layer",
+        "warning_codes",
+    ):
+        assert field in architecture
+    assert "deterministic, non-mutating candidate validator" in architecture_flat
+
+    threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
+    threat_flat = " ".join(threat.split())
+    assert "either reserved" in threat_flat
+    assert "JSONL preserves them as ordinary framed" in threat_flat
+    assert "stdout/console encoding is not a fidelity boundary" in threat_flat
+
+    library = (ROOT / "docs" / "LIBRARY_API.md").read_text(encoding="utf-8")
+    for symbol in ("PdfToMdOptions", "pdf_to_md", "page_text_stats", "text_coverage"):
+        assert symbol in library
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "`pdf-to-md` text extraction, S4" in status
+    assert "no new runtime dependency" in status

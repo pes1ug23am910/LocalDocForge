@@ -110,6 +110,106 @@ build and are refused; nothing labelled "compress" silently degrades images.
 - Inputs with parser-reported structural syntax damage are refused rather
   than silently repaired by PDFium.
 
+## pdf-to-md
+
+`pdf-to-md` is text-layer extraction, not OCR and not semantic reconstruction.
+It uses the text and geometry APIs in pypdfium2 5.12.1 / PDFium
+152.0.7947.0, owns only one selected page at a time, and writes the requested
+artifact explicitly as UTF-8 with LF line endings. Unicode is normalized to
+NFC. For clean text formats, non-newline whitespace runs (including tabs,
+form-feed, and NBSP) are collapsed to one ASCII space, trailing space and outer
+blank lines are trimmed, and geometry supplies paragraph breaks. Inter-fragment
+spacing is also heuristic: rectangles separated by at most 1 pt or 10% of the
+smaller line height concatenate; a larger gap inserts one ASCII space. PDFium's mapped visible characters and
+explicit line/hyphen boundaries are otherwise preserved: LocalDocForge performs
+no silent dehyphenation, compatibility normalization, bidi repair, or guessed
+ligature replacement.
+
+Format fidelity and provenance:
+
+- Markdown begins every selected occurrence with the exact anchor
+  `<!-- ldf:page N -->` unless `--no-page-anchors` is selected. With anchors
+  disabled, blank lines separate occurrences.
+- TXT uses the exact `--- ldf:page N ---` anchor by default. With anchors
+  disabled, one form-feed (`U+000C`) separates occurrences.
+- JSONL has one LF-terminated object per selected occurrence and the exact keys
+  `page`, `text`, `char_count`, and `has_text_layer`. The `page` key is always
+  authoritative, so the page-anchor option is accepted for API/CLI shape parity
+  but is ignored semantically for JSONL.
+- Markdown and TXT, with or without structural page anchors, escape source
+  lines matching either reserved syntax (`<!-- ldf:page N -->` and
+  `--- ldf:page N ---`) so text cannot forge provenance. JSONL preserves both
+  lookalikes unchanged as data.
+- `has_text_layer` is based on raw PDFium character/text-object presence;
+  `char_count` and `pages_with_text` use normalized non-whitespace extracted
+  content. A whitespace-only text layer may therefore have
+  `has_text_layer=true` and `char_count=0`. An image-only page is false.
+  `char_count` equals Python's Unicode-code-point length of the normalized
+  extracted page text before anchors/Markdown markup (and equals the JSONL
+  record's text length), not the UTF-8 byte length or grapheme-cluster count.
+  A single selected empty page with anchors disabled may therefore produce a
+  valid zero-byte MD/TXT artifact; the report still carries its coverage and
+  text-layer distinction.
+
+Markdown reading order is a deterministic best-effort baseline: text rectangles
+are ordered top-to-bottom, then left-to-right. Larger-font clustering may turn a
+line into a heading, but that is explicitly a heuristic. Multi-column pages,
+rotated or angled text, and RTL scripts can be ordered incorrectly. Tables are
+flattened into ordinary text in this slice; conservative ruled-grid detection
+can identify some cases, but no warning is proof that a page has no table.
+
+Stable codes (at most one aggregate `fidelity_warnings` entry per code):
+
+- `no-text-layer` — one or more selected pages have no PDF text objects. Use
+  `pdf-to-images --preset llm` for vision input; OCR is not implemented.
+- `headings-inferred` — Markdown headings were produced through font-size
+  clustering rather than document semantics.
+- `reading-order-uncertain` — columns, rotation, angled text, or RTL content
+  makes the baseline reading order uncertain.
+- `tables-flattened` — conservative ruled-grid detection suggests a table was
+  emitted as flowed text; structured table extraction is deferred to S5.
+
+The aggregate warning message reports how many selected occurrences were
+affected. Exact attribution remains bounded in
+`details.coverage.per_page[]`, whose ordered records are
+`{"page": N, "char_count": N, "has_text_layer": bool,
+"warning_codes": [...]}`. `details.coverage` also contains
+`pages_total`, `pages_with_text`, `pages_with_text_layer`,
+`char_count_min`, `char_count_median`, and `char_count_max`. These values count
+selected occurrences, including repeats and reverse order. The report never
+contains extracted text.
+
+Per-page work is bounded before layout materialization. PDFium's raw character
+count is compared conservatively with the remaining
+`max_decompressed_bytes` budget (before whitespace cleanup) and with
+`max_memory_bytes // 64`; a zero decompressed budget therefore rejects even a
+whitespace-only text object. More than 50,000 text rectangles skips rectangle
+layout and falls back to full-page bounded text with
+`reading-order-uncertain`. The page-object inventory examines at most 4,096
+objects, descends through at most 15 nested Form levels, and retains at most
+512 horizontal and 512 vertical ruling candidates. If either bounded traversal
+stops while PDFium reports zero characters and no text object has been found,
+extraction refuses with `[reading-order-uncertain]` rather than falsely
+asserting `no-text-layer`. Pages above one million raw
+characters are also preflighted against the remaining output budget; the
+streaming writer remains authoritative for exact UTF-8/framing bytes.
+
+The related read-only `inspect` inventory reports no document text. A valid
+zero-page PDF has an empty `page_text_stats` list; its `text_coverage` page
+counters are zero and `char_count_min`, `char_count_median`, and
+`char_count_max` are JSON `null` because no page population exists. Inspection
+uses the same configured `max_pages`, cumulative `max_decompressed_bytes`, and
+per-page `max_memory_bytes // 64` preflights as the text pipeline, so an
+over-limit document is refused rather than materialized for statistics.
+
+Pre-publication validation is format-specific. Every candidate must decode as
+strict UTF-8 and carry the required coverage schema. Markdown/TXT anchor counts
+must equal selected occurrence count when anchors are enabled; JSONL must have
+exactly one record per occurrence, the exact schema above, and counts that agree
+with the report. Validation failure blocks atomic publication. Unlike generated
+PDF validation, this proves encoding, framing, provenance cardinality, and
+report consistency — not linguistic correctness or visual equivalence.
+
 ## convert-images
 
 Every output is a re-encode (`image-reencoded`, info; lossy for JPEG/WebP at
@@ -147,8 +247,9 @@ server-side downscaling; it is a convenience default, not a fidelity claim.
 
 ## Encrypted inputs and active content
 
-- A supplied password authorizes reading an encrypted input. Generated PDFs
-  and raster images are not password protected; reports carry the critical
+- A supplied password authorizes reading an encrypted input. Generated PDFs,
+  raster images, and extracted-text artifacts are not password protected;
+  reports carry the critical
   `input-encryption-removed` security warning.
 - CLI credential source does not change conversion semantics: global
   `--password-stdin` outranks `LDF_PASSWORD`, which outranks the hidden TTY
@@ -170,10 +271,13 @@ arrays, `security_warnings[]` and `fidelity_warnings[]`, whose entries carry
 stable `code` values.
 
 ## Validation floor for every operation
+
 Every generated PDF is reopened with pikepdf/libqpdf, parser syntax warnings
 are rejected, expected page counts are checked, and pages are rendered through
 PDFium (all pages for high-risk/small outputs, a documented sample for routine
 large outputs). Zero-page and render failures block publication. Blank pages
 are reported and may be legitimate; only callers that explicitly forbid an
 all-blank result make blankness a hard failure. These checks do not establish
-PDF/A or PDF/UA conformance.
+PDF/A or PDF/UA conformance. Generated images must decode. Generated
+Markdown/TXT/JSONL follows the strict UTF-8, anchor/record-cardinality,
+exact-schema, and coverage-consistency validator described above.

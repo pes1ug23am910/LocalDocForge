@@ -202,6 +202,49 @@ class TestJobFlow:
             dpi_details["dimensions"][0]["height"],
         ) > 1568
 
+    def test_pdf_to_md_selection_download_and_report_schema(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/pdf-to-md",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data={"pages": "3,1", "format": "txt", "page_anchors": "false"},
+        )
+
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        assert len(payload["outputs"]) == 1
+        assert payload["outputs"][0]["index"] == 0
+        assert payload["outputs"][0]["name"] == "document.txt"
+        assert payload["outputs"][0]["size_bytes"] > 0
+        details = payload["report"]["details"]
+        assert details["format"] == "txt"
+        assert details["page_anchors"] is False
+        coverage = details["coverage"]
+        assert set(coverage) == {
+            "pages_total",
+            "pages_with_text",
+            "pages_with_text_layer",
+            "char_count_min",
+            "char_count_median",
+            "char_count_max",
+            "per_page",
+        }
+        assert [item["page"] for item in coverage["per_page"]] == [3, 1]
+        assert all(
+            set(item) == {"page", "char_count", "has_text_layer", "warning_codes"}
+            for item in coverage["per_page"]
+        )
+
+        downloaded = client.get(
+            f"/api/jobs/{payload['job_id']}/outputs/0",
+            headers=auth(),
+        )
+        assert downloaded.status_code == 200
+        text = downloaded.content.decode("utf-8", errors="strict")
+        assert "--- ldf:page" not in text
+        assert text.count("\f") == 1
+        assert text.index("MARKER-ALPHA-PAGE-3") < text.index("MARKER-ALPHA-PAGE-1")
+
     def test_compress_job_reports_reduction_and_downloads(self, client, fixtures_dir):
         response = client.post(
             "/api/jobs/compress",
@@ -326,6 +369,26 @@ class TestJobErrors:
         )
         assert response.status_code == 422
         assert "preset" in response.json()["detail"]
+
+    @pytest.mark.parametrize(
+        ("data", "message"),
+        [
+            ({"format": "html"}, "'format' must be one of"),
+            ({"page_anchors": "1"}, "'page_anchors' must be true or false"),
+        ],
+    )
+    def test_pdf_to_md_rejects_invalid_parameters(
+        self, client, fixtures_dir, data, message
+    ):
+        response = client.post(
+            "/api/jobs/pdf-to-md",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data=data,
+        )
+
+        assert response.status_code == 422
+        assert message in response.json()["detail"]
 
     def test_image_api_honors_layout_and_quality_parameters(self, client, fixtures_dir):
         response = client.post(

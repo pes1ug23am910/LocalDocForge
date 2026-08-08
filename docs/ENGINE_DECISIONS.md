@@ -9,14 +9,24 @@ Probed state on this machine is always visible via `ldf doctor`.
 |---|---|---|---|---|
 | pikepdf (libqpdf) | 10.10.0 / qpdf 12.3.2 | MPL-2.0 (pikepdf) / Apache-2.0 (qpdf) | Primary structural engine: merge/split/remove/extract/organize/rotate/crop/inspect | Mature, actively maintained, binds qpdf (the reference structural tool), preserves objects faithfully, handles encryption, robust against malformed files |
 | pypdf | 6.14.2 | BSD-3-Clause | Installed library used for independent text assertions in tests; no production operation is wired to it | It remains probed for diagnostics but is not advertised or selected as a fallback |
-| pypdfium2 (PDFium) | 5.12.1 | Apache-2.0 OR BSD-3-Clause (wrapper); bundled PDFium uses BSD-style and `BUILD_LICENSES` notices | Rendering: validation renders, pdf-to-images, future previews/thumbnails | Chrome's PDF renderer: fast, robust on hostile files, permissive license, abi3 wheels |
+| pypdfium2 (PDFium) | 5.12.1 / PDFium 152.0.7947.0 | Apache-2.0 OR BSD-3-Clause (wrapper); bundled PDFium uses BSD-style and `BUILD_LICENSES` notices | Rendering: validation renders and pdf-to-images; text/geometry extraction for pdf-to-md and inspect coverage | Chrome's PDF engine: fast, robust on hostile files, exposes page-scoped text rectangles/font geometry without another runtime dependency, permissive license, abi3 wheels |
 | Pillow | 12.3.0 | MIT-CMU; bundled codecs have per-component terms | Image decode/encode, images-to-pdf composition, convert-images transcoding | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 | pi-heif (libheif) | 1.4.0 / libheif 1.23.0, libde265 1.1.1 | BSD-3-Clause wrapper; LGPL-3.0-or-later libheif + libde265 | HEIF/HEIC **decode-only** Pillow plugin: iPhone photo input for convert-images and images-to-pdf | The decode-only distribution of pillow-heif — its wheels bundle no GPLv2 x265 encoder, keeping the runtime license ceiling at LGPLv3; the full pillow-heif package is a dev-profile fixture-encoding tool only |
 
-Rationale for the split: structural edits (pikepdf) and rasterization
-(PDFium) are different failure domains; no single library is trusted for
+Rationale for the split: structural edits (pikepdf) and rendering/text
+extraction (PDFium) are different failure domains; no single library is trusted for
 both. A pypdf production fallback remains a future implementation task; an
 installed library alone is not reported as an executable operation engine.
+
+PDF→Markdown/text uses PDFium's page-scoped text and geometry APIs. It was
+chosen because PDFium is already shipped, probed, worker-contained for API
+jobs, and licensed Apache-2.0/BSD-3-Clause; it supports deterministic
+one-page-at-a-time extraction without expanding the dependency closure.
+Layout and heading reconstruction remain documented heuristics. **PyMuPDF and
+pymupdf4llm are banned from core**: linking/importing their AGPL runtime would
+exceed this project's weak-copyleft-or-lighter license ceiling. They are not a
+fallback and are not optional adapters. Structured table extraction is a
+separate future slice rather than a reason to mislabel flattened PDFium text.
 
 ## Optional executable probes (features gated off; availability varies)
 
@@ -45,7 +55,8 @@ installed library alone is not reported as an executable operation engine.
   pipelines — decide with benchmarks and quality-floor checks.
 - Markdown→PDF (Phase 3): Typst (installed, fast, hermetic) vs WeasyPrint
   (HTML/CSS themes, pure-Python install) — likely Typst primary.
-- PDF→Markdown (Phase 3): evaluate Docling / PyMuPDF4LLM licensing
-  (PyMuPDF is AGPL — if used, optional adapter only, never core).
+- PDF→Markdown follow-up: evaluate S5's separately licensed table extractor and
+  confidence thresholds. Keep PDFium text as the source for ordinary regions;
+  do not interleave competing text engines or weaken the PyMuPDF ban.
 - Semantic PDF→DOCX (Phase 2/3): candidate pdf2docx; verify license and
   output honesty before adoption.

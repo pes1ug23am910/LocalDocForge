@@ -74,6 +74,10 @@ class CandidateOutput:
     expected_pages: int | None = None
     #: High-risk candidates get every page rendered; others a sampled render.
     render_all: bool = False
+    #: Non-PDF operations may supply semantic validation that runs before
+    #: publication. The validator must be deterministic and must not mutate
+    #: the candidate.
+    validator: Callable[[Path], ValidationResult] | None = None
 
 
 @dataclass
@@ -298,7 +302,9 @@ def run_pipeline(
         context.emit("validate", total=len(result.candidates))
         all_checks: list[ValidationCheck] = []
         for index, candidate in enumerate(result.candidates):
-            if candidate.media_type == "application/pdf":
+            if candidate.validator is not None:
+                validation = candidate.validator(candidate.workspace_path)
+            elif candidate.media_type == "application/pdf":
                 validation = validate_pdf(
                     candidate.workspace_path,
                     expected_pages=candidate.expected_pages,

@@ -681,12 +681,18 @@ def crop_pages(
     )
 
 
-def inspect_pdf(input_path: Path, *, password: str | None = None) -> dict[str, Any]:
+def inspect_pdf(
+    input_path: Path,
+    *,
+    password: str | None = None,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
     """Read-only structural inventory used by ``ldf inspect`` and reports."""
     import pikepdf
 
     from localdocforge.security.sniff import require_media_type
 
+    settings = settings or Settings()
     require_media_type(input_path, "application/pdf")
     info: dict[str, Any] = {
         "file": input_path.name,
@@ -696,6 +702,12 @@ def inspect_pdf(input_path: Path, *, password: str | None = None) -> dict[str, A
         info["pdf_version"] = str(pdf.pdf_version)
         info["encrypted"] = pdf.is_encrypted
         info["page_count"] = len(pdf.pages)
+        page_limit = settings.limits.max_pages
+        if page_limit is not None and info["page_count"] > page_limit:
+            raise PipelineError(
+                f"Input has {info['page_count']} pages, over the configured limit "
+                f"of {page_limit}"
+            )
         sizes = set()
         annotation_count = 0
         for page in pdf.pages:
@@ -721,4 +733,27 @@ def inspect_pdf(input_path: Path, *, password: str | None = None) -> dict[str, A
         except pikepdf.PdfError:
             pass
         info["docinfo"] = docinfo
+    # Keep the structural pikepdf preflight above authoritative, then use the
+    # same PDFium extraction policy as pdf-to-md. Only counts leave the helper;
+    # inspect never retains or reports source text.
+    from localdocforge.operations.text import inspect_page_text_stats
+
+    if info["page_count"] == 0:
+        page_text_stats: list[dict[str, object]] = []
+        text_coverage: dict[str, object] = {
+            "pages_total": 0,
+            "pages_with_text": 0,
+            "pages_with_text_layer": 0,
+            "char_count_min": None,
+            "char_count_median": None,
+            "char_count_max": None,
+        }
+    else:
+        page_text_stats, text_coverage = inspect_page_text_stats(
+            input_path,
+            password=password,
+            limits=settings.limits,
+        )
+    info["page_text_stats"] = page_text_stats
+    info["text_coverage"] = text_coverage
     return info

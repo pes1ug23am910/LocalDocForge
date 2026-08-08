@@ -79,6 +79,10 @@ def test_usage_templates_exactly_cover_implemented_specs() -> None:
         assert usage.startswith("ldf ")
         assert "\n" not in usage and "\r" not in usage
     assert "--preset llm" in USAGE_BY_CAPABILITY_ID["pdf-to-images"]
+    assert USAGE_BY_CAPABILITY_ID["pdf-to-markdown"] == (
+        "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
+        "[--format md|txt|jsonl] [--no-page-anchors]"
+    )
 
 
 def test_brief_uses_spec_order_one_probe_and_keeps_unavailable_implemented() -> None:

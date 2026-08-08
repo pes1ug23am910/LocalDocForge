@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](docs/PACKAGING.md)
 
-**Merge, split, compress, convert, and inspect PDFs entirely on your own
+**Merge, split, extract text, compress, convert, and inspect PDFs entirely on your own
 machine.** No uploads, no account, no telemetry — the shipped package
 contains no outbound network client at all.
 
@@ -34,8 +34,9 @@ source before anything was published.*
   through pikepdf/libqpdf, PDFium, and Pillow. The web UI binds to
   `127.0.0.1` by default and authenticates every request.
 - **It refuses to guess.** Damaged PDFs are rejected rather than silently
-  "repaired", outputs are structurally reopened and render-checked before
-  they are published, and originals are never modified in place.
+  "repaired"; generated PDFs are structurally reopened/render-checked, images
+  must decode, and extracted text must pass strict encoding/provenance/schema
+  checks before publication. Originals are never modified in place.
 - **It refuses to lie.** A feature is advertised only when its
   implementation *and* a live engine probe both pass (`ldf doctor` is the
   truth, not a brochure). Cropping is never called redaction. Known
@@ -51,13 +52,14 @@ source before anything was published.*
 | Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
 | Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
-| Convert | images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
-| Inspect | page count, encryption, page sizes, annotations, outlines, forms, attachments, JavaScript presence |
+| Convert | PDF → UTF-8 Markdown/plain text/JSONL via PDFium (`pdf-to-md`, page anchors, per-page coverage and honest layout warnings) · images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
+| Inspect | page count, encryption, page sizes, per-page extracted character counts, annotations, outlines, forms, attachments, JavaScript presence |
 | Agent integration | deterministic `ldf agent-brief` Markdown/JSON generated from implemented `CAPABILITY_SPECS` plus one live capability probe, including usage, exit codes, gotchas, workflow, and feedback rules |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
-Everything above is covered by the repository's test suite (504 tests) and a
-full release gate. OCR, Office conversion, lossy compression presets,
+Everything above is covered by the repository's test suite and full release
+gate; dated counts and platform-scoped evidence are recorded in
+[`docs/STATUS.md`](docs/STATUS.md). OCR, Office conversion, lossy compression presets,
 redaction, signatures, and the rest of the roadmap are **not implemented
 yet** and are honestly reported as unavailable by `ldf doctor` — see
 [`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md).
@@ -119,6 +121,8 @@ ldf compress input.pdf -o smaller.pdf                  # lossless; images untouc
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
+ldf pdf-to-md input.pdf -o content.md                    # Markdown + source-page anchors
+ldf pdf-to-md input.pdf -o content.jsonl --format jsonl # one UTF-8 JSON record per page
 ldf convert-images photos/*.HEIC -d ready/ --preset llm  # iPhone photos → AI-ready JPEGs
 ldf inspect input.pdf
 ldf agent-brief                   # registry-derived Markdown for coding agents
@@ -142,6 +146,14 @@ overwritten unless you say
 `--collision overwrite`. Full grammar, exit codes, and the HTTP API
 contract: [`docs/CLI.md`](docs/CLI.md).
 
+`pdf-to-md` writes extracted content to the requested file using strict UTF-8
+and normalized LF line endings; stdout remains the report/diagnostic channel,
+not a text-fidelity channel. Markdown headings and reading order are explicitly
+heuristic. The report summarizes selected-page coverage and attributes the
+stable `no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
+`tables-flattened` codes without copying document text into the report. For a
+page with no usable text layer, render it with `pdf-to-images --preset llm`.
+
 The `ldf web` server binds to `127.0.0.1`, authenticates every API call
 with a per-session token header, sends CSP/hardening headers, and keeps job
 history in memory only. Every conversion runs in a fresh spawned worker
@@ -152,8 +164,9 @@ terminal state is published only after the process tree is verified gone.
 ## Status and maturity
 
 **Early alpha, honestly scoped.** Phase 0 (foundation), the core of Phase 1
-(structural PDF tools + image conversion), and the first Phase 2 slice
-(lossless compression, 2026-08-03) are implemented, tested, and gated.
+(structural PDF tools + image conversion), the first Phase 2 slice
+(lossless compression, 2026-08-03), and the core Phase 3 PDF text-extraction
+path are implemented, tested, and gated.
 
 - **For everyday, non-sensitive documents:** working and validated — the
   full release gate (locks, lint, types, two full test-suite runs including
@@ -210,7 +223,7 @@ subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
 
 ```powershell
 pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
-.venv\Scripts\python.exe -m pytest tests -q    # 504 tests
+.venv\Scripts\python.exe -m pytest tests -q    # current count: see docs/STATUS.md
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```
@@ -224,7 +237,8 @@ reality. Start at [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Roadmap
 
-Lossy compression presets, repair, OCR, Office↔PDF, PDF/A, PDF↔Markdown,
+Lossy compression presets, repair, OCR, Office↔PDF, PDF/A, Markdown→PDF and
+advanced PDF→Markdown table/semantic reconstruction,
 editor, forms, encryption, redaction, signatures, compare, scanner
 acquisition, full browser UI — phased plan in
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), current truth
