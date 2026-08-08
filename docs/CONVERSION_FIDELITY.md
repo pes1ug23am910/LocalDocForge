@@ -179,7 +179,10 @@ affected. Exact attribution remains bounded in
 selected occurrences, including repeats and reverse order. The report never
 contains extracted text.
 
-Per-page work is bounded before layout materialization. PDFium's raw character
+Per-page work is bounded before layout materialization. These are memory and
+cardinality bounds, not a speed guarantee: per-page wall time scales with
+PDFium text-rectangle count, and a dense page below the 50,000-rectangle cutoff
+can consume much of `pdf-to-md`'s cooperative timeout. PDFium's raw character
 count is compared conservatively with the remaining
 `max_decompressed_bytes` budget (before whitespace cleanup) and with
 `max_memory_bytes // 64`; a zero decompressed budget therefore rejects even a
@@ -194,8 +197,11 @@ asserting `no-text-layer`. Pages above one million raw
 characters are also preflighted against the remaining output budget; the
 streaming writer remains authoritative for exact UTF-8/framing bytes.
 
-The related read-only `inspect` inventory reports no document text. A valid
-zero-page PDF has an empty `page_text_stats` list; its `text_coverage` page
+The related read-only `inspect` inventory reports no document text and skips
+the font-size/angle sampling used only for extraction warnings and Markdown
+headings. It still walks and extracts accepted PDFium text rectangles, so a
+rectangle-dense page can be slow. A valid zero-page PDF has an empty
+`page_text_stats` list; its `text_coverage` page
 counters are zero and `char_count_min`, `char_count_median`, and
 `char_count_max` are JSON `null` because no page population exists. Inspection
 uses the same configured `max_pages`, cumulative `max_decompressed_bytes`, and

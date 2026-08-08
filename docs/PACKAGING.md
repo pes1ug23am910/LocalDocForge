@@ -277,6 +277,25 @@ checks, and sdist-to-wheel equivalence in 32.935 seconds. The definitive
 verify-mode gate and its fresh temporary profile-evidence identity are recorded
 in `docs/STATUS.md` and the S4 executor log.
 
+#### 2026-08-09 S4 F1/N1 remediation identity
+
+On 2026-08-09, the two non-blocking findings were addressed on
+S4. The inspect path now skips style sampling that its count-only result never
+consumes; package dependencies and locks remain unchanged. A build-only refresh
+again used disposable system-temporary artifacts and left retained `dist/` and
+`packaging-evidence/` records untouched.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `b3384fe440a96881a96d9617d4a5dd2a35ac2f03d8f7146055ff989024ee0f5f` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097` | 125,012 |
+| `localdocforge-0.1.0.tar.gz` | `42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4` | 111,839 |
+
+The remediation build-only refresh passed reproducible direct builds,
+Twine/member/metadata checks, and sdist-to-wheel equivalence in 25.3 seconds.
+Its separate clean-tree verify-mode gate will be recorded in `docs/STATUS.md`
+and the append-only S4 executor log after the coherent remediation commit.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source

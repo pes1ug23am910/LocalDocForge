@@ -1,7 +1,8 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S4 `pdf-to-md` text extraction and per-page inspect
-text counts; definitive Windows-AMD64 gate passed on the 545-outcome tree).
+Last updated: 2026-08-09 (S4 `pdf-to-md` F1/N1 review remediation; the original
+definitive Windows-AMD64 gate passed on the 545-outcome tree and the
+547-outcome remediation tree is awaiting its clean-commit re-gate).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -461,6 +462,32 @@ result applies only to the recorded OS, architecture, and interpreter.
   `full_tests.status: passed`; its SHA-256 is
   `f7e2176deb9b7bef7e3049162455c27caeb0045b9a20eb931bc255bde487bdce`.
   Retained `dist/` and `packaging-evidence/` remained untouched.
+
+### Review remediation — F1/N1
+
+- After an independent review returned `approve-with-nits`, both
+  non-blocking findings be resolved on S4. Inspect now skips per-fragment font-
+  size/angle sampling because its count-only result consumes neither style nor
+  extraction warning codes. `pdf-to-md` retains sampling in every output format
+  so angle-based `reading-order-uncertain` warnings and Markdown heading
+  inference are unchanged.
+- The fidelity, CLI, and Windows getting-started documentation now state that
+  the resource caps are memory/cardinality bounds rather than a speed guarantee:
+  accepted rectangle-dense pages still take time proportional to their PDFium
+  text-rectangle count. The former unqualified `fast` inspect wording was
+  removed.
+- The remediation candidate collects 547 outcomes. Its direct full run passed
+  545 with the same two expected platform skips in 78.7 seconds; the focused
+  text/fidelity set passed 40 outcomes. Ruff and native/Linux/macOS mypy are
+  clean, and generated-release-artifact drift is clean.
+- The disposable 25.3-second build-only refresh records package-source identity
+  `b3384fe440a96881a96d9617d4a5dd2a35ac2f03d8f7146055ff989024ee0f5f`,
+  125,012-byte wheel
+  `1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097`,
+  and 111,839-byte sdist
+  `42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4`.
+  Retained `dist/` and `packaging-evidence/` remain untouched. The definitive
+  clean-commit verify-mode re-gate is pending.
 
 ## Implemented hardening
 

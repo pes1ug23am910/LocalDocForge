@@ -179,7 +179,9 @@ ldf --json inspect input.pdf   # + page_text_stats and text_coverage
 
 `page_text_stats` contains one `{page, char_count, has_text_layer}` record per
 source page; `text_coverage` summarizes pages and character counts. These are
-fast extraction-vs-render decision signals, not reading-order guarantees.
+extraction-vs-render decision signals, not a cheap probe or a reading-order
+guarantee: inspect still walks PDFium text rectangles, so dense or adversarial
+pages can take substantial time.
 
 ### Encrypted inputs
 
