@@ -269,8 +269,9 @@ the input is not treated as Typst source.
 
 Known losses are explicit:
 
-- `markdown-construct-dropped` — raw HTML markup, footnotes, inline/block math,
-  strikethrough, an unsafe/local link destination, or an unknown parser token
+- `markdown-construct-dropped` — raw HTML markup, footnotes, math blocks,
+  recognized backslash-delimited inline math, strikethrough, an unsafe/local
+  link destination, or an unknown parser token
   was omitted. Each warning message and `details.dropped_constructs` entry names
   the construct and its 1-based source line, without copying its contents.
   Text that Markdown exposes separately between inline HTML tags remains text;
@@ -284,11 +285,13 @@ Known losses are explicit:
   installed system fonts for missing glyphs. Glyph choice, line wrapping, and
   page count can therefore differ across machines.
 
-Footnotes and math are intentionally unsupported rather than passed through as
-misleading literal notation. Remote images, absolute/traversing paths,
-multi-frame images, Typst imports/plugins/packages, and invalid/binary Markdown
-are refused instead of downgraded. Images are re-encoded, so original image
-metadata, compression, color-profile bytes, and animation are not preserved.
+Detected footnotes and math are intentionally unsupported rather than passed
+through as misleading notation. The CommonMark parser enables no math extension.
+Dollar signs in ordinary CommonMark text are rendered literally. Remote images,
+absolute/traversing paths, multi-frame images, Typst imports/plugins/packages,
+and invalid/binary Markdown are refused instead of downgraded. Images are
+re-encoded, so original image metadata, compression, color-profile bytes, and
+animation are not preserved.
 The converter offers no CSS/theme compatibility and does not claim pixel parity
 with another Markdown renderer.
 

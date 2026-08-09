@@ -182,6 +182,37 @@ FENCED-CODE-MARKER
     _assert_workspace_clean(tmp_path)
 
 
+def test_currency_dollar_text_round_trips_without_math_warning(
+    tmp_path: Path,
+    typst_info,
+) -> None:
+    source = _write_markdown(
+        tmp_path,
+        """# CURRENCY-TEXT
+
+The price range is $5-$10 for members.
+
+Price is $5 and$10 total.
+
+The single-item fee is $20.
+""",
+    )
+    output = tmp_path / "currency.pdf"
+
+    report = md_to_pdf(source, output, options=_options(tmp_path))
+
+    assert not any(
+        warning.code == MARKDOWN_CONSTRUCT_DROPPED
+        for warning in report.fidelity_warnings
+    )
+    assert report.details["dropped_constructs"] == []
+    text = " ".join(_extract_text(output, tmp_path).split())
+    assert "The price range is $5-$10 for members." in text
+    assert "Price is $5 and$10 total." in text
+    assert "The single-item fee is $20." in text
+    _assert_workspace_clean(tmp_path)
+
+
 @pytest.mark.parametrize(
     ("paper", "expected"),
     [
@@ -470,7 +501,7 @@ def test_unsupported_constructs_are_dropped_with_stable_lines(
 
 [^note]: FOOTNOTE-DEFINITION-SECRET
 
-Visible sentence [^note] and $INLINE-MATH-SECRET$.
+Visible sentence [^note] and $DOLLAR-TEXT-MARKER$.
 
 $$
 BLOCK-MATH-SECRET
@@ -488,7 +519,6 @@ SUPPORTED-TAIL with ~~STRIKETHROUGH-TEXT~~.
         ("raw HTML", 3),
         ("footnote definition", 5),
         ("footnote reference", 7),
-        ("inline math", 7),
         ("math block", 9),
         ("strikethrough", 13),
     } <= dropped
@@ -504,10 +534,10 @@ SUPPORTED-TAIL with ~~STRIKETHROUGH-TEXT~~.
     text = _extract_text(output, tmp_path)
     assert "SUPPORTED-HEADING" in text and "SUPPORTED-TAIL" in text
     assert "STRIKETHROUGH-TEXT" in text
+    assert "$DOLLAR-TEXT-MARKER$" in text
     for secret in (
         "RAW-HTML-SECRET",
         "FOOTNOTE-DEFINITION-SECRET",
-        "INLINE-MATH-SECRET",
         "BLOCK-MATH-SECRET",
     ):
         assert secret not in text
@@ -566,7 +596,14 @@ Escapes: \\ [brackets] $dollar$ `backtick` @at *star* _underscore_ <angle@exampl
 
     assert report.status is ReportStatus.SUCCESS
     text = _extract_text(output, tmp_path)
-    for literal in ("#eval", "#read", "#import", "@preview", "outside-secret.txt"):
+    for literal in (
+        "#eval",
+        "#read",
+        "#import",
+        "@preview",
+        "$dollar$",
+        "outside-secret.txt",
+    ):
         assert literal in text
     assert "OUTSIDE-FILE-CONTENT-MUST-NOT-APPEAR" not in text
     assert "OUTSIDE-FILE-CONTENT-MUST-NOT-APPEAR" not in report.model_dump_json()

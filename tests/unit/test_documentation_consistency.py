@@ -206,7 +206,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "non-interactive PDF passwords, S1" in status
     assert "464 outcomes: 462 passed and two expected" in status
-    assert "615 outcomes as of" in status and "2026-08-09" in status
+    assert "616 outcomes as of" in status and "2026-08-09" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging
@@ -402,6 +402,7 @@ def test_md_to_pdf_slice_is_documented_consistently() -> None:
     assert "1-based source line" in section
     assert "256 distinct construct/line entries" in section
     assert "250,000 parser tokens" in section
+    assert "Dollar signs in ordinary CommonMark text are rendered literally" in section
 
     architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
     assert "Typst receives `--root`" in architecture
