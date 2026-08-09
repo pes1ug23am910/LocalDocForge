@@ -49,8 +49,14 @@ The extraction operation reads text rectangles, font geometry, rotation/angle,
 and page path geometry one page at a time. It normalizes Unicode to NFC and
 uses deterministic top-to-bottom/left-to-right ordering plus font-size
 clustering, while the report labels heading and layout conclusions as
-heuristics. `inspect` combines its pikepdf structural inventory with the same
-PDFium page text-count policy; the capability therefore requires both engines.
+heuristics. Markdown-only table mode lazily opens pdfplumber and requests its
+explicit-line finder only after the PDFium path scan passes fixed bounds. An
+accepted table region removes wholly contained PDFium fragments and uses only
+pdfplumber cell text; PDFium remains the source everywhere else. Any partial
+overlap, rotated/coordinate mismatch, merged cell, or confidence/resource
+failure keeps flowed PDFium text. `inspect` combines its pikepdf structural
+inventory with the same PDFium page text-count policy; the capability therefore
+requires both engines.
 
 ### Capability honesty (`engines/registry.py::CAPABILITY_SPECS`)
 
@@ -121,7 +127,11 @@ For `pdf-to-md`, `details.coverage` contains only bounded metadata:
 min/median/max, and ordered per-page `{page, char_count, has_text_layer,
 warning_codes}` records. A stable fidelity code appears once in the aggregate
 warning array and on each affected page record; extracted text is never report
-data.
+data. The sibling `details.tables` object is also text-free: `requested`,
+`engine_status`, `emitted`, and `flattened_candidates`. Table analysis caps are
+8,192 path segments, 1,024 edges, 4,096 vertical×horizontal pairs, 32 tables
+per page, 4,096 cells per page, and 4 MiB of cell text per page further reduced
+by the job's extraction-byte and memory budgets.
 
 For `md-to-pdf`, the operation parses a bounded token stream and renders only
 known node types. Every untrusted text/code/link/alt value is serialized as a
@@ -247,10 +257,12 @@ generic terminal failure and a critical report warning rather than being
 silently ignored.
 
 `pdf-to-md` is an ordinary worker-backed API conversion. The allowlisted form
-fields are `pages`, `format`, `page_anchors`, and `password`; the server chooses
-the contained output filename. Extracted text exists only in the candidate and
-published output artifact. Public job state/report IPC carries coverage counts
-and stable warning codes, never the document body.
+fields are `pages`, `format`, `page_anchors`, strict boolean `tables`, and
+`password`; the server chooses the contained output filename. `tables` defaults
+false and is accepted only for Markdown. Extracted text exists only in the
+candidate and published output artifact. Public job state/report IPC carries
+coverage counts, table status/counters, and stable warning codes, never the
+document body or cell values.
 
 ### Error model
 

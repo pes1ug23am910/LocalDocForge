@@ -13,12 +13,14 @@ ROOT = Path(__file__).resolve().parents[2]
 GENERATOR_PATH = ROOT / "scripts" / "generate_release_artifacts.py"
 REPORT_PATH = ROOT / "docs" / "ADVISORY_REPORT.json"
 PROFILES = ("lite", "standard", "full")
-PYTHON_COUNTS = {"lite": 21, "standard": 29, "full": 30}
-NATIVE_COUNT = 18
-UNVERSIONED_COUNT = 18
-REVIEW_DATES = {"2026-07-19", "2026-08-08", "2026-08-09"}
+PYTHON_COUNTS = {"lite": 27, "standard": 35, "full": 36}
+NATIVE_COUNT = 52
+UNVERSIONED_COUNT = 19
+REVIEW_DATES = {"2026-07-19", "2026-08-08", "2026-08-09", "2026-08-10"}
 BASE_DIRECT = {
+    "pkg:pypi/cryptography@50.0.0",
     "pkg:pypi/markdown-it-py@4.2.0",
+    "pkg:pypi/pdfplumber@0.11.10",
     "pkg:pypi/pi-heif@1.4.0",
     "pkg:pypi/pikepdf@10.10.0",
     "pkg:pypi/pillow@12.3.0",
@@ -98,8 +100,8 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         metadata_properties = _properties(sbom["metadata"])
         assert metadata_properties["localdocforge:profile"] == profile
         assert metadata_properties["localdocforge:advisoryAccessDate"] == "2026-07-19"
-        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-08-09"
-        assert sbom["metadata"]["timestamp"] == "2026-08-09T00:00:00Z"
+        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-08-10"
+        assert sbom["metadata"]["timestamp"] == "2026-08-10T00:00:00Z"
         assert "SHA-256 artifact hashes" in metadata_properties[
             "localdocforge:lockEvidence"
         ]
@@ -180,6 +182,32 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         assert dependency_map["pkg:pypi/pypdfium2@5.12.1"] == {
             "pkg:generic/pdfium@152.0.7947.0"
         }
+        assert dependency_map["pkg:pypi/pdfplumber@0.11.10"] == {
+            "pkg:pypi/pdfminer-six@20260107",
+            "pkg:pypi/pillow@12.3.0",
+            "pkg:pypi/pypdfium2@5.12.1",
+        }
+        assert dependency_map["pkg:pypi/cryptography@50.0.0"] == {
+            "pkg:cargo/cryptography-rust@0.50.0",
+            "pkg:pypi/cffi@2.1.0",
+        }
+        cargo_children = dependency_map["pkg:cargo/cryptography-rust@0.50.0"]
+        assert len(cargo_children) == 33
+        assert "pkg:generic/openssl@4.0.1" in cargo_children
+        assert sum(reference.startswith("pkg:cargo/") for reference in references) == 33
+        assert dependency_map["pkg:pypi/cffi@2.1.0"] == {
+            "pkg:pypi/pycparser@3.0",
+            "urn:localdocforge:native:cffi:libffi:unversioned",
+        }
+        assert {
+            "cc",
+            "find-msvc-tools",
+            "pkg-config",
+            "pyo3-build-config",
+            "shlex",
+            "target-lexicon",
+            "vcpkg",
+        }.isdisjoint({component["name"] for component in components})
         assert len(dependency_map["pkg:generic/pdfium@152.0.7947.0"]) == 14
         assert len(dependency_map["pkg:generic/libavif@1.4.2"]) == 4
         assert dependency_map["pkg:pypi/pillow@12.3.0"] == {
@@ -196,6 +224,23 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
             "pkg:generic/pillow%20codec%20bundle@12.3.0"
         ]
         assert "pkg:generic/libde265@1.1.1" not in dependency_map[
+            "pkg:generic/pillow%20codec%20bundle@12.3.0"
+        ]
+        assert dependency_map["pkg:generic/pillow%20codec%20bundle@12.3.0"] == {
+            "pkg:generic/brotli@1.2.0",
+            "pkg:generic/freetype@2.14.3",
+            "pkg:generic/harfbuzz@14.2.1",
+            "pkg:generic/lcms2@2.19.1",
+            "pkg:generic/libavif@1.4.2",
+            "pkg:generic/libjpeg-turbo@3.1.4.1",
+            "pkg:generic/libpng@1.6.58",
+            "pkg:generic/libwebp@1.6.0",
+            "pkg:generic/openjpeg@2.5.4",
+            "pkg:generic/tiff@4.7.1",
+            "pkg:generic/xz@5.8.3",
+            "pkg:generic/zlib-ng@2.3.3",
+        }
+        assert "pkg:generic/openssl@4.0.1" not in dependency_map[
             "pkg:generic/pillow%20codec%20bundle@12.3.0"
         ]
 
@@ -222,6 +267,9 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
             assert entry["recommendation"]
 
         by_ref = {component["bom-ref"]: component for component in components}
+        assert by_ref["pkg:pypi/pdfminer-six@20260107"]["licenses"] == [
+            {"expression": "MIT AND Apache-2.0"}
+        ]
         assert _properties(by_ref["pkg:generic/openjpeg@2.5.4"])[
             "localdocforge:advisoryDisposition"
         ] == "affected"
@@ -258,23 +306,23 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     assert report["schemaVersion"] == 1
     assert report["accessDate"] == "2026-07-19"
-    assert report["amendedDate"] == "2026-08-09"
+    assert report["amendedDate"] == "2026-08-10"
     refresh = report["verificationRuns"][-1]
-    assert refresh["accessDate"] == "2026-08-09"
+    assert refresh["accessDate"] == "2026-08-10"
     assert refresh["releaseDisposition"] == "not-cleared"
     assert all(source["url"].startswith("https://") for source in refresh["sources"])
     assert all(source["exactVersions"] for source in refresh["sources"])
     assert all(source["conclusion"] for source in refresh["sources"])
     assert all(source["disposition"] for source in refresh["sources"])
-    assert report["scope"]["versionedReviewRecordCount"] == 48
+    assert report["scope"]["versionedReviewRecordCount"] == 88
     assert report["scope"]["versionedBundledNativeComponents"] == NATIVE_COUNT
     assert report["scope"]["unversionedNestedNativeComponents"] == UNVERSIONED_COUNT
     assert report["scope"]["optionalEngines"]["reviewed"] is False
     assert "Typst 0.15.1 is an enabled" in report["scope"]["optionalEngines"]["reason"]
     components = report["components"]
-    assert len({component["bomRef"] for component in components}) == 48
+    assert len({component["bomRef"] for component in components}) == 88
     assert Counter(component["kind"] for component in components) == {
-        "runtime-python": 30,
+        "runtime-python": 36,
         "bundled-native": NATIVE_COUNT,
     }
     assert Counter(
@@ -363,6 +411,42 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
         "github-reviewed-pip-exact-2026-08-09",
     ]
 
+    cryptography = by_ref["pkg:pypi/cryptography@50.0.0"]
+    assert cryptography["reviewDate"] == "2026-08-10"
+    assert cryptography["license"]["concluded"] == "Apache-2.0 OR BSD-3-Clause"
+    assert "GHSA-g6cj-pr64-35w5" in cryptography["security"]["upstream"]
+    assert "cryptography>=50.0.0" in cryptography["security"]["remediation"]
+    assert by_ref["pkg:pypi/cffi@2.1.0"]["security"]["disposition"] == (
+        "contains-unknown-component"
+    )
+    assert by_ref["pkg:cargo/self_cell@1.3.0"]["license"]["concluded"] == (
+        "Apache-2.0"
+    )
+    assert by_ref["pkg:cargo/unicode-ident@1.0.24"]["license"]["concluded"] == (
+        "(MIT OR Apache-2.0) AND Unicode-3.0"
+    )
+    assert by_ref["pkg:generic/openssl@4.0.1"]["license"]["concluded"] == (
+        "Apache-2.0"
+    )
+
+    pdfminer = by_ref["pkg:pypi/pdfminer-six@20260107"]
+    assert pdfminer["license"]["concluded"] == "MIT AND Apache-2.0"
+    assert "installs only the top-level MIT LICENSE" in pdfminer["license"][
+        "localVersionEvidence"
+    ]
+    preserved = pdfminer["license"]["preservedNotices"]
+    assert [notice["name"] for notice in preserved] == [
+        "pdfminer.six MongoDB/PyMongo-derived SASLprep attribution",
+        "Apache License 2.0 terms for pdfminer.six SASLprep code",
+        "pdfminer.six pyHanko-derived code notice",
+    ]
+    assert "# Copyright 2016-present MongoDB, Inc." in preserved[0]["text"]
+    assert preserved[1]["textId"] == "Apache-2.0"
+    assert preserved[1]["sourceSha256"] == (
+        "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    )
+    assert "Copyright (c) 2020 Matthias Valvekens" in preserved[2]["text"]
+
     libde265 = by_ref["pkg:generic/libde265@1.1.1"]
     assert libde265["security"]["disposition"] == "no-known-applicable-advisory"
     assert "OSV-2020-2308" in libde265["security"]["applicability"]
@@ -376,7 +460,7 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     assert "vs2022-cruntime" in msvc["license"]["upstreamText"]
 
     unversioned = report["unversionedNestedComponents"]
-    assert len({component["bomRef"] for component in unversioned}) == 18
+    assert len({component["bomRef"] for component in unversioned}) == 19
     assert sum(
         component["parentBomRef"] == "pkg:generic/pdfium@152.0.7947.0"
         for component in unversioned
@@ -401,6 +485,18 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
         "libsharpyuv (libavif child)",
         "libyuv (libavif child)",
     }
+    libffi = next(
+        component
+        for component in unversioned
+        if component["bomRef"]
+        == "urn:localdocforge:native:cffi:libffi:unversioned"
+    )
+    assert libffi["licenseConclusion"] == "MIT"
+    assert "cffi-2.1.0.tar.gz" in libffi["licenseNotice"]
+    assert "Copyright (c) 1996-2003  Red Hat, Inc." in libffi["fullLicenseText"]
+    assert "pydantic-core 2.46.4 wheel contains an embedded Cargo SBOM" in " ".join(
+        report["method"]["limitations"]
+    )
 
 
 def test_notice_index_and_profile_notices_disclose_required_uncertainty():
@@ -425,6 +521,21 @@ def test_notice_index_and_profile_notices_disclose_required_uncertainty():
         assert "no GPLv2 x265" in notices
         assert "PDFium 152.0.7947.0 is advisory-unknown" in notices
         assert "Typst 0.15.1 is an enabled" in notices
+        assert "pdfminer.six pyHanko-derived code notice" in notices
+        assert "Copyright (c) 2020 Matthias Valvekens" in notices
+        assert "pdfminer.six MongoDB/PyMongo-derived SASLprep attribution" in notices
+        assert "# Copyright 2016-present MongoDB, Inc." in notices
+        assert "Apache License 2.0 terms for pdfminer.six SASLprep code" in notices
+        assert "https://www.apache.org/licenses/LICENSE-2.0.txt" in notices
+        assert "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30" in (
+            notices
+        )
+        assert "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION" in notices
+        assert "3. Grant of Patent License." in notices
+        assert "END OF TERMS AND CONDITIONS" in notices
+        assert "libffi (CFFI child)" in notices
+        assert "Copyright (c) 1996-2003  Red Hat, Inc." in notices
+        assert "pydantic-core 2.46.4 embedded Cargo SBOM is not" in notices
         assert "No optional external executable was enabled" not in notices
         assert "not a safety guarantee" in notices
         assert "No vulnerability or security-advisory lookup was performed" not in notices

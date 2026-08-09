@@ -2,9 +2,10 @@
 
 Assessment run: **2026-08-03**. Everything below marked "executed" was run on
 this machine on that date; nothing is inferred from configuration alone.
-Capability inventory updates for S4/S6 are dated **2026-08-09** and rely on
-the definitive gate and operation probes recorded in `docs/STATUS.md`, rather
-than being folded into the original run. This report answers one question —
+Capability inventory updates for S4/S6 are dated **2026-08-09**; the S5 table
+mode update is dated **2026-08-10**. They rely on the definitive gates and
+operation probes recorded in `docs/STATUS.md`, rather than being folded into
+the original run. This report answers one question —
 *is LocalDocForge ready for use on this machine?* — and records the evidence.
 Companion how-to:
 `docs/GETTING_STARTED_WINDOWS.md`.
@@ -140,6 +141,11 @@ convert-images, pdf-to-markdown, and markdown-to-pdf. The S4/S6 operation
 probes and definitive 616-outcome F1-remediation gate are recorded in
 `docs/STATUS.md`.
 
+**2026-08-10 update:** pdf-to-markdown additionally supports default-off,
+Markdown-only `--tables` reconstruction for conservative explicit-line grids.
+The S5 operation probes and definitive evidence are recorded in
+`docs/STATUS.md`; borderless and merged-cell reconstruction remain unavailable.
+
 ## 3. Engine inventory on this machine
 
 Python engines (in `.venv`, all probed available):
@@ -148,6 +154,7 @@ Python engines (in `.venv`, all probed available):
 |---|---|---|
 | pikepdf | 10.10.0 (qpdf library 12.3.2) | structural PDF operations |
 | pypdfium2 | 5.12.1 | render validation, previews, PDF→image |
+| pdfplumber | 0.11.10 | opt-in explicit-line table geometry/cell extraction |
 | Pillow | 12.3.0 | imaging |
 | pypdf | 6.14.2 | optional diagnostic adapter |
 
@@ -185,7 +192,7 @@ These are the open blockers recorded in `docs/STATUS.md`; today's verification
 does not close any of them, and none is specific to this machine's health:
 
 1. Bundled OpenJPEG 2.5.4 inside Pillow has an open advisory
-   (`OSV-2025-219`); PDFium 152.0.7947.0 and 18 unversioned native children
+   (`OSV-2025-219`); PDFium 152.0.7947.0 and 19 unversioned native children
    are advisory-unknown.
 2. No OS-enforced outbound-plus-DNS network denial has been executed here.
    `--strict-offline` + the gate's socket-denial test run are application/

@@ -58,6 +58,8 @@ EXPECTED_BASE_DEPENDENCIES = frozenset(
         "markdown-it-py",
         "pikepdf",
         "pypdfium2",
+        "pdfplumber",
+        "cryptography",
         "pillow",
         "pi-heif",
     }

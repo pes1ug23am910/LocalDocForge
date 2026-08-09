@@ -206,7 +206,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "non-interactive PDF passwords, S1" in status
     assert "464 outcomes: 462 passed and two expected" in status
-    assert "616 outcomes as of" in status and "2026-08-09" in status
+    assert "639 outcomes as of" in status and "2026-08-10" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging
@@ -272,11 +272,13 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     assert matching[0].operation == OP_PDF_TO_MD
     assert all(spec.id != "pdf-to-md" for spec in CAPABILITY_SPECS)
     assert "ldf pdf-to-md" in USAGE_BY_CAPABILITY_ID["pdf-to-markdown"]
+    assert "--tables" in USAGE_BY_CAPABILITY_ID["pdf-to-markdown"]
 
     expected_codes = (
         "no-text-layer",
         "headings-inferred",
         "reading-order-uncertain",
+        "table-fidelity-best-effort",
         "tables-flattened",
     )
     assert WARNING_CODE_ORDER == expected_codes
@@ -289,12 +291,13 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
 
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
     assert "ldf pdf-to-md INPUT.pdf -o OUTPUT" in cli
-    assert "[--format md|txt|jsonl] [--no-page-anchors]" in cli
+    assert "[--format md|txt|jsonl] [--no-page-anchors] [--tables]" in cli
     assert "<!-- ldf:page N -->" in cli
     assert "--- ldf:page N ---" in cli
     api_row = next(line for line in cli.splitlines() if line.startswith("| pdf-to-md |"))
-    for field in ("`pages`", "`format`", "`page_anchors`", "`password`"):
+    for field in ("`pages`", "`format`", "`page_anchors`", "`tables`", "`password`"):
         assert field in api_row
+    assert "valid only with `md`" in api_row
     planned = cli[cli.index("## Planned") :]
     assert "`pdf-to-md`" not in planned
     assert "`md-to-pdf`" not in planned
@@ -303,8 +306,10 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     row = next(
         line for line in feature.splitlines() if line.startswith("| PDF → Markdown/text/JSONL")
     )
-    assert "| ✅ | pdfium text API | Lib, CLI, API |" in row
+    assert "| ✅ | pdfium text API + pdfplumber (opt-in tables) | Lib, CLI, API |" in row
     assert "No OCR, bidi repair, or silent dehyphenation" in row
+    assert "first physical row is an inferred header" in row
+    assert "No warning proves no table exists" in row
 
     fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
         encoding="utf-8"
@@ -317,8 +322,19 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
         "one selected page at a time",
         "per-page wall time scales with PDFium text-rectangle count",
         "details.coverage.per_page[]",
+        "details.tables",
         '"warning_codes": [...]',
         "pdf-to-images --preset llm",
+        "default remains flowed PDFium text",
+        "first physical row",
+        "Each accepted region has one text source",
+        "8,192 PDF path segments",
+        "1,024 pdfplumber edges",
+        "4,096 vertical×horizontal edge pairs",
+        "32 detected tables per page",
+        "4,096 cumulative cells per page",
+        "4 MiB per page",
+        "not proof that no table exists",
     ):
         assert phrase in text_section_flat
 
@@ -333,6 +349,8 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     assert "Chrome's widely deployed PDF engine" in engines
     assert "Chrome's PDF engine: fast" not in engines
     assert "PyMuPDF and" in engines and "pymupdf4llm are banned" in engines
+    assert "| pdfplumber | 0.11.10 | MIT |" in engines
+    assert "pdfplumber alone supplies cell text" in engines
 
     architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
     architecture_flat = " ".join(architecture.split())
@@ -343,23 +361,46 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
         "char_count",
         "has_text_layer",
         "warning_codes",
+        "requested",
+        "engine_status",
+        "emitted",
+        "flattened_candidates",
     ):
         assert field in architecture
     assert "deterministic, non-mutating candidate validator" in architecture_flat
+    assert "8,192 path segments" in architecture_flat
+    assert "pdfplumber cell text" in architecture_flat
 
     threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
     threat_flat = " ".join(threat.split())
     assert "either reserved" in threat_flat
     assert "JSONL preserves them as ordinary framed" in threat_flat
     assert "stdout/console encoding is not a fidelity boundary" in threat_flat
+    assert "pdfplumber/pdfminer.six" in threat_flat
+    assert "pdfplumber is the sole text source inside that region" in threat_flat
+    assert "4,096 vertical×horizontal pairs" in threat_flat
 
     library = (ROOT / "docs" / "LIBRARY_API.md").read_text(encoding="utf-8")
     for symbol in ("PdfToMdOptions", "pdf_to_md", "page_text_stats", "text_coverage"):
         assert symbol in library
+    assert "PdfToMdOptions(tables=True)" in library
+    library_flat = " ".join(library.split())
+    assert "first physical row becomes the inferred GFM header" in library_flat
+
+    technical = (ROOT / "docs" / "TECHNICAL_REFERENCE.md").read_text(
+        encoding="utf-8"
+    )
+    technical_flat = " ".join(technical.split())
+    assert "PDFium text API + pdfplumber (opt-in tables)" in technical_flat
+    assert "Markdown-only `--tables` (default off)" in technical_flat
+    assert "4 MiB of normalized table-cell UTF-8" in technical_flat
 
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "`pdf-to-md` text extraction, S4" in status
     assert "no new runtime dependency" in status
+    assert "`pdf-to-md` tables via pdfplumber, S5" in status
+    assert "cryptography-only 2026-08-01 cutoff" in status
+    assert "639 outcomes" in status
 
 
 def test_md_to_pdf_slice_is_documented_consistently() -> None:
