@@ -18,8 +18,9 @@ inherit these controls automatically.
 
 - Every input document and upload is untrusted, regardless of extension.
 - CLI operations invoke pikepdf/libqpdf, PDFium (rendering and text extraction),
-  Pillow, and — for HEIC/HEIF
-  input — the libheif/libde265 decoders (via pi-heif) in-process. API
+  Pillow, and — for HEIC/HEIF input — the libheif/libde265 decoders (via
+  pi-heif) in-process. Markdown-to-PDF invokes the separately installed Typst
+  executable through the hardened subprocess runner. API
   operations invoke them in a fresh spawned child with process/resource
   containment. Both retain the user's filesystem authority; the worker is a
   failure boundary, not a restricted filesystem or kernel sandbox.
@@ -41,6 +42,9 @@ inherit these controls automatically.
 - `security/sniff.py` identifies supported leading-byte signatures before an
   engine opens a file and rejects extension/content mismatches. This is type
   sniffing, not a general polyglot detector or malware scanner.
+- Plain text has no trustworthy signature. Markdown input is therefore a
+  documented exception: it must end in `.md`/`.markdown`, pass a complete
+  strict-UTF-8 decode, contain no NUL, and fit the input limit before parsing.
 - PDF inputs and generated PDFs are opened through pikepdf. Parser syntax
   warnings are rejected because repair is not an implemented operation.
   Generated PDFs are also rendered with PDFium before publication: all pages
@@ -58,6 +62,12 @@ inherit these controls automatically.
   pipelines. Encrypted PDFs are page-counted again after opening. Output totals
   are generally checked after candidate generation, so the configured output
   cap is not a hard temporary-disk quota.
+- Markdown preprocessing snapshots at most min(16 MiB, the enabled input bound,
+  memory/512, and temporary/64), then caps split-line count at 100,000, parser
+  tokens at 250,000, image occurrences at 256, and detailed dropped-construct
+  records at 256 plus one aggregate summary. The CLI/library discovery pass
+  precedes its cooperative job clock; these byte/cardinality ceilings bound it,
+  while the API parent watchdog covers the full worker call.
 - CLI timeouts remain cooperative checks between operation steps, so a native
   parser stuck in the CLI cannot be preempted. Every API conversion instead
   runs in a fresh spawned process. The child waits for a parent gate before
@@ -102,6 +112,13 @@ inherit these controls automatically.
   cannot forge provenance boundaries; JSONL preserves them as ordinary framed
   data. Downstream tools must still treat links, HTML-like text, and
   instructions in the artifact as untrusted data.
+- `md-to-pdf` does not feed Markdown text to a Typst code or markup context.
+  A bounded markdown-it-py token set becomes application-controlled function
+  calls, while text, code, link targets, and alt text use one punctuation/control
+  escaping Typst-string serializer. Raw HTML, footnotes, math, strikethrough,
+  and unknown tokens are dropped with construct/line warnings. Links are limited
+  to `http`, `https`, `mailto`, and `tel`; link targets are not fetched.
+  Dropped strikethrough/link behavior retains only its inert enclosed text.
 
 ### T3. Filesystem abuse and source integrity
 
@@ -128,6 +145,16 @@ inherit these controls automatically.
 - A destination that equals or aliases an input (including an existing hard
   link) is refused, including under overwrite. Inputs are never intentional
   in-place targets.
+- CLI Markdown images must resolve beneath the Markdown file's directory; API
+  images must match distinct sanitized sibling-upload basenames. Remote/data/
+  file/UNC/absolute, query-bearing, traversing, missing, or reparse-point paths
+  are refused. Every referenced image is an explicit pipeline input, so byte
+  and output-alias checks include it. Images are copied through pinned,
+  identity-checked handles to neutral private snapshots, signature-checked
+  again, then decoded and written—not linked—to neutral PNG names. EXIF
+  orientation is applied, then source metadata/text/profile chunks are removed.
+  Workspace entries are checked
+  for links/junctions immediately before and after Typst.
 - On Windows, lexical validation distinguishes local `\\?\C:\...` paths from
   extended UNC, rejects `\\.\` and unsupported device namespaces, NTFS ADS,
   reserved device components (including extensions), and trailing-dot/space
@@ -153,9 +180,24 @@ inherit these controls automatically.
   an API worker stay in its validated worker group so the outer supervisor owns
   their descendants. Timeout, `KeyboardInterrupt`, and other cancellation paths
   terminate the applicable tree/group, with a direct-kill fallback.
-- These controls reduce command injection, executable hijacking, leakage, and
-  orphaning. They do not make a user-installed binary trustworthy. None of the
-  currently implemented conversion operations requires an optional executable.
+- `md-to-pdf` is the first implemented operation requiring an optional
+  executable. Its Typst adapter requires a parseable version ≥0.15.1. Typst runs
+  with an argv list, a private absolute working directory and project root,
+  neutral source/output/asset names, one job, a hard remaining-job timeout,
+  bounded diagnostics, workspace-local HOME/TEMP/package paths, and an exact
+  post-run dependency-manifest audit. Generated source forbids imports, reads,
+  includes, plugins, eval, and preview packages; package/cache directories must
+  remain empty. Compiler failures expose only a generic exit status because
+  diagnostics can repeat document lines.
+- Disabling the general job timeout does not disable the external-process
+  safety bound: Typst still receives a 600-second ceiling.
+- Typst's `--root` is defense in depth, not a filesystem sandbox: 0.15.1 blocks
+  lexical traversal but follows a Windows junction inside the root. The primary
+  controls are inert string generation, application-created regular workspace
+  files, reparse checks, asset decoding/copying, and exact dependency auditing.
+  Typst also has no native offline flag. These controls reduce command
+  injection, executable hijacking, leakage, and orphaning; they do not make a
+  user-installed binary trustworthy or deny its OS authority/network access.
 
 ### T5. Sensitive-data leakage
 
@@ -186,6 +228,11 @@ inherit these controls automatically.
   warning codes but never per-page text. On Windows, stdout/console encoding is
   not a fidelity boundary: the CLI prints only its report there, while the
   artifact is written explicitly as UTF-8.
+- `md-to-pdf` reports only paper/margin/TOC, source-line and image counts,
+  construct names/line numbers, font policy, and engine/version. It omits source
+  text, link destinations, asset source paths from operation details, generated
+  Typst, and raw tool diagnostics. The ordinary CLI artifact list still names
+  user-selected inputs/outputs as documented; API reports basename-scrub them.
 - Admission precedes multipart parsing. API transport uses a random contained
   `.transport-*` directory beneath the private session and is aggregate-bounded
   by the upload, enabled input, and enabled temporary-byte ceilings. Handles and
@@ -234,6 +281,11 @@ inherit these controls automatically.
   grandchildren. Tests exercise a spawned Python grandchild. This is test
   instrumentation and defense in depth, not an OS network sandbox; native code
   and non-Python children can bypass it.
+- The Typst child is native and therefore outside the Python socket guard.
+  Package/import syntax is structurally absent, package/cache directories and
+  dependencies are audited, and Markdown images cannot be remote. These prevent
+  the supported document subset from requesting network resources, but only an
+  OS firewall/container can enforce outbound denial against the executable.
 - Network-path recognition is lexical plus Windows `GetDriveTypeW`. On POSIX,
   a remote filesystem mounted at an ordinary path is indistinguishable from a
   local filesystem to this application. Strict mode also cannot prevent a
@@ -277,8 +329,7 @@ inherit these controls automatically.
 
 ### T8. Unavailable security-sensitive capabilities
 
-Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF, and
-Markdown-to-PDF conversion,
+Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
 PDF/A or PDF/UA validation/conversion, form editing, encryption/protection
 tools, secure redaction, signatures, compare, scanner/camera acquisition, and
 a full browser job UI are unavailable. UI capability lists and `ldf doctor`
@@ -306,6 +357,10 @@ refused, never approximated.
   preserved rather than silently repaired; tables remain flattened. Stable
   warnings expose detected uncertainty, but detection is conservative and the
   absence of a warning is not a correctness guarantee.
+- Markdown rendering supports a deliberate subset, not browser-compatible
+  Markdown/HTML/CSS. Unsupported constructs are detectable only to the parser's
+  bounded rules; system-font fallback can alter wrapping, and escaped content
+  can still contain misleading links or instructions in the visible PDF.
 - Multi-output publication and cleanup have handled-failure recovery but cannot
   be made crash-transactional or forensically erasing at application level.
 - Strict-offline is an application policy with platform-specific path
@@ -316,8 +371,9 @@ refused, never approximated.
 - Linux and macOS hardening gates were not run; portable implementation and CI
   configuration are not evidence that either platform passed.
 - Optional external tools are user-installed and must be reviewed by exact
-  binary/version before enablement. Their diagnostic license labels are not
-  provenance evidence.
+  binary/version before enablement. Typst 0.15.1 is the reviewed enabled engine;
+  its executable remains outside the Python-profile SBOM. Diagnostic license
+  labels are not provenance evidence.
 - The dated advisory/license review is not a safety verdict: OpenJPEG 2.5.4 is
   affected, PDFium provenance cannot be mapped authoritatively to fixes, and
   the native inventory identifies incomplete/unversioned bundled subcomponents.

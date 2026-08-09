@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from functools import cache
 
 from localdocforge.domain.models import EngineInfo, EngineKind
@@ -21,6 +22,7 @@ OP_COMPRESS = "compress"
 OP_RENDER = "render"
 OP_PDF_TO_IMAGES = "pdf-to-images"
 OP_PDF_TO_MD = "pdf-to-md"
+OP_MD_TO_PDF = "md-to-pdf"
 OP_IMAGES_TO_PDF = "images-to-pdf"
 OP_CONVERT_IMAGES = "convert-images"
 
@@ -207,9 +209,12 @@ class PiHeifEngine(EngineAdapter):
 
 
 class ExternalToolEngine(EngineAdapter):
-    """Adapter for an optional external executable, probe-only until its
-    operations are implemented. Probing runs ``<tool> --version`` under the
-    hardened subprocess runner."""
+    """Adapter for an optional external executable.
+
+    Operations remain empty until a tested pipeline is wired. Probing runs
+    ``<tool> --version`` through the hardened runner and can enforce a minimum
+    semantic version without adding a packaging dependency.
+    """
 
     def __init__(
         self,
@@ -220,6 +225,7 @@ class ExternalToolEngine(EngineAdapter):
         install_hint_windows: str,
         operations: frozenset[str] = frozenset(),
         version_line: int = 0,
+        minimum_version: tuple[int, int, int] | None = None,
     ) -> None:
         self.name = name
         self._version_args = version_args
@@ -227,6 +233,7 @@ class ExternalToolEngine(EngineAdapter):
         self._install_hint = install_hint_windows
         self._operations = operations
         self._version_line = version_line
+        self._minimum_version = minimum_version
         self._probe_cache: EngineInfo | None = None
 
     def probe(self) -> EngineInfo:
@@ -250,15 +257,36 @@ class ExternalToolEngine(EngineAdapter):
                 result = run_tool(self.name, self._version_args, timeout=20.0)
                 lines = [line.strip() for line in result.output.splitlines() if line.strip()]
                 version = lines[self._version_line] if lines else None
+                version_match = re.search(
+                    r"(?<!\d)(\d+)\.(\d+)(?:\.(\d+))?",
+                    version or "",
+                )
+                parsed_version = (
+                    tuple(int(part or 0) for part in version_match.groups())
+                    if version_match is not None
+                    else None
+                )
+                minimum_ok = self._minimum_version is None or (
+                    parsed_version is not None and parsed_version >= self._minimum_version
+                )
+                if result.returncode != 0:
+                    notes = "version probe failed"
+                elif not minimum_ok:
+                    required = ".".join(str(part) for part in self._minimum_version or ())
+                    notes = f"requires version >= {required}; detected {version or 'unknown'}"
+                else:
+                    notes = ""
                 info = EngineInfo(
                     name=self.name,
                     kind=EngineKind.EXECUTABLE,
-                    available=result.returncode == 0,
+                    available=result.returncode == 0 and minimum_ok,
                     version=version,
                     path=path,
                     license=self._license,
-                    notes="" if result.returncode == 0 else "version probe failed",
-                    install_hint="" if result.returncode == 0 else self._install_hint,
+                    notes=notes,
+                    install_hint=(
+                        "" if result.returncode == 0 and minimum_ok else self._install_hint
+                    ),
                 )
             except (ToolError, ToolTimeout) as exc:
                 info = EngineInfo(
@@ -325,6 +353,8 @@ def build_external_engines() -> list[ExternalToolEngine]:
             version_args=["--version"],
             license_name="Apache-2.0",
             install_hint_windows="winget install Typst.Typst",
+            operations=frozenset({OP_MD_TO_PDF}),
+            minimum_version=(0, 15, 1),
         ),
         ExternalToolEngine(
             "verapdf",

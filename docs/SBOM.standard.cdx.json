@@ -803,7 +803,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "User documents are not parsed as Markdown; only application-controlled CLI presentation uses this dependency."
+          "value": "Attacker-controlled Markdown reaches this parser through md-to-pdf. The CommonMark parser enables only the built-in table rule; linkify and plugin extras are excluded, raw HTML is dropped by the conversion boundary, and execution remains inside the bounded job pipeline."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -811,11 +811,11 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Keep the hash lock and repeat review before enabling attacker-controlled Markdown input or rendering."
+          "value": "Keep the direct floor at markdown-it-py>=4.2 and the exact hash lock current; retain input, nesting, memory, worker, and timeout limits; do not enable linkify or third-party parser plugins without a fresh closure and security review."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
-          "value": "2026-07-19"
+          "value": "2026-08-09"
         },
         {
           "name": "localdocforge:componentKind",
@@ -824,6 +824,10 @@
         {
           "name": "localdocforge:licenseConclusion",
           "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed wheel metadata reports markdown-it-py 4.2.0 with sole mandatory dependency mdurl~=0.1 and preserves MIT files licenses/LICENSE (SHA-256 4a2260d6e2cd0f5a151a1e86dbfe7d3ed552b1e2beabf9941c1ba5c49cbce484) and licenses/LICENSE.markdown-it (SHA-256 792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473)."
         },
         {
           "name": "localdocforge:licenseVerification",
@@ -851,11 +855,11 @@
         },
         {
           "name": "localdocforge:residualRisk",
-          "value": "Future rendering of attacker-controlled Markdown would materially change reachability."
+          "value": "A crafted document can still trigger unpublished parser complexity or memory defects; safe PDF output additionally depends on complete token-to-Typst escaping and subprocess containment."
         },
         {
           "name": "localdocforge:role",
-          "value": "Rich Markdown rendering dependency for local CLI presentation; user-document Markdown input/rendering and Markdown-to-PDF are not enabled."
+          "value": "Direct parser for attacker-controlled Markdown in the Markdown-to-PDF pipeline; also retained transitively by Rich for local CLI presentation."
         }
       ],
       "purl": "pkg:pypi/markdown-it-py@4.2.0",
@@ -889,7 +893,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "No untrusted document URL is routed to mdurl in current capabilities."
+          "value": "Explicit link destinations from attacker-controlled Markdown can reach mdurl through markdown-it-py. LocalDocForge emits link text and destinations into escaped Typst output but does not dereference ordinary links or enable fuzzy-link discovery."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -897,11 +901,11 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Preserve both MIT notices and repeat review before enabling Markdown input."
+          "value": "Keep mdurl in the exact hash lock, preserve its combined MIT notice, validate and bound hostile destinations, reject unsupported schemes, and repeat exact-version review on upgrade."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
-          "value": "2026-07-19"
+          "value": "2026-08-09"
         },
         {
           "name": "localdocforge:componentKind",
@@ -910,6 +914,10 @@
         {
           "name": "localdocforge:licenseConclusion",
           "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed wheel metadata reports mdurl 0.1.2 with no mandatory dependencies and preserves its combined MIT notice (SHA-256 7c605df6e28667a9603118e98274f64a49ce3eed0d26fccce9534a345e0ef955)."
         },
         {
           "name": "localdocforge:licenseVerification",
@@ -937,11 +945,11 @@
         },
         {
           "name": "localdocforge:residualRisk",
-          "value": "URL normalization issues become relevant if attacker-controlled Markdown is later enabled."
+          "value": "Crafted URL normalization may still consume disproportionate resources or produce surprising destination semantics even though the conversion does not fetch ordinary links."
         },
         {
           "name": "localdocforge:role",
-          "value": "URL parser used by markdown-it-py; user-document Markdown input/rendering and Markdown-to-PDF are disabled."
+          "value": "URL normalizer used by markdown-it-py for attacker-controlled Markdown link destinations in the Markdown-to-PDF pipeline."
         }
       ],
       "purl": "pkg:pypi/mdurl@0.1.2",
@@ -5311,6 +5319,7 @@
     {
       "dependsOn": [
         "pkg:pypi/fastapi@0.139.2",
+        "pkg:pypi/markdown-it-py@4.2.0",
         "pkg:pypi/pi-heif@1.4.0",
         "pkg:pypi/pikepdf@10.10.0",
         "pkg:pypi/pillow@12.3.0",
@@ -5544,7 +5553,7 @@
       },
       {
         "name": "localdocforge:advisoryAmendedDate",
-        "value": "2026-08-08"
+        "value": "2026-08-09"
       },
       {
         "name": "localdocforge:advisoryReport",
@@ -5552,7 +5561,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "82917de4debf9a9e9a1c99c4ec0526938ef174c7e7c3e99c9b8f5248aa9488a2"
+        "value": "4708fc09fbbcaaeed5edf329cb8110ce26ec43f18eb2ce3b299039a217422fd2"
       },
       {
         "name": "localdocforge:advisoryReview",
@@ -5579,7 +5588,7 @@
         "value": "This universal-profile SBOM uses Windows x86-64 / CPython 3.14 evidence for every native component. It does not claim the same native composition on Linux or macOS; every other target wheel requires equivalent re-inventory."
       }
     ],
-    "timestamp": "2026-08-08T00:00:00Z",
+    "timestamp": "2026-08-09T00:00:00Z",
     "tools": {
       "components": [
         {

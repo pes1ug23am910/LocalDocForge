@@ -4,7 +4,7 @@ The one-document consolidation of how LocalDocForge works, subsystem by
 subsystem, with the concrete constants, contracts, and invariants that the
 per-topic documents explain in prose. Written 2026-08-03 against the code as
 shipped (407-test suite and full release gate passing that day), with the S4
-PDF text-extraction surface updated on 2026-08-09. Where a
+PDF text-extraction and S6 Markdown-rendering surfaces updated on 2026-08-09. Where a
 per-topic document is the authority, it is linked; when this file and the code
 disagree, the code and its tests win.
 
@@ -154,7 +154,7 @@ them). `probe()` uses this runner for `<tool> --version`.
 - `EngineAdapter.probe() -> EngineInfo` must return unavailability instead of
   raising; probes are cached per process. `supported_operations()` declares
   operation ids (`OP_MERGE` … `OP_COMPRESS`, `OP_RENDER`,
-  `OP_PDF_TO_IMAGES`, `OP_PDF_TO_MD`, `OP_IMAGES_TO_PDF`).
+  `OP_PDF_TO_IMAGES`, `OP_PDF_TO_MD`, `OP_MD_TO_PDF`, `OP_IMAGES_TO_PDF`).
 - `EngineRegistry.engine_for(operation, preferred=None)` returns the first
   available supporting engine or raises `EngineUnavailableError` with install
   hints; a `preferred` engine must both support the operation and probe
@@ -164,18 +164,19 @@ them). `probe()` uses this runner for `<tool> --version`.
   requires the pipeline + tests in the same change
   (`tests/unit/test_registry.py` enforces the honest set). Doctor, the API
   `/api/capabilities`, and the status page all read this one registry.
-- An installed executable never lights a feature: external adapters keep
-  `supported_operations()` empty until a pipeline lands (e.g., Typst probes
-  available while Markdown→PDF stays unavailable).
+- An installed executable never lights a feature by itself. Typst now declares
+  only `OP_MD_TO_PDF`, requires a parseable version ≥0.15.1, and still needs the
+  matching implemented registry spec before the capability can be available.
 
 ## 7. The pipeline lifecycle (`pipelines/runner.py`)
 
 Every operation runs the same eight steps (authoritative prose:
 `docs/ARCHITECTURE.md`):
 
-1. **Inputs**: strict-offline network-path refusal → signature sniff →
-   cumulative `max_input_bytes` → best-effort page counts (re-counted after
-   password opening so encryption cannot bypass the page cap).
+1. **Inputs**: strict-offline network-path refusal → signature sniff (or the
+   explicit `.md`/`.markdown` + full strict-UTF-8/NUL-free boundary) → cumulative
+   `max_input_bytes` → best-effort page counts (re-counted after password
+   opening so encryption cannot bypass the page cap).
 2. **Workspace**: private `ldf-job-<uuid>`; `JobContext` carries limits +
    cancellation.
 3. **Execute**: the operation writes candidates only inside the workspace and
@@ -220,6 +221,7 @@ Failures raise `PipelineError` with the failed report attached
 | images-to-pdf | Pillow | multipage-TIFF aware, EXIF orientation honored; fixed page sizes composed on a raster canvas at `dpi` (36–600), `fit`/`stretch`/`center`, alpha flattened onto `background`; `image` page size keeps the pixel grid; photographs pass one JPEG generation (`images-reencoded` info) |
 | pdf-to-images | PDFium | 18–1200 dpi, PNG/JPEG/WebP/TIFF, page ranges; incremental pixel/byte limit checks; syntax-damaged inputs refused |
 | pdf-to-md | PDFium text API | Streams selected occurrences one page at a time; UTF-8/LF + NFC; Markdown `<!-- ldf:page N -->`, TXT `--- ldf:page N ---` (or form-feed without anchors), or exact-schema JSONL. Top-to-bottom/left-to-right ordering and font-size headings are heuristics; no bidi repair or silent dehyphenation. Per-page raw-character/memory preflight, 50,000-rectangle fallback, and bounded 4,096-object/15-level/512-ruling scans prevent unbounded layout work. Coverage/warning metadata only in reports |
+| md-to-pdf | markdown-it-py + Typst ≥0.15.1 | Strict-UTF-8 CommonMark subset with GFM tables; known tokens become application-controlled Typst function calls and all untrusted values use a punctuation/control-escaping string serializer. A4/Letter/Legal, finite margin, optional outline/TOC. Preprocessing is capped at min(16 MiB, input bytes, memory/512, temporary/64), 100k lines, 250k tokens, and 256 image occurrences; detailed drops cap at 256 plus a summary. Relative contained raster images are signature-checked additional inputs, single-frame decoded, metadata-stripped, and normalized to neutral PNGs. Typst runs through the hardened subprocess runner with private root/home/temp/package paths, hard remaining-job timeout, bounded hidden diagnostics, static generated-source audit, empty-package and exact dependency-manifest checks. Post-compile `max_pages` plus full standard PDF validation apply. Unsupported constructs emit `markdown-construct-dropped`; font fallback emits `system-font-dependent` |
 
 ### 8.1 Fidelity and security warning model
 
@@ -260,6 +262,10 @@ report never embeds extracted text.
 
 Directory monitors are sampled (50 ms cadence) and can overshoot between
 samples; none of this is a filesystem quota or sandbox.
+
+`md-to-pdf` adds operation-specific preprocessing ceilings described in §8.
+If `timeout_seconds=None`, the general job clock is disabled but the external
+Typst child still receives a non-disableable 600-second safety ceiling.
 
 PDF text extraction checks selection length against `max_pages`, writes and
 accounts output incrementally, and releases each PDFium page before advancing;

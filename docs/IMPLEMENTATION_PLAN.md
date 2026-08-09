@@ -44,8 +44,12 @@ Live progress: `docs/STATUS.md`. Honest capability state: `docs/FEATURE_MATRIX.m
   heuristics, and stable uncertainty warnings. Structured table extraction,
   richer semantic/layout reconstruction, RAG/archival bundles, and a review UI
   remain pending.
-- Markdown→PDF remains pending (Typst present on this machine is the candidate
-  renderer; WeasyPrint fallback to evaluate).
+- ✅ Markdown→PDF via Typst 0.15.1+: strict-UTF-8 CommonMark subset plus GFM
+  tables, A4/Letter/Legal and margin/TOC controls, contained local raster
+  images, context-safe text escaping, honest dropped-construct/source-line
+  warnings, hard tool timeout, dependency/package audit, and standard full-PDF
+  validation. Richer themes, math, footnotes, raw HTML, remote assets, and a
+  WeasyPrint fallback remain future work.
 
 ### Phase 4 — Editing, forms, security features
 - Visual editor (overlay vs existing-content honesty), AcroForm workflows,
