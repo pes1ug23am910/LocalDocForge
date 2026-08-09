@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S6 currency-dollar F1 remediation handoff; definitive
-Windows-AMD64 gate passed on the clean 616-outcome remediation tree).
+Last updated: 2026-08-10 (S5 opt-in PDF-to-Markdown table reconstruction;
+definitive Windows-AMD64 gate passed on clean 639-outcome revision `073b7b3`).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,8 +20,8 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (616 outcomes as of
-2026-08-09) normally and with Python DNS/non-loopback sockets denied,
+SBOM/notices drift, the complete collected test suite (639 outcomes as of
+2026-08-10) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
 result applies only to the recorded OS, architecture, and interpreter.
@@ -572,6 +572,64 @@ result applies only to the recorded OS, architecture, and interpreter.
   `source.working_tree_changes: false`. Disposable outputs were removed;
   retained `dist/` and `packaging-evidence/` were not modified.
 
+## Executed evidence — 2026-08-10 (`pdf-to-md` tables via pdfplumber, S5)
+
+- `PdfToMdOptions(tables=True)`, CLI `--tables`, and strict API `tables=true`
+  now opt into Markdown-only table reconstruction; the default path is
+  unchanged. TXT/JSONL requests reject the option before publication rather
+  than silently ignoring a GFM-only feature.
+- Only explicit horizontal/vertical line grids can become GFM pipe tables. The
+  first physical row is the inferred header; cell backslashes and pipes are
+  escaped and embedded line breaks become `<br>`. Borderless alignment,
+  merged/spanning cells, rotated/incompatible geometry, overlapping regions,
+  partial text overlaps, parser failures, and cross-engine text disagreement
+  remain flowed PDFium text with `tables-flattened` rather than plausible-looking
+  bad structure. Accepted tables carry `table-fidelity-best-effort`.
+- Accepted regions have exactly one text owner: pdfplumber supplies cell text
+  inside, while PDFium supplies all ordinary regions. Reports contain only
+  request/engine status, emitted/flattened counters, coverage, and stable
+  warnings—never extracted cell/prose text or raw parser diagnostics.
+- Work is refused before pdfplumber's non-preemptible table finder above 8,192
+  PDF path segments, 1,024 edges, or 4,096 vertical×horizontal pairs. Further
+  ceilings are 32 detected tables, 4,096 cells, and min(4 MiB, remaining output,
+  memory/64) normalized table text per page. Dense-vector, malformed-parser,
+  duplicate-page, mixed-column, overlap, and disagreement regressions exercise
+  the fallback and cleanup paths.
+- The dependency closure adds reviewed `pdfplumber==0.11.10` and
+  `pdfminer.six==20260107`. Because the global cutoff selected affected
+  cryptography 49.0.0, explicit user approval added direct
+  `cryptography>=50.0.0`, a cryptography-only 2026-08-01 cutoff, and exactly the
+  two corresponding release-gate allowlist entries. The affected PKCS#7 API is
+  not called by pdfminer.six, but the published package no longer permits a
+  known-affected distribution.
+- The 2026-08-10 advisory refresh inventories 36 runtime Python records, 52
+  versioned native records, and 19 version-unknown children. The cryptography
+  supplier boundary retains its aggregate, all 32 `scope=required` Cargo
+  children, and OpenSSL 4.0.1; seven supplier-excluded build dependencies and a
+  duplicate target stay outside runtime counts. CFFI's libffi child remains
+  advisory-unknown. The pre-existing unflattened pydantic-core Cargo SBOM is
+  disclosed, so CycloneDX composition remains honestly `incomplete`.
+- Real source/GFM/Typst-round-trip render inspection found the ruled table
+  readable and correctly ordered. Before the manifest refresh, the settled
+  suite collected 639 outcomes and passed 636 with three documented platform
+  skips; Ruff, mypy over 35 source files, lock drift, generated artifacts, and
+  release-artifact/packaging contracts are clean. Retained `dist/` and
+  `packaging-evidence/` remain untouched.
+- A 29.066-second disposable build-only gate reproduced two direct builds and
+  the sdist-to-wheel build, then refreshed the live Windows-AMD64 manifest to
+  source `66e25069…`, wheel `7076cabd…` (145,443 bytes), and sdist
+  `0ad3304e…` (132,183 bytes). The temporary output was removed; retained
+  artifacts/evidence remain untouched.
+- The subsequent 485.3-second clean-tree verify-mode gate at implementation
+  commit `073b7b32812ad08af86eed261dbaf776bb6a92bd` reproduced that identity;
+  passed native/Linux/macOS mypy, both 639-outcome suite modes, reproducible
+  builds, and every Base/Lite/Standard/Full source/wheel profile; and recorded
+  `release_manifest_verified: true`, `source_install_syntax_tested: true`,
+  `full_tests.status: passed`, and `source.working_tree_changes: false`.
+  Disposable evidence SHA-256 was
+  `9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
+  its temporary directory was removed and retained evidence stayed untouched.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -633,9 +691,10 @@ result applies only to the recorded OS, architecture, and interpreter.
   517 backend is `setuptools==83.0.0`, authenticated against official PyPI
   hashes, downloaded into a one-use wheelhouse, and installed by isolated builds
   with the wheelhouse forced offline; build isolation was not weakened.
-- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 29 runtime
-  Python components, 16 versioned bundled-native components, and 18 separately
-  enumerated version-unknown children.
+- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 36 unique
+  runtime Python components (27 Lite / 35 Standard / 36 Full), 52 versioned
+  bundled-native components, and 19 separately enumerated version-unknown
+  children. Profile totals are 98 / 106 / 107 components.
 - The base advisory/license review date is 2026-07-19. A 2026-07-20 OSV refresh
   returned no matches for 29 exact PyPI queries and one match among 16 versioned
   native queries: OpenJPEG 2.5.4 / `OSV-2025-219`. Empty results are not safety
@@ -652,7 +711,7 @@ are closed. Release remains blocked by:
    and — since 2026-08-08 — affected bundled libheif 1.23.0 (OSS-Fuzz
    OSV-2020-2308 and OSV-2023-1129, no fixed release enumerated), which
    untrusted HEIC inputs reach by design of the HEIF input feature;
-2. advisory-unknown PDFium 152.0.7947.0 and 18 unversioned native children;
+2. advisory-unknown PDFium 152.0.7947.0 and 19 unversioned native children;
 3. no complete Windows OS-enforced outbound-plus-DNS denial result;
 4. partially closed on 2026-08-03 by the first executed CI runs (see the
    dated evidence section): the Ubuntu runner passed the complete release
@@ -676,9 +735,10 @@ every other. The 2026-08-08 convert-images slice followed the same golden
 path: iPhone HEIC/HEIF input (decode-only via pi-heif) for image conversion
 and images-to-pdf, with an `llm` preset producing AI-assistant-ready JPEGs
 and privacy-default GPS/EXIF stripping. Phase 3's core PDF text-extraction path
-now ships as `pdf-to-md`, and its bounded Markdown rendering path ships as
-`md-to-pdf` when Typst ≥0.15.1 is available; semantic/table reconstruction
-remains future work.
+now ships as `pdf-to-md`, including opt-in conservative explicit-line GFM table
+reconstruction through pdfplumber. Its bounded Markdown rendering path ships as
+`md-to-pdf` when Typst ≥0.15.1 is available; borderless/merged-cell and broader
+semantic reconstruction remain future work.
 Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
 PDF/A/PDF/UA, editing/forms,
 protection, secure redaction, signatures, compare, scanner/camera

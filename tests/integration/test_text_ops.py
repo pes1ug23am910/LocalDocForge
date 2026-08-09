@@ -23,6 +23,7 @@ WARNING_CODES = frozenset(
         "no-text-layer",
         "headings-inferred",
         "reading-order-uncertain",
+        "table-fidelity-best-effort",
         "tables-flattened",
     }
 )
@@ -321,6 +322,427 @@ def test_layout_heuristics_emit_stable_labeled_warnings(
     assert "heuristic" in warning.message.lower()
     coverage = _assert_coverage_shape(report)
     assert expected_code in coverage["per_page"][0]["warning_codes"]
+
+
+def test_ruled_table_default_remains_flowed_text(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "ruled-default.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-ruled-table.pdf",
+        output,
+        options=_options(tmp_path),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert "| --- |" not in extracted
+    assert "TABLE-MIXED-BEFORE" in extracted
+    assert "TABLE-MIXED-AFTER" in extracted
+    assert "tables-flattened" in _warning_codes(report)
+    assert "table-fidelity-best-effort" not in _warning_codes(report)
+    assert report.details["tables"] == {
+        "requested": False,
+        "engine_status": "not-requested",
+        "emitted": 0,
+        "flattened_candidates": 1,
+    }
+
+
+def test_ruled_mixed_table_opt_in_is_gfm_unique_and_deterministic(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    source = fixtures_dir / "text-ruled-table.pdf"
+    first = out_dir / "ruled-first.md"
+    second = out_dir / "ruled-second.md"
+
+    first_report = pdf_to_md(source, first, options=_options(tmp_path, tables=True))
+    second_report = pdf_to_md(source, second, options=_options(tmp_path, tables=True))
+
+    assert first.read_bytes() == second.read_bytes()
+    extracted = first.read_text(encoding="utf-8")
+    table = (
+        "| Quarter | Units | Revenue |\n"
+        "| --- | --- | --- |\n"
+        "| Q1 | 10 | 100 |\n"
+        "| Q2 | 20 | 200 |\n"
+        "| Q3 | 30 | 300 |"
+    )
+    assert table in extracted
+    assert extracted.index("TABLE-MIXED-BEFORE") < extracted.index(table)
+    assert extracted.index(table) < extracted.index("TABLE-MIXED-AFTER")
+    for marker in ("Q1", "Q2", "Q3", "TABLE-MIXED-BEFORE", "TABLE-MIXED-AFTER"):
+        assert extracted.count(marker) == 1
+    assert "table-fidelity-best-effort" in _warning_codes(first_report)
+    assert "tables-flattened" not in _warning_codes(first_report)
+    assert first_report.details["tables"] == {
+        "requested": True,
+        "engine_status": "available",
+        "emitted": 1,
+        "flattened_candidates": 0,
+    }
+    serialized_report = first_report.model_dump_json()
+    assert "TABLE-MIXED-BEFORE" not in serialized_report
+    assert "Quarter" not in serialized_report
+    assert first_report.details["coverage"] == second_report.details["coverage"]
+    assert [
+        (warning.code, warning.message) for warning in first_report.fidelity_warnings
+    ] == [
+        (warning.code, warning.message) for warning in second_report.fidelity_warnings
+    ]
+
+
+def test_ruled_table_duplicate_page_selection_preserves_occurrences(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "ruled-duplicate.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-ruled-table.pdf",
+        output,
+        options=_options(tmp_path, tables=True, pages=PageRange(spec="1,1")),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert _anchor_pages(extracted) == [1, 1]
+    assert extracted.count("| Quarter | Units | Revenue |") == 2
+    assert extracted.count("TABLE-MIXED-BEFORE") == 2
+    assert report.details["tables"] == {
+        "requested": True,
+        "engine_status": "available",
+        "emitted": 2,
+        "flattened_candidates": 0,
+    }
+    warning = next(
+        item for item in report.fidelity_warnings if item.code == "table-fidelity-best-effort"
+    )
+    assert warning.message.startswith("2 table(s)")
+
+
+def test_accepted_table_does_not_hide_unrelated_column_order_warning(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "table-plus-columns.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-table-plus-columns.pdf",
+        output,
+        options=_options(tmp_path, tables=True),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert "| Quarter | Units | Revenue |" in extracted
+    for row in range(1, 4):
+        assert extracted.count(f"OUTSIDE-LEFT-{row}") == 1
+        assert extracted.count(f"OUTSIDE-RIGHT-{row}") == 1
+    assert "table-fidelity-best-effort" in _warning_codes(report)
+    assert "reading-order-uncertain" in _warning_codes(report)
+    assert "tables-flattened" not in _warning_codes(report)
+
+
+def test_borderless_table_opt_in_flattens_with_warning(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "borderless.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-borderless-table.pdf",
+        output,
+        options=_options(tmp_path, tables=True),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert "| --- |" not in extracted
+    for marker in (
+        "BORDERLESS-BEFORE",
+        "Region",
+        "North",
+        "South",
+        "West",
+        "BORDERLESS-AFTER",
+    ):
+        assert extracted.count(marker) == 1
+    assert "tables-flattened" in _warning_codes(report)
+    assert "table-fidelity-best-effort" not in _warning_codes(report)
+
+
+def test_merged_table_is_rejected_not_plausibly_broken(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "merged.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-merged-table.pdf",
+        output,
+        options=_options(tmp_path, tables=True),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert "| --- |" not in extracted
+    for marker in ("MERGED-SPANNING-HEADER", "M1", "M2", "M3", "MERGED-AFTER"):
+        assert extracted.count(marker) == 1
+    assert "tables-flattened" in _warning_codes(report)
+    assert "table-fidelity-best-effort" not in _warning_codes(report)
+
+
+def test_dense_vector_page_skips_quadratic_table_finder(
+    fixtures_dir: Path,
+    out_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pdfplumber.page
+
+    def unexpected_find_tables(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("dense-vector preflight must skip pdfplumber.find_tables")
+
+    monkeypatch.setattr(pdfplumber.page.Page, "find_tables", unexpected_find_tables)
+    output = out_dir / "dense.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-dense-vector-table.pdf",
+        output,
+        options=_options(tmp_path, tables=True),
+    )
+
+    assert "DENSE-VECTOR-TABLE-MARKER" in output.read_text(encoding="utf-8")
+    assert "tables-flattened" in _warning_codes(report)
+    assert report.details["tables"]["emitted"] == 0
+
+
+def test_table_parser_failure_falls_back_without_diagnostic_leak(
+    fixtures_dir: Path,
+    out_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pdfplumber.page
+
+    secret = "PARSER-DIAGNOSTIC-SECRET"
+
+    def fail_find_tables(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError(secret)
+
+    monkeypatch.setattr(pdfplumber.page.Page, "find_tables", fail_find_tables)
+    output = out_dir / "parser-fallback.md"
+    report = pdf_to_md(
+        fixtures_dir / "text-ruled-table.pdf",
+        output,
+        options=_options(tmp_path, tables=True),
+    )
+
+    extracted = output.read_text(encoding="utf-8")
+    assert "| --- |" not in extracted
+    assert "TABLE-MIXED-BEFORE" in extracted
+    assert "tables-flattened" in _warning_codes(report)
+    assert secret not in report.model_dump_json()
+
+
+def test_malformed_pdfplumber_page_bbox_falls_back() -> None:
+    class MalformedPage:
+        bbox = (10**10_000, 0, 1, 1)
+
+    result = text_ops._extract_markdown_tables(  # noqa: SLF001
+        MalformedPage(),
+        page_box=(0.0, 0.0, 100.0, 100.0),
+        rotated=False,
+        object_scan=text_ops._ObjectScan(  # noqa: SLF001
+            has_text_object=True,
+            ruled_table=True,
+            truncated=False,
+        ),
+        possible_unruled_table=False,
+        byte_limit=None,
+        memory_limit=None,
+        check_cancelled=None,
+    )
+
+    assert result.tables == ()
+    assert result.flattened_candidates == 1
+
+
+def test_excess_table_candidates_report_the_known_refusal_count() -> None:
+    class ExcessTablesPage:
+        bbox = (0.0, 0.0, 100.0, 100.0)
+        edges = [
+            {"orientation": "v"},
+            {"orientation": "v"},
+            {"orientation": "v"},
+            {"orientation": "h"},
+            {"orientation": "h"},
+            {"orientation": "h"},
+        ]
+
+        def find_tables(self, _settings: object) -> list[object]:
+            return [object() for _ in range(33)]
+
+    result = text_ops._extract_markdown_tables(  # noqa: SLF001
+        ExcessTablesPage(),
+        page_box=(0.0, 0.0, 100.0, 100.0),
+        rotated=False,
+        object_scan=text_ops._ObjectScan(  # noqa: SLF001
+            has_text_object=True,
+            ruled_table=True,
+            truncated=False,
+        ),
+        possible_unruled_table=False,
+        byte_limit=None,
+        memory_limit=None,
+        check_cancelled=None,
+    )
+
+    assert result.tables == ()
+    assert result.flattened_candidates == 33
+
+
+def test_partial_table_boundary_overlap_rejects_region_without_text_loss() -> None:
+    fragments = [
+        text_ops._Fragment(  # noqa: SLF001
+            text="crosses-boundary",
+            left=20.0,
+            bottom=25.0,
+            right=50.0,
+            top=75.0,
+            font_size=10.0,
+            angle=0.0,
+            source_index=0,
+        ),
+        text_ops._Fragment(  # noqa: SLF001
+            text="inside",
+            left=30.0,
+            bottom=30.0,
+            right=50.0,
+            top=70.0,
+            font_size=10.0,
+            angle=0.0,
+            source_index=1,
+        ),
+    ]
+    table = text_ops._MarkdownTable(  # noqa: SLF001
+        bbox=(25.0, 25.0, 75.0, 75.0),
+        markdown="| A | B |\n| --- | --- |\n| 1 | 2 |",
+        plain_text="A\tB\n1\t2",
+        row_count=2,
+        column_count=2,
+    )
+    extraction = text_ops._TableExtraction(  # noqa: SLF001
+        tables=(table,),
+        plumber_bbox=(0.0, 0.0, 100.0, 100.0),
+    )
+
+    remaining, applied = text_ops._apply_table_regions(  # noqa: SLF001
+        fragments,
+        extraction,
+        page_box=(0.0, 0.0, 100.0, 100.0),
+    )
+
+    assert remaining == fragments
+    assert applied.tables == ()
+    assert applied.flattened_candidates == 1
+
+
+def test_cross_engine_table_text_disagreement_rejects_region() -> None:
+    fragments = [
+        text_ops._Fragment(  # noqa: SLF001
+            text="PDFIUM-DISAGREES",
+            left=30.0,
+            bottom=30.0,
+            right=60.0,
+            top=70.0,
+            font_size=10.0,
+            angle=0.0,
+            source_index=0,
+        )
+    ]
+    table = text_ops._MarkdownTable(  # noqa: SLF001
+        bbox=(25.0, 25.0, 75.0, 75.0),
+        markdown="| A | B |\n| --- | --- |\n| 1 | 2 |",
+        plain_text="A\tB\n1\t2",
+        row_count=2,
+        column_count=2,
+    )
+
+    remaining, applied = text_ops._apply_table_regions(  # noqa: SLF001
+        fragments,
+        text_ops._TableExtraction(  # noqa: SLF001
+            tables=(table,),
+            plumber_bbox=(0.0, 0.0, 100.0, 100.0),
+        ),
+        page_box=(0.0, 0.0, 100.0, 100.0),
+    )
+
+    assert remaining == fragments
+    assert applied.tables == ()
+    assert applied.flattened_candidates == 1
+
+
+def test_table_bbox_overlap_rejects_positive_area_but_allows_shared_border() -> None:
+    def table(  # noqa: SLF001
+        bbox: tuple[float, float, float, float],
+    ) -> text_ops._MarkdownTable:
+        return text_ops._MarkdownTable(  # noqa: SLF001
+            bbox=bbox,
+            markdown="| A | B |\n| --- | --- |\n| 1 | 2 |",
+            plain_text="A\tB\n1\t2",
+            row_count=2,
+            column_count=2,
+        )
+
+    first = table((0.0, 0.0, 50.0, 50.0))
+    slight_overlap = table((49.5, 49.5, 100.0, 100.0))
+    shared_border = table((50.0, 0.0, 100.0, 50.0))
+    assert text_ops._table_bboxes_overlap(first, slight_overlap)  # noqa: SLF001
+    assert not text_ops._table_bboxes_overlap(first, shared_border)  # noqa: SLF001
+
+
+def test_gfm_table_cell_escaping_is_single_cell_and_deterministic() -> None:
+    assert text_ops._escape_gfm_cell("A|B") == r"A\|B"  # noqa: SLF001
+    assert text_ops._escape_gfm_cell(r"C\D") == r"C\\D"  # noqa: SLF001
+    assert text_ops._escape_gfm_cell("first\r\nsecond") == "first<br>second"  # noqa: SLF001
+
+
+@pytest.mark.parametrize("output_format", ["txt", "jsonl"])
+def test_tables_are_refused_for_non_markdown_output(
+    output_format: str, fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / f"never.{output_format}"
+    with pytest.raises(PipelineError, match="requires Markdown"):
+        pdf_to_md(
+            fixtures_dir / "text-ruled-table.pdf",
+            output,
+            options=_options(tmp_path, output_format=output_format, tables=True),
+        )
+    assert not output.exists()
+
+
+def test_table_markup_expansion_honors_output_limit_without_publication(
+    fixtures_dir: Path, out_dir: Path, tmp_path: Path
+) -> None:
+    output = out_dir / "limited-table.md"
+    with pytest.raises(PipelineError, match="output limit"):
+        pdf_to_md(
+            fixtures_dir / "text-ruled-table.pdf",
+            output,
+            options=_options(
+                tmp_path,
+                tables=True,
+                settings=_settings(tmp_path, limits=ResourceLimits(max_output_bytes=150)),
+            ),
+        )
+    assert not output.exists()
+
+
+def test_default_path_never_opens_pdfplumber(
+    fixtures_dir: Path,
+    out_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected_open(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("default-off extraction must not open pdfplumber")
+
+    monkeypatch.setattr(text_ops, "_open_pdfplumber_document", unexpected_open)
+    output = out_dir / "default.md"
+    pdf_to_md(
+        fixtures_dir / "simple-3page.pdf",
+        output,
+        options=_options(tmp_path),
+    )
+    assert "MARKER-ALPHA-PAGE-1" in output.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("output_format", ["md", "txt"])

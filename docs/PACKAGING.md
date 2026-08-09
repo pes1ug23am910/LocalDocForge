@@ -39,7 +39,9 @@ Profiles describe shipped Python dependencies, not the feature roadmap.
 Office/HTML-to-PDF conversion, PDF/A/PDF/UA, editing, signatures, scanner
 support, external executables, or the planned React UI. PDF-to-Markdown text
 extraction and the `markdown-it-py>=4.2` side of Markdown-to-PDF are part of
-every profile. Typst ≥0.15.1 is separately installed and never bundled by these
+every profile. Opt-in PDF-to-Markdown table extraction also ships in every
+profile through `pdfplumber==0.11.10` and its locked parser/cryptography
+closure. Typst ≥0.15.1 is separately installed and never bundled by these
 profiles, so `ldf doctor` remains the live capability authority.
 
 The Windows-primary reproducible Standard install is:
@@ -80,8 +82,11 @@ SHA-256-enforced exports are:
 
 `requirements-lock.txt` is only a compatibility include for Dev. The resolver
 is pinned to uv 0.11.26. `requirements/uv-bootstrap.txt` contains hashes for
-the official PyPI uv artifacts. Resolution uses the official PyPI simple index,
-a 2026-07-19 cutoff, and no insecure/trusted-host bypass.
+the official PyPI uv artifacts. Resolution uses the official PyPI simple index
+and a 2026-07-19 global cutoff, with one package-scoped exception:
+cryptography uses 2026-08-01 so the locks can select 50.0.0, the first release
+fixing CVE-2026-69247. The exception does not move any other package's cutoff,
+and no insecure/trusted-host bypass is used.
 
 ```powershell
 .venv\Scripts\python.exe -m pip install --require-hashes `
@@ -345,6 +350,32 @@ both 616-outcome suite modes and every source/wheel profile, and recorded
 Disposable artifacts/evidence were removed after verification; retained
 artifacts/evidence remained untouched.
 
+### 2026-08-10 S5 PDF-to-Markdown table identity
+
+S5 packages the bounded opt-in pdfplumber table path, adds `pdfplumber` and the
+fixed `cryptography>=50.0.0` floor as direct base requirements, and carries the
+reviewed six-package Python closure in every profile. A 29.066-second build-only
+gate used a fresh system-temporary directory, reproduced both direct builds and
+the sdist-to-wheel build, and refreshed only the live manifest below. Retained
+`dist/` and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `66e25069bc8db079746ddc609ab07ce7162982b31e3a6bf4d42f8a5d4130cef9` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `7076cabda6baaa9a6b9bda69ccbd4533c8cb7c61e3ab5cbf2cffb652f3bedae6` | 145,443 |
+| `localdocforge-0.1.0.tar.gz` | `0ad3304e7342721bdf67b6f079c0881e3979fc865ae50042c63e4b468ab781d0` | 132,183 |
+
+The build-only refresh passed byte-identical direct builds, Twine/member/
+metadata checks, and sdist-to-wheel equivalence. A subsequent 485.3-second
+clean-tree verify-mode gate at S5 implementation commit
+`073b7b32812ad08af86eed261dbaf776bb6a92bd` reproduced the identity, passed both
+639-outcome suite modes and every source/wheel profile, and recorded
+`release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and `source.working_tree_changes: false`.
+Disposable evidence SHA-256 was
+`9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
+temporary output was removed and retained artifacts/evidence stayed untouched.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source
@@ -369,9 +400,9 @@ $python313 = & .venv\Scripts\uv.exe python find 3.13
 
 Each profile gets a fresh venv, matching hash lock, source install/import/
 uninstall, wheel install, `pip check`, `ldf doctor` plus focused core smoke, and
-wheel uninstall. The additional fresh Dev venv runs Ruff, mypy, all 390 tests,
-the same complete suite with Python DNS/non-loopback sockets denied, and
-generated-artifact drift.
+wheel uninstall. The additional fresh Dev venv runs Ruff, mypy, the complete
+collected suite (639 outcomes as of 2026-08-10), the same suite with Python
+DNS/non-loopback sockets denied, and generated-artifact drift.
 
 ## SBOMs, notices, and the complete gate
 
@@ -380,6 +411,17 @@ Profile-specific artifacts are:
 - `docs/SBOM.lite.cdx.json` / `THIRD_PARTY_NOTICES.lite.md`
 - `docs/SBOM.standard.cdx.json` / `THIRD_PARTY_NOTICES.standard.md`
 - `docs/SBOM.full.cdx.json` / `THIRD_PARTY_NOTICES.full.md`
+
+The 2026-08-10 S5 inventory contains 36 unique runtime Python records, 52
+versioned bundled-native records, and 19 enumerated version-unknown native
+children. Profile component totals are 98 Lite, 106 Standard, and 107 Full.
+Cryptography's supplier SBOM boundary retains its aggregate plus all 32
+`scope=required` Cargo children and OpenSSL 4.0.1, while excluding exactly seven
+supplier-marked build dependencies and a duplicate target record. CFFI's
+embedded libffi remains version-unknown. Composition is still explicitly
+`incomplete`: the pre-existing pydantic-core 2.46.4 embedded Cargo inventory is
+disclosed but not flattened, and other static/platform-specific children may
+exist.
 
 Regenerate/check them offline:
 
@@ -445,3 +487,11 @@ encoder package (GPLv2 wheels) is a dev-profile fixture tool only and is
 excluded from every runtime profile, SBOM, and notice. PyPI's current classifier
 list was also checked before replacing the OS-independent classifier with
 `Operating System :: Microsoft :: Windows :: Windows 11`.
+On 2026-08-10, S5 added pdfplumber 0.11.10 and its exact locked closure. The
+review constrained cryptography to 50.0.0 because 49.0.0 falls in the affected
+range for GHSA-g6cj-pr64-35w5/CVE-2026-69247, even though pdfminer.six does not
+call the affected PKCS#7 API. Exact PyPI, crates.io, OpenSSL, supplier-SBOM, and
+source-license evidence—including pdfminer.six's omitted pyHanko notice and
+MongoDB/PyMongo Apache-2.0 SASLprep attribution/terms, plus CFFI's omitted
+libffi notice—is recorded in the report's 2026-08-10 verification run. Empty
+advisory results remain time-bounded findings, not safety guarantees.

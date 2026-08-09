@@ -94,6 +94,7 @@ ldf images-to-pdf photos/*.HEIC -o photos.pdf            # iPhone HEIC input
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300 --pages odd
 ldf pdf-to-images scan.pdf -d vision/ --preset llm       # vision-ready JPEGs
 ldf pdf-to-md input.pdf -o content.md                     # Markdown (default)
+ldf pdf-to-md report.pdf -o content.md --tables           # confident ruled grids → GFM
 ldf pdf-to-md input.pdf -o content.txt --format txt --pages 1-5,9
 ldf pdf-to-md input.pdf -o content.jsonl --format jsonl
 ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
@@ -107,7 +108,7 @@ ldf convert-images big.png -d out/ --max-dimension 1024
 
 ```text
 ldf pdf-to-md INPUT.pdf -o OUTPUT [--pages RANGE]
-    [--format md|txt|jsonl] [--no-page-anchors]
+    [--format md|txt|jsonl] [--no-page-anchors] [--tables]
 ```
 
 `pdf-to-md` extracts one selected page at a time through pypdfium2/PDFium and
@@ -137,6 +138,10 @@ Formats and separators are deterministic:
   provenance marker. `page` is a positive 1-based integer, `text` is a string,
   `char_count` is a non-negative integer, and `has_text_layer` is boolean.
 
+`--tables` is opt-in, defaults off, and is valid only with `--format md`.
+Combining it with TXT or JSONL is a usage error (exit 2); those formats retain
+their exact S4 schemas and flowed-text behavior.
+
 Output order follows the shared page-range grammar, including descending,
 repeated, and reverse selections. Page numbers remain the 1-based source page
 numbers; repeated pages therefore repeat their number. Text line endings are
@@ -156,10 +161,23 @@ cannot forge provenance. JSONL preserves both strings unchanged as ordinary
 Markdown structure and reading order are **heuristics**, not semantic recovery.
 The baseline is top-to-bottom then left-to-right over PDFium text rectangles;
 font-size clustering provides heading inference. Columns, rotated/angled text,
-and RTL scripts can be ordered incorrectly. Tables are flattened into reading-
-order text in S4; conservative ruled-grid detection can warn, but absence of the
-warning is not proof that a page contains no table. The four stable fidelity
-codes are:
+and RTL scripts can be ordered incorrectly.
+
+With `--tables`, pdfplumber's explicit horizontal/vertical-line strategy may
+replace a confidently bounded rectangular region with a GFM pipe table. The
+first physical row becomes an **inferred** header; LocalDocForge does not claim
+that the PDF marked it semantically. Backslashes are doubled, pipe characters
+are escaped as `\|`, and cell newlines become `<br>` so extracted content stays
+inside its cell. PDFium remains the text source outside each accepted region;
+pdfplumber alone supplies the accepted region's cell text, so competing text
+from the two extractors is never interleaved for the same region.
+
+Borderless tables, merged/spanning cells, rotated pages, overlapping or
+coordinate-mismatched regions, dense-vector pages, parser failures, and any
+other low-confidence or over-limit candidate remain deterministic flowed text.
+When the bounded heuristics recognize such a candidate, the report warns.
+Absence of a table warning is not proof that no table exists; it means only that
+those heuristics found no evidence. The five stable fidelity codes are:
 
 - `no-text-layer` — a page has no PDF text objects; use
   `pdf-to-images --preset llm` for vision input (OCR remains unavailable).
@@ -167,8 +185,12 @@ codes are:
   clustering.
 - `reading-order-uncertain` — geometry suggests columns, rotated/angled text,
   or RTL content whose logical order may differ from the baseline.
-- `tables-flattened` — ruled-grid density suggests tabular content was emitted
-  as ordinary text.
+- `table-fidelity-best-effort` — one or more confident line-grid regions were
+  emitted as GFM; verify the inferred header, cell order, and spanning-cell
+  fidelity.
+- `tables-flattened` — table output was disabled, or a candidate was kept as
+  flowed text because confidence, geometry, parser, or resource checks refused
+  a rectangular GFM table.
 
 To keep reports bounded, `fidelity_warnings[]` contains at most one aggregate
 entry for each code. Exact attribution lives in
@@ -179,9 +201,14 @@ keys `page`, `char_count`, `has_text_layer`, and stable `warning_codes[]`.
 `char_count_max`, and `per_page`. Counts apply to selected
 occurrences, so a repeated page is counted repeatedly. A text layer containing
 only whitespace can have `has_text_layer=true` but `char_count=0`.
-`char_count` is Python's length of the normalized extracted page text before
-anchors/Markdown markup (Unicode code points); in JSONL it therefore equals
-`len(record["text"])`. It is not an encoded byte length or grapheme count.
+`details.tables` has the exact safe metadata keys `requested`, `engine_status`,
+`emitted`, and `flattened_candidates`; the status is `not-requested`,
+`available`, or `fallback`, and the counters contain no cell or document text.
+`char_count` is Python's length of the normalized combined plain page text
+before anchors/Markdown markup (Unicode code points). An accepted table region
+uses pdfplumber's cell text while ordinary regions use PDFium; in JSONL it
+therefore still equals `len(record["text"])`. It is not an encoded byte length
+or grapheme count.
 Consequently, selecting one empty page with anchors disabled can legitimately
 publish a zero-byte MD/TXT artifact; the coverage record, not file non-emptiness,
 distinguishes that success from a failed extraction.
@@ -203,6 +230,15 @@ a text object, the operation refuses with
 `[reading-order-uncertain]` rather than emitting a false `no-text-layer` claim.
 Pages above one million raw characters are also preflighted against the
 remaining output budget; the streaming writer performs the exact final check.
+When `--tables` is enabled, structured table finding is skipped once the PDFium
+scan exceeds 8,192 PDF path segments. It refuses structured output above 1,024
+pdfplumber edges, above 4,096 vertical×horizontal edge pairs, above 32
+detected tables per page, or
+above 4,096 cumulative cells per page. Normalized table-cell UTF-8 is capped at
+4 MiB per page and further reduced by the remaining extraction-byte budget and
+`max_memory_bytes // 64`. Crossing any table-specific limit falls back to
+flowed text rather than running unbounded analysis or publishing a partial
+table.
 
 ### Markdown to PDF
 
@@ -442,7 +478,7 @@ output paths. Supported string form fields are:
 | compress | optional `preset` (only `lossless` exists), optional `password` |
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
 | pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), `preset` (`llm`), and `password` |
-| pdf-to-md | optional `pages`, `format` (`md`, `txt`, or `jsonl`; default `md`), strict boolean `page_anchors` (`true`/`false`; default `true`), and `password` |
+| pdf-to-md | optional `pages`, `format` (`md`, `txt`, or `jsonl`; default `md`), strict boolean `page_anchors` (`true`/`false`; default `true`), strict boolean `tables` (`true`/`false`; default `false`, valid only with `md`), and `password` |
 | md-to-pdf | exactly one `.md`/`.markdown` upload plus only referenced sibling raster-image uploads; optional `paper` (`A4`, `Letter`, or `Legal`), finite non-negative `margin`, and strict boolean `toc` (`true`/`false`) |
 | convert-images | optional `format` (png/jpeg/webp/tiff), `quality` (1–100), `max_dimension` (16–30000), `preset` (`llm`), boolean `keep_metadata`, and `background` |
 
@@ -495,7 +531,8 @@ exists); none of these paths is described as secure erasure.
 For a `pdf-to-md` API job, the server-selected output is `document.md`,
 `document.txt`, or `document.jsonl` according to the resolved format. As with
 the CLI, the download artifact carries text while the job report carries only
-coverage and warnings.
+coverage, safe table counters/status, and warnings. `tables=true` is accepted
+only with `format=md`; other combinations return 422.
 
 For `md-to-pdf`, the API selects `document.pdf`. Transport-renamed uploads are
 mapped back to distinct sanitized basenames so a Markdown image such as

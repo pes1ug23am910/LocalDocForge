@@ -336,6 +336,8 @@ def make_text_extraction(directory: Path) -> None:
     ruled_table = canvas.Canvas(str(directory / "text-ruled-table.pdf"), pagesize=letter)
     ruled_table.setFont("Helvetica-Bold", 18)
     ruled_table.drawString(54, 742, "Quarterly Synthetic Totals")
+    ruled_table.setFont("Helvetica", 11)
+    ruled_table.drawString(54, 700, "TABLE-MIXED-BEFORE")
     table_left, table_bottom = 72, 490
     cell_width, cell_height = 150, 42
     for column in range(4):
@@ -355,8 +357,116 @@ def make_text_extraction(directory: Path) -> None:
         y = table_bottom + (3 - row) * cell_height + 15
         for column, value in enumerate(values):
             ruled_table.drawString(table_left + column * cell_width + 8, y, value)
+    ruled_table.drawString(54, 450, "TABLE-MIXED-AFTER")
     ruled_table.showPage()
     ruled_table.save()
+
+    table_columns = canvas.Canvas(
+        str(directory / "text-table-plus-columns.pdf"), pagesize=letter
+    )
+    table_columns.setFont("Helvetica-Bold", 18)
+    table_columns.drawString(54, 742, "Table Plus Independent Columns")
+    columns_table_left, columns_table_bottom = 72, 510
+    for column in range(4):
+        x = columns_table_left + column * cell_width
+        table_columns.line(
+            x,
+            columns_table_bottom,
+            x,
+            columns_table_bottom + 4 * cell_height,
+        )
+    for row in range(5):
+        y = columns_table_bottom + row * cell_height
+        table_columns.line(
+            columns_table_left,
+            y,
+            columns_table_left + 3 * cell_width,
+            y,
+        )
+    table_columns.setFont("Helvetica", 11)
+    for row, values in enumerate(table_rows):
+        y = columns_table_bottom + (3 - row) * cell_height + 15
+        for column, value in enumerate(values):
+            table_columns.drawString(
+                columns_table_left + column * cell_width + 8,
+                y,
+                value,
+            )
+    for row in range(3):
+        y = 430 - row * 34
+        table_columns.drawString(54, y, f"OUTSIDE-LEFT-{row + 1}")
+        table_columns.drawString(360, y, f"OUTSIDE-RIGHT-{row + 1}")
+    table_columns.showPage()
+    table_columns.save()
+
+    borderless = canvas.Canvas(
+        str(directory / "text-borderless-table.pdf"), pagesize=letter
+    )
+    borderless.setFont("Helvetica-Bold", 18)
+    borderless.drawString(54, 742, "Borderless Synthetic Totals")
+    borderless.setFont("Helvetica", 11)
+    borderless.drawString(54, 700, "BORDERLESS-BEFORE")
+    borderless_rows = (
+        ("Region", "Units", "Revenue"),
+        ("North", "11", "110"),
+        ("South", "22", "220"),
+        ("West", "33", "330"),
+    )
+    for row, values in enumerate(borderless_rows):
+        y = 640 - row * 42
+        for column, value in enumerate(values):
+            borderless.drawString(72 + column * 150, y, value)
+    borderless.drawString(54, 440, "BORDERLESS-AFTER")
+    borderless.showPage()
+    borderless.save()
+
+    merged = canvas.Canvas(str(directory / "text-merged-table.pdf"), pagesize=letter)
+    merged.setFont("Helvetica-Bold", 18)
+    merged.drawString(54, 742, "Merged Header Synthetic Table")
+    merged.setFont("Helvetica", 11)
+    merged.drawString(54, 700, "MERGED-BEFORE")
+    merged_left, merged_bottom = 72, 490
+    merged_cell_width, merged_cell_height = 150, 42
+    merged_top = merged_bottom + 4 * merged_cell_height
+    merged_header_bottom = merged_top - merged_cell_height
+    merged.line(merged_left, merged_bottom, merged_left, merged_top)
+    merged_right = merged_left + 3 * merged_cell_width
+    merged.line(merged_right, merged_bottom, merged_right, merged_top)
+    for column in (1, 2):
+        x = merged_left + column * merged_cell_width
+        merged.line(x, merged_bottom, x, merged_header_bottom)
+    for row in range(5):
+        y = merged_bottom + row * merged_cell_height
+        merged.line(merged_left, y, merged_left + 3 * merged_cell_width, y)
+    merged.drawString(merged_left + 8, merged_header_bottom + 15, "MERGED-SPANNING-HEADER")
+    merged_rows = (
+        ("M1", "41", "410"),
+        ("M2", "52", "520"),
+        ("M3", "63", "630"),
+    )
+    for row, values in enumerate(merged_rows):
+        y = merged_bottom + (2 - row) * merged_cell_height + 15
+        for column, value in enumerate(values):
+            merged.drawString(merged_left + column * merged_cell_width + 8, y, value)
+    merged.drawString(54, 450, "MERGED-AFTER")
+    merged.showPage()
+    merged.save()
+
+    dense = canvas.Canvas(
+        str(directory / "text-dense-vector-table.pdf"), pagesize=letter
+    )
+    dense.setFont("Helvetica", 11)
+    dense.drawString(54, 742, "DENSE-VECTOR-TABLE-MARKER")
+    # Stay below the independent 1,024-edge ceiling while exceeding the
+    # vertical×horizontal pre-finder cap (80 * 80 > 4,096).
+    for index in range(80):
+        x = 40 + index * (530 / 79)
+        dense.line(x, 100, x, 700)
+    for index in range(80):
+        y = 100 + index * (600 / 79)
+        dense.line(40, y, 570, y)
+    dense.showPage()
+    dense.save()
 
     unicode_font = _register_fixture_unicode_font()
     rtl = canvas.Canvas(str(directory / "text-rtl.pdf"), pagesize=letter)
@@ -416,7 +526,7 @@ def make_text_extraction(directory: Path) -> None:
     many.save()
 
 
-FIXTURES_VERSION = "fixtures generated v8 (pdf-to-md extraction corpus)\n"
+FIXTURES_VERSION = "fixtures generated v10 (pdf-to-md table extraction corpus)\n"
 
 
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
