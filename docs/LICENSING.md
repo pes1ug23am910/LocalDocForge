@@ -146,11 +146,12 @@ bundle or installer rather than assuming the Python environment inventory is com
 
 ## Optional external engines
 
-No optional external executable is enabled or distributed by the reviewed profiles.
-Typst is detectable but its capability remains unwired; qpdf CLI, Tesseract, OCRmyPDF,
-Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped. They were therefore
-excluded from the 45 versioned review records and 18-child unversioned inventory instead
-of being assigned stale or speculative conclusions.
+No optional external executable is distributed by the reviewed Python profiles.
+Typst 0.15.1 is separately installed on the reviewed machine and is enabled for
+Markdown-to-PDF when its minimum-version probe passes; its executable is Apache-2.0 and
+is invoked, never linked or bundled. It therefore remains outside the profiles' 48
+versioned review records and 18-child unversioned inventory. qpdf CLI, Tesseract,
+OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are neither enabled nor shipped.
 
 If an engine is enabled or redistributed later, repeat exact-version license,
 provenance, and advisory review. Copyleft, dual-license, commercial, plugin, and bundled

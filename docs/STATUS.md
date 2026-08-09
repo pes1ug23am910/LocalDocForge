@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S4 `pdf-to-md` F1/N1 review remediation; definitive
-Windows-AMD64 gate passed on the 547-outcome remediation tree).
+Last updated: 2026-08-09 (S6 `md-to-pdf` implementation handoff; definitive
+Windows-AMD64 gate passed on the 615-outcome implementation tree).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,8 +20,8 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (504 tests as of
-2026-08-08) normally and with Python DNS/non-loopback sockets denied,
+SBOM/notices drift, the complete collected test suite (615 outcomes as of
+2026-08-09) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
 result applies only to the recorded OS, architecture, and interpreter.
@@ -496,6 +496,69 @@ result applies only to the recorded OS, architecture, and interpreter.
   SHA-256 is
   `626d4885463d005d5a3611cdd625baee7f4d4b47bf7a396623da85375e74d3c9`.
 
+## Executed evidence — 2026-08-09 (`md-to-pdf` via Typst, S6)
+
+- S6 makes the stable `markdown-to-pdf` capability available when the
+  separately installed Typst probe reports version 0.15.1 or newer. The library,
+  CLI, spawned-worker API, registry-derived agent brief, and status capability
+  feed all use operation id `md-to-pdf`; an absent/old/unparseable engine stays
+  honestly unavailable.
+- `markdown-it-py>=4.2` is now a reviewed direct base dependency because hostile
+  Markdown reaches it. Version 4.2.0 and its sole mandatory child mdurl 0.1.2
+  were already hash-locked in every profile through Rich, so no pin, wheel hash,
+  license ceiling, or SBOM component count changed. The 2026-08-09 OSV/GitHub
+  exact-version refresh found no reviewed match for either package; an empty
+  result is not a safety guarantee.
+- The converter accepts a strict-UTF-8/NUL-free `.md`/`.markdown` boundary and a
+  bounded CommonMark token set plus GFM tables. Every text/code/link/alt value is
+  an escaped Typst string. Raw HTML, footnotes, math, strikethrough, unsafe/local
+  links, and unknown tokens are dropped with stable construct and 1-based-line
+  warnings; strikethrough/link labels remain inert text. Reports contain no
+  source text, URL values, or raw tool diagnostics.
+- Preprocessing is bounded to min(16 MiB, configured input bytes, memory/512,
+  temporary/64)—4 MiB under defaults—plus 100,000 source lines, 250,000 parser
+  tokens, and 256 image occurrences. Detailed dropped entries cap at 256 plus a
+  synthetic summary with explicit truncation/omission metadata.
+- Relative CLI raster images must remain beneath the Markdown directory; API
+  assets must be distinct referenced sibling uploads. Assets are signature-
+  checked additional pipeline inputs, copied through revalidated pinned handles
+  to private snapshots, signature-checked again, decoded as single frames,
+  stripped of metadata/profile chunks, and normalized to neutral regular PNGs
+  in the private workspace. They are protected by cumulative bytes, pixels,
+  decompressed bytes, temporary bytes, and input/output alias
+  limits. Remote, absolute, traversing, missing, escaping-symlink, and Windows
+  reparse/junction paths are refused; contained POSIX symlinks resolve to their
+  canonical in-root target.
+- Typst runs only through the hardened subprocess runner with a private absolute
+  root/working directory, isolated HOME/TEMP/package/cache paths, one job, a hard
+  remaining-job timeout, bounded hidden diagnostics, static no-code source
+  audit, empty package directories, and an exact dependency manifest. Its
+  `--root` follows Windows junctions and Typst has no native offline flag, so
+  neither is called an OS filesystem/network sandbox; escaping, regular copied
+  assets, reparse checks, and dependency auditing are the primary controls.
+- Real A4/Letter probes exercised TOC, headings, lists, emphasis, quotes, code,
+  GFM tables, hostile literal strings, stable dropped-construct warnings, and a
+  contained raster image. The shipped text extractor confirmed key visible text
+  and absence of dropped content. PDFium raster inspection caught and then
+  verified the fix for Typst ignoring a full-width image directly inside a
+  paragraph. All candidates enforce post-compile page limits and render every
+  page through the standard PDF validation floor before publication.
+- The focused library/unit/CLI/API/release-artifact matrix passes with one
+  expected host symlink-privilege skip. Repository-wide Ruff and mypy are clean;
+  lock and generated SBOM/notice drift checks pass.
+- Final verification collected 615 outcomes: 612 passed and three documented
+  platform skips in both the ordinary and Python blocked-network runs. Ruff,
+  native/Linux/macOS mypy, lock/artifact drift, reproducible direct builds,
+  sdist-to-wheel equality, all four source/wheel profile installs, `pip check`,
+  and the fresh Dev full-suite passed. The 552.2-second Windows-AMD64 CPython
+  3.14.4 verify-mode gate reproduced source identity `b2d8dfe9…`, wheel
+  `98d27010…`, and sdist `29aa62fa…`; its disposable evidence recorded
+  `release_manifest_verified: true`, `source_install_syntax_tested: true`, and
+  `full_tests.status: passed`, with SHA-256
+  `8216c2d879f0a7af04ca9a2d6b5f281750777de2502340e0dd13b156796887dc`.
+  The evidence truthfully identifies base revision `9f27b4e` with working-tree
+  changes; retained `dist/` and `packaging-evidence/` were not modified.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -600,9 +663,11 @@ every other. The 2026-08-08 convert-images slice followed the same golden
 path: iPhone HEIC/HEIF input (decode-only via pi-heif) for image conversion
 and images-to-pdf, with an `llm` preset producing AI-assistant-ready JPEGs
 and privacy-default GPS/EXIF stripping. Phase 3's core PDF text-extraction path
-now ships as `pdf-to-md`; semantic/table reconstruction remains future work.
+now ships as `pdf-to-md`, and its bounded Markdown rendering path ships as
+`md-to-pdf` when Typst ≥0.15.1 is available; semantic/table reconstruction
+remains future work.
 Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
-Markdown-to-PDF, PDF/A/PDF/UA, editing/forms,
+PDF/A/PDF/UA, editing/forms,
 protection, secure redaction, signatures, compare, scanner/camera
 acquisition, and the React UI remain unavailable.
 

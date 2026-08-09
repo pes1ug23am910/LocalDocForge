@@ -251,6 +251,58 @@ The `llm` preset (JPEG quality 85, long edge ≤ 1568 px, metadata stripped)
 is sized so current AI assistants ingest the file without further
 server-side downscaling; it is a convenience default, not a fidelity claim.
 
+## Markdown → PDF (`md-to-pdf`)
+
+Preserved within the implemented subset:
+
+- headings, paragraphs, emphasis/strong text, ordered/unordered lists, block
+  quotes, horizontal rules, inline/fenced code, and GFM tables;
+- allowlisted `http`, `https`, `mailto`, and `tel` links; and
+- contained relative single-frame raster images, decoded and normalized to PNG
+  before Typst sees a neutral workspace name.
+
+The selected A4/Letter/Legal dimensions, finite millimetre margin, and optional
+table of contents are recorded in report details. Markdown source, link values,
+image paths, and Typst diagnostics are never copied into the report. All
+untrusted text/code/destinations/alt text are emitted as inert Typst strings;
+the input is not treated as Typst source.
+
+Known losses are explicit:
+
+- `markdown-construct-dropped` — raw HTML markup, footnotes, inline/block math,
+  strikethrough, an unsafe/local link destination, or an unknown parser token
+  was omitted. Each warning message and `details.dropped_constructs` entry names
+  the construct and its 1-based source line, without copying its contents.
+  Text that Markdown exposes separately between inline HTML tags remains text;
+  no HTML styling or behavior is preserved. Dropping strikethrough or an unsafe
+  link removes the formatting/destination but retains the enclosed label text.
+  Details retain at most 256 distinct construct/line entries, followed by one
+  aggregate summary when needed. `dropped_constructs_truncated`,
+  `dropped_constructs_omitted`, and `dropped_construct_report_limit` make that
+  bounded reporting explicit.
+- `system-font-dependent` (info) — Typst uses embedded fonts first but may use
+  installed system fonts for missing glyphs. Glyph choice, line wrapping, and
+  page count can therefore differ across machines.
+
+Footnotes and math are intentionally unsupported rather than passed through as
+misleading literal notation. Remote images, absolute/traversing paths,
+multi-frame images, Typst imports/plugins/packages, and invalid/binary Markdown
+are refused instead of downgraded. Images are re-encoded, so original image
+metadata, compression, color-profile bytes, and animation are not preserved.
+The converter offers no CSS/theme compatibility and does not claim pixel parity
+with another Markdown renderer.
+
+The input snapshot has a hard 16 MiB ceiling, further reduced by enabled input,
+memory/512, and temporary/64 limits (4 MiB by default), and refuses more than
+100,000 source lines, 250,000 parser tokens, or 256 image occurrences. These
+are availability limits, not fidelity degradation: an over-limit document is
+refused rather than partially rendered.
+
+After compilation, `max_pages` is enforced and every page goes through the
+normal pikepdf/libqpdf syntax/page checks and PDFium render validation before
+atomic publication. Those checks establish structural/renderability fitness,
+not PDF/A, PDF/UA, typography equivalence, accessibility, or semantic identity.
+
 ## Encrypted inputs and active content
 
 - A supplied password authorizes reading an encrypted input. Generated PDFs,

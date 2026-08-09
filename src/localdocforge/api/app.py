@@ -57,6 +57,7 @@ from localdocforge.api.worker import (
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import ConversionReport
 from localdocforge.domain.pages import PageRange, PageRangeError
+from localdocforge.engines.base import EngineUnavailableError
 from localdocforge.engines.registry import default_registry
 from localdocforge.jobs.workspace import (
     CollisionPolicy,
@@ -65,6 +66,7 @@ from localdocforge.jobs.workspace import (
     remove_tree_with_retries,
 )
 from localdocforge.operations import images as image_ops
+from localdocforge.operations import markdown as markdown_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.operations import text as text_ops
@@ -1274,6 +1276,51 @@ def _run_pdf_to_md(paths, output_dir, params, settings, progress=None):
     )
 
 
+def _transport_upload_alias(path: Path) -> str:
+    """Undo the private numeric transport prefix while retaining sanitization."""
+    prefix, separator, alias = path.name.partition("-")
+    if separator and prefix.isdecimal() and alias:
+        return alias
+    return path.name
+
+
+def _run_md_to_pdf(paths, output_dir, params, settings, progress=None):
+    aliases = {_transport_upload_alias(path): path for path in paths}
+    if len(aliases) != len(paths):
+        raise _ApiError(422, "Markdown uploads must have distinct sanitized basenames")
+    markdown_names = [
+        name for name in aliases if Path(name).suffix.casefold() in {".md", ".markdown"}
+    ]
+    if len(markdown_names) != 1:
+        raise _ApiError(422, "md-to-pdf needs exactly one .md or .markdown upload")
+    source_name = markdown_names[0]
+    source = aliases.pop(source_name)
+    margin = _float_param(params, "margin", default=20.0, minimum=0)
+    assert margin is not None
+    try:
+        paper = markdown_ops.normalize_paper(params.get("paper", "A4"))
+        markdown_ops.validate_margin(margin, paper)
+    except PipelineError as exc:
+        raise _ApiError(422, str(exc)) from exc
+    options = markdown_ops.MdToPdfOptions(
+        paper=paper[0],
+        margin_mm=margin,
+        toc=_strict_bool_param(params, "toc", default=False),
+        collision=CollisionPolicy.RENAME,
+        settings=settings,
+        progress=progress,
+    )
+    try:
+        return markdown_ops.md_to_pdf(
+            source,
+            output_dir / "document.pdf",
+            options=options,
+            image_inputs=aliases,
+        )
+    except EngineUnavailableError as exc:
+        raise _ApiError(503, str(exc)) from exc
+
+
 def _run_convert_images(paths, output_dir, params, settings, progress=None):
     image_format = params.get("format") or None
     if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
@@ -1312,6 +1359,7 @@ _OPERATIONS = {
     "images-to-pdf": _run_images_to_pdf,
     "pdf-to-images": _run_pdf_to_images,
     "pdf-to-md": _run_pdf_to_md,
+    "md-to-pdf": _run_md_to_pdf,
     "convert-images": _run_convert_images,
 }
 
@@ -1329,6 +1377,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
         {"format", "dpi", "pages", "quality", "preset", "password"}
     ),
     "pdf-to-md": frozenset({"pages", "format", "page_anchors", "password"}),
+    "md-to-pdf": frozenset({"paper", "margin", "toc"}),
     "convert-images": frozenset(
         {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}
     ),

@@ -9,7 +9,7 @@
 │             minimal HTML status shell (shipped)            │
 │             full browser job UI (planned)                  │
 ├────────────────────────────────────────────────────────────┤
-│ operations/  organize, edit, compress, image/text convert  │
+│ operations/  organize, edit, compress, image/text/Markdown │
 │   build an execute() closure and hand it to the runner     │
 ├────────────────────────────────────────────────────────────┤
 │ pipelines/runner.py — shared job lifecycle                 │
@@ -39,9 +39,10 @@ raise. `supported_operations()` declares operation ids. The registry resolves
 `engine_for(operation, preferred)` only from probes that passed. Operations,
 not interfaces, own document-engine calls.
 
-External executable presence is not an implementation claim. For example,
-Typst may probe successfully while Markdown-to-PDF remains unavailable because
-its capability implementation bit is false.
+External executable presence is not by itself an implementation claim. Typst is
+now wired only to `md-to-pdf`, and its adapter fails closed unless `--version`
+reports at least 0.15.1. The capability is available only when that live probe
+and the registry implementation bit both pass.
 
 The PDFium adapter declares both rendering and `pdf-to-md` text extraction.
 The extraction operation reads text rectangles, font geometry, rotation/angle,
@@ -64,8 +65,11 @@ engines and planned capabilities remain data, not placeholder actions.
 ### Pipeline lifecycle (`pipelines/runner.py`)
 
 1. **Input boundary.** In strict mode, recognizable network paths are refused
-   before file inspection. `require_media_type` uses leading bytes rather than
-   extensions. Input byte totals are cumulative across the job.
+   before file inspection. Binary formats use leading-byte signatures rather
+   than extensions. Plain Markdown has no trustworthy magic bytes, so its
+   deliberately narrow boundary requires `.md`/`.markdown`, performs a full
+   strict-UTF-8 decode, and rejects NUL/binary content. Input byte totals are
+   cumulative across the job, including referenced Markdown images.
 2. **Early resource inventory.** Page counts are collected where possible and
    checked cumulatively. Encrypted PDFs are counted again by the operation
    after password-based opening, so encryption cannot bypass the page cap.
@@ -77,7 +81,11 @@ engines and planned capabilities remain data, not placeholder actions.
    between meaningful units of work. CLI operations currently execute this
    lifecycle in-process. API operations execute it in a fresh spawned worker,
    so the parent can preempt a native parser by terminating the contained
-   process tree.
+   process tree. Typst is always launched through the hardened subprocess
+   runner with the remaining job timeout, bounded diagnostics, a private
+   working directory, neutral generated filenames, and isolated environment
+   directories; the CLI therefore gets a hard tool timeout even though other
+   in-process native calls remain cooperative.
 5. **Pre-publication boundaries.** Candidate paths and destinations are
    canonicalized once; strict network-output policy, output-root containment,
    duplicate destinations, and input/output aliases are checked. Aggregate
@@ -114,6 +122,27 @@ min/median/max, and ordered per-page `{page, char_count, has_text_layer,
 warning_codes}` records. A stable fidelity code appears once in the aggregate
 warning array and on each affected page record; extracted text is never report
 data.
+
+For `md-to-pdf`, the operation parses a bounded token stream and renders only
+known node types. Every untrusted text/code/link/alt value is serialized as a
+Typst string; raw HTML, math, footnotes, and unknown constructs become bounded
+name/line warnings. Local raster assets are resolved beneath the Markdown root,
+validated as additional pipeline inputs, decoded to neutral workspace PNGs, and
+reparse-checked. Typst receives `--root` plus empty package/cache directories;
+its dependency manifest must name exactly the generated source and normalized
+assets. This is defense in depth: the executable retains the user's authority
+and has no native offline flag. API upload prefixes are reversed only into
+distinct sanitized sibling basenames for asset matching. Generated PDFs enforce
+the post-compile page limit and render every page before publication.
+
+Markdown preprocessing snapshots at most the lowest of 16 MiB,
+`max_input_bytes`, `max_memory_bytes / 512`, and
+`max_temporary_bytes / 64` (4 MiB by default), with 100,000-line,
+250,000-token, and 256-image-occurrence caps. Dropped-construct detail retains
+256 distinct construct/line pairs plus one overflow summary. This discovery
+step precedes generic input gathering so referenced images can become explicit
+pipeline inputs; CLI/library protection is the byte/cardinality envelope,
+while the API parent wall-clock covers the entire worker call.
 
 ### Resource-limit coverage
 

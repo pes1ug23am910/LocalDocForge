@@ -245,6 +245,79 @@ class TestJobFlow:
         assert text.count("\f") == 1
         assert text.index("MARKER-ALPHA-PAGE-3") < text.index("MARKER-ALPHA-PAGE-1")
 
+    def test_md_to_pdf_upload_with_sibling_image_and_options(
+        self, client, fixtures_dir
+    ):
+        markdown = (
+            b"# API report\n\n"
+            b"![Sibling diagram](diagram.png)\n\n"
+            b"This document was submitted as a multipart upload.\n"
+        )
+        response = client.post(
+            "/api/jobs/md-to-pdf",
+            headers=auth(),
+            files=[
+                ("files", ("report.md", io.BytesIO(markdown), "text/markdown")),
+                upload(fixtures_dir / "images" / "diagram.png", name="diagram.png"),
+            ],
+            data={"paper": "Legal", "margin": "12.5", "toc": "true"},
+        )
+
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        assert payload["outputs"] == [
+            {
+                "index": 0,
+                "name": "document.pdf",
+                "size_bytes": payload["outputs"][0]["size_bytes"],
+            }
+        ]
+        assert payload["outputs"][0]["size_bytes"] > 0
+        details = payload["report"]["details"]
+        assert details | {
+            "paper": "Legal",
+            "margin_mm": 12.5,
+            "toc": True,
+            "image_count": 1,
+            "images_normalized_to_png": 1,
+        } == details
+        downloaded = client.get(
+            f"/api/jobs/{payload['job_id']}/outputs/0",
+            headers=auth(),
+        )
+        assert downloaded.status_code == 200
+        with pikepdf.open(io.BytesIO(downloaded.content)) as pdf:
+            assert len(pdf.pages) >= 1
+
+    @pytest.mark.parametrize(
+        "markdown",
+        [
+            b"![missing](missing.png)\n",
+            b"![nested](assets/diagram.png)\n",
+            b"# No image reference\n",
+        ],
+    )
+    def test_md_to_pdf_rejects_missing_nested_or_unreferenced_assets(
+        self,
+        client,
+        fixtures_dir,
+        markdown,
+    ):
+        files = [
+            ("files", ("report.md", io.BytesIO(markdown), "text/markdown")),
+        ]
+        if b"missing.png" not in markdown:
+            files.append(upload(fixtures_dir / "images" / "diagram.png", name="diagram.png"))
+
+        response = client.post(
+            "/api/jobs/md-to-pdf",
+            headers=auth(),
+            files=files,
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"] == "Document processing failed"
+
     def test_compress_job_reports_reduction_and_downloads(self, client, fixtures_dir):
         response = client.post(
             "/api/jobs/compress",
@@ -389,6 +462,55 @@ class TestJobErrors:
 
         assert response.status_code == 422
         assert message in response.json()["detail"]
+
+    @pytest.mark.parametrize(
+        ("data", "message"),
+        [
+            ({"paper": "Tabloid"}, "Unknown paper size"),
+            ({"margin": "-1"}, "at least 0"),
+            ({"margin": "nan"}, "finite"),
+            ({"margin": "105"}, "no drawable area"),
+            ({"toc": "yes"}, "'toc' must be true or false"),
+            ({"ignored_option": "surprise"}, "Unknown form field"),
+        ],
+    )
+    def test_md_to_pdf_rejects_invalid_parameters(self, client, data, message):
+        response = client.post(
+            "/api/jobs/md-to-pdf",
+            headers=auth(),
+            files=[
+                (
+                    "files",
+                    ("invalid.md", io.BytesIO(b"# Invalid options\n"), "text/markdown"),
+                )
+            ],
+            data=data,
+        )
+
+        assert response.status_code == 422
+        assert message in response.json()["detail"]
+
+    def test_md_to_pdf_missing_typst_is_controlled_503(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("PATH", "")
+        app = create_app(Settings(jobs_root=tmp_path / "jobs"), token=TOKEN)
+        with TestClient(app, base_url="http://127.0.0.1") as no_typst_client:
+            response = no_typst_client.post(
+                "/api/jobs/md-to-pdf",
+                headers=auth(),
+                files=[
+                    (
+                        "files",
+                        (
+                            "missing-engine.md",
+                            io.BytesIO(b"# Missing Typst\n"),
+                            "text/markdown",
+                        ),
+                    )
+                ],
+            )
+
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Internal server error"
 
     def test_image_api_honors_layout_and_quality_parameters(self, client, fixtures_dir):
         response = client.post(

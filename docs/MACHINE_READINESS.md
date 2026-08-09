@@ -1,9 +1,12 @@
 # Machine Readiness Report — Primary Windows 11 Workstation
 
-Assessment date: **2026-08-03**. Everything below marked "executed" was run on
-this machine on that date; nothing is inferred from configuration alone. This
-report answers one question — *is LocalDocForge ready for use on this machine,
-right now?* — and records the evidence. Companion how-to:
+Assessment run: **2026-08-03**. Everything below marked "executed" was run on
+this machine on that date; nothing is inferred from configuration alone.
+Capability inventory updates for S4/S6 are dated **2026-08-09** and rely on
+the definitive gate and operation probes recorded in `docs/STATUS.md`, rather
+than being folded into the original run. This report answers one question —
+*is LocalDocForge ready for use on this machine?* — and records the evidence.
+Companion how-to:
 `docs/GETTING_STARTED_WINDOWS.md`.
 
 ## Verdict
@@ -125,13 +128,16 @@ run against them and the outputs were reopened independently with pikepdf/Pillow
 Ctrl+C'd; the graceful path is regression-tested by the suite, and startup
 residue cleanup is lease-gated by design.)
 
-### 2.4 `ldf doctor` — all shipped capabilities live
+### 2.4 `ldf doctor` — 2026-08-03 executed snapshot
 
 merge · split · remove-pages · extract-pages · organize · rotate · crop ·
 inspect · images-to-pdf · pdf-to-images — all `available: true`, each backed by
-a passing live engine probe (compress joined this list the same day; §7). All
-remaining roadmap capabilities honestly report *not implemented in this
-build*.
+a passing live engine probe (compress joined this list the same day; §7).
+Capabilities not listed here were not implemented in that snapshot.
+
+**2026-08-09 update:** the current registry additionally implements
+convert-images, pdf-to-markdown, and markdown-to-pdf. The S4/S6 operation
+probes and definitive 615-outcome gate are recorded in `docs/STATUS.md`.
 
 ## 3. Engine inventory on this machine
 
@@ -144,12 +150,12 @@ Python engines (in `.venv`, all probed available):
 | Pillow | 12.3.0 | imaging |
 | pypdf | 6.14.2 | optional diagnostic adapter |
 
-External executables (only relevant to future phases; installing them early
-unlocks nothing — see `docs/FEATURE_MATRIX.md` rules):
+External executables (availability is still capability-gated; see
+`docs/FEATURE_MATRIX.md` rules):
 
 | Executable | Status | Install hint when needed |
 |---|---|---|
-| Typst 0.15.1 | **installed**, unwired (Markdown→PDF is P3) | — |
+| Typst 0.15.1 | **installed and wired** for bounded Markdown→PDF | `winget install Typst.Typst` on another machine |
 | qpdf CLI | not installed | `winget install qpdf.qpdf` |
 | Tesseract / OCRmyPDF | not installed | `winget install UB-Mannheim.TesseractOCR` |
 | Ghostscript | not installed | `winget install ArtifexSoftware.GhostScript` |
@@ -163,6 +169,7 @@ unlocks nothing — see `docs/FEATURE_MATRIX.md` rules):
 |---|---|---|
 | Organize/split/merge/rotate/crop ordinary local PDFs (CLI) | **Yes** | §2.1–§2.2 |
 | Images→PDF and PDF→images for ordinary files | **Yes** | §2.2 |
+| Markdown→PDF for strict-UTF-8 CommonMark-subset files | **Yes on this machine** — Typst 0.15.1 probe passes | §3 and `docs/CLI.md` |
 | Inspect PDFs read-only | **Yes** | §2.2 |
 | Compress PDFs (lossless structural preset) | **Yes** | §7 |
 | Localhost API / status page for the same operations | **Yes** | §2.3 |

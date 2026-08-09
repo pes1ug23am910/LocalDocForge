@@ -4,8 +4,12 @@ import json
 from pathlib import Path
 
 from localdocforge.cli.agent_brief import USAGE_BY_CAPABILITY_ID
-from localdocforge.engines.adapters import OP_PDF_TO_MD
+from localdocforge.engines.adapters import OP_MD_TO_PDF, OP_PDF_TO_MD
 from localdocforge.engines.registry import CAPABILITY_SPECS
+from localdocforge.operations.markdown import (
+    MARKDOWN_CONSTRUCT_DROPPED,
+    SYSTEM_FONT_DEPENDENT,
+)
 from localdocforge.operations.text import WARNING_CODE_ORDER
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,12 +23,14 @@ def test_implementation_plan_records_shipped_api_and_pending_react_ui() -> None:
     assert "full React browser UI" in plan
 
 
-def test_optional_engine_heading_does_not_claim_present_typst_is_absent() -> None:
+def test_engine_decisions_record_typst_as_wired_but_separately_installed() -> None:
     decisions = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
 
     assert "Probed but absent on this machine" not in decisions
-    assert "Optional executable probes (features gated off; availability varies)" in decisions
-    assert "**Present on this machine**" in decisions
+    assert "Selected, installed, probed, and in use" in decisions
+    assert "Other optional executable probes (features gated off; availability varies)" in decisions
+    assert "| Typst | 0.15.1 | Apache-2.0 |" in decisions
+    assert "Typst probes available while Markdown→PDF stays unavailable" not in decisions
     assert "AGPL obligations do not attach" not in decisions
     assert "MPL-2.0 (pikepdf) / Apache-2.0 (qpdf)" in decisions
 
@@ -200,7 +206,7 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "non-interactive PDF passwords, S1" in status
     assert "464 outcomes: 462 passed and two expected" in status
-    assert "504 tests as of" in status and "2026-08-08" in status
+    assert "615 outcomes as of" in status and "2026-08-09" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging
@@ -291,7 +297,7 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
         assert field in api_row
     planned = cli[cli.index("## Planned") :]
     assert "`pdf-to-md`" not in planned
-    assert "`md-to-pdf`" in planned
+    assert "`md-to-pdf`" not in planned
 
     feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
     row = next(
@@ -354,3 +360,62 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
     assert "`pdf-to-md` text extraction, S4" in status
     assert "no new runtime dependency" in status
+
+
+def test_md_to_pdf_slice_is_documented_consistently() -> None:
+    matching = [spec for spec in CAPABILITY_SPECS if spec.id == "markdown-to-pdf"]
+    assert len(matching) == 1
+    assert matching[0].implemented is True
+    assert matching[0].operation == OP_MD_TO_PDF
+    assert all(spec.id != "md-to-pdf" for spec in CAPABILITY_SPECS)
+    assert "ldf md-to-pdf" in USAGE_BY_CAPABILITY_ID["markdown-to-pdf"]
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf md-to-pdf notes.md -o notes.pdf" in readme
+    assert "Typst ≥0.15.1" in readme
+    assert MARKDOWN_CONSTRUCT_DROPPED in readme
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    assert "ldf md-to-pdf INPUT.md -o OUTPUT.pdf" in cli
+    assert "`.md` or `.markdown`" in cli
+    assert "private job workspace" in cli
+    assert "not an OS filesystem or network" in cli
+    assert "default effective ceiling is 4 MiB" in cli
+    assert "dropped_constructs_truncated" in cli
+    api_row = next(line for line in cli.splitlines() if line.startswith("| md-to-pdf |"))
+    for field in ("`paper`", "`margin`", "`toc`"):
+        assert field in api_row
+    planned = cli[cli.index("## Planned") :]
+    assert "`md-to-pdf`" not in planned
+
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    feature_row = next(line for line in feature.splitlines() if line.startswith("| Markdown → PDF"))
+    assert "✅ when Typst ≥0.15.1 is available" in feature_row
+    assert "Lib, CLI, API" in feature_row
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
+        encoding="utf-8"
+    )
+    section = fidelity[fidelity.index("## Markdown → PDF") :]
+    assert MARKDOWN_CONSTRUCT_DROPPED in section
+    assert SYSTEM_FONT_DEPENDENT in section
+    assert "1-based source line" in section
+    assert "256 distinct construct/line entries" in section
+    assert "250,000 parser tokens" in section
+
+    architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    assert "Typst receives `--root`" in architecture
+    assert "dependency manifest must name exactly" in architecture
+
+    threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
+    assert "first implemented operation requiring an optional" in threat
+    assert "Typst's `--root` is defense in depth" in threat
+    assert "has no native offline flag" in threat
+
+    library = (ROOT / "docs" / "LIBRARY_API.md").read_text(encoding="utf-8")
+    for symbol in ("MdToPdfOptions", "md_to_pdf", "image_inputs"):
+        assert symbol in library
+    assert "max_memory_bytes / 512" in library
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "`md-to-pdf` via Typst, S6" in status

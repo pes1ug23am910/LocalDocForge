@@ -55,6 +55,7 @@ EXPECTED_BASE_DEPENDENCIES = frozenset(
         "pydantic",
         "pydantic-settings",
         "typer",
+        "markdown-it-py",
         "pikepdf",
         "pypdfium2",
         "pillow",

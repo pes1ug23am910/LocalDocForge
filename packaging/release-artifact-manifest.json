@@ -30,6 +30,7 @@
             "localdocforge/jobs/workspace.py",
             "localdocforge/operations/__init__.py",
             "localdocforge/operations/images.py",
+            "localdocforge/operations/markdown.py",
             "localdocforge/operations/optimize.py",
             "localdocforge/operations/organize.py",
             "localdocforge/operations/text.py",
@@ -46,8 +47,8 @@
             "localdocforge/validation/__init__.py",
             "localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "1f6a5ed319f51f2ad793a9593eaedadd3bb3ab08f62191eb1497bebf09aaa097",
-          "size": 125012
+          "sha256": "98d2701037611e2313ddd89efd4ec6f5247cc3089b4c7a8aaf05d1bc11b3d432",
+          "size": 140233
         },
         "localdocforge-0.1.0.tar.gz": {
           "members": [
@@ -82,6 +83,7 @@
             "localdocforge-0.1.0/src/localdocforge/jobs/workspace.py",
             "localdocforge-0.1.0/src/localdocforge/operations/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/operations/images.py",
+            "localdocforge-0.1.0/src/localdocforge/operations/markdown.py",
             "localdocforge-0.1.0/src/localdocforge/operations/optimize.py",
             "localdocforge-0.1.0/src/localdocforge/operations/organize.py",
             "localdocforge-0.1.0/src/localdocforge/operations/text.py",
@@ -98,12 +100,12 @@
             "localdocforge-0.1.0/src/localdocforge/validation/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "42481a9948b469213a5d78317d905618818e51ae4c4b381d38daf14a1e0c8fd4",
-          "size": 111839
+          "sha256": "29aa62fae063b934f6fb539ddee3ef71f55195913a040668f81c4a01589c369d",
+          "size": 126744
         }
       },
       "source_date_epoch": 1704067200,
-      "source_tree_sha256": "b3384fe440a96881a96d9617d4a5dd2a35ac2f03d8f7146055ff989024ee0f5f"
+      "source_tree_sha256": "b2d8dfe9abe5bfea5c99ace8504d505e0b29cf5988e045a86cc768f8677688a9"
     }
   },
   "schema": 3

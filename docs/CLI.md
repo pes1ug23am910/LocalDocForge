@@ -96,6 +96,7 @@ ldf pdf-to-images scan.pdf -d vision/ --preset llm       # vision-ready JPEGs
 ldf pdf-to-md input.pdf -o content.md                     # Markdown (default)
 ldf pdf-to-md input.pdf -o content.txt --format txt --pages 1-5,9
 ldf pdf-to-md input.pdf -o content.jsonl --format jsonl
+ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
 
 ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-ready JPEGs
 ldf convert-images scan.heic -d out/ --format png --keep-metadata
@@ -202,6 +203,71 @@ a text object, the operation refuses with
 `[reading-order-uncertain]` rather than emitting a false `no-text-layer` claim.
 Pages above one million raw characters are also preflighted against the
 remaining output budget; the streaming writer performs the exact final check.
+
+### Markdown to PDF
+
+```text
+ldf md-to-pdf INPUT.md -o OUTPUT.pdf
+    [--paper A4|Letter|Legal] [--margin MM] [--toc]
+    [--collision fail|rename|overwrite]
+```
+
+`md-to-pdf` requires Typst 0.15.1 or newer. It accepts only a strict-UTF-8
+`.md` or `.markdown` primary input; text has no reliable magic bytes, so this is
+an intentionally limited extension-plus-full-decode boundary. The supported
+document subset is CommonMark headings, paragraphs, emphasis/strong text,
+ordered and unordered lists, block quotes, horizontal rules, code spans and
+fences, links with `http`/`https`/`mailto`/`tel` destinations, plus the built-in
+GFM table rule. The default is A4 with a 20 mm margin and no table of contents.
+`--toc` inserts a Typst outline followed by a page break. Margins must be finite,
+non-negative, and leave a drawable page area.
+
+Before parsing, the Markdown snapshot is capped at 16 MiB and further reduced
+to the lowest enabled `max_input_bytes`, `max_memory_bytes / 512`, and
+`max_temporary_bytes / 64` allowance; the default effective ceiling is 4 MiB.
+It is then limited to 100,000 source lines and 250,000 parser tokens. At most
+256 image occurrences are accepted, including repeated references. These
+preprocessing bounds run before the ordinary job clock; the API's outer worker
+watchdog covers the whole call, while CLI/library preprocessing is bounded by
+cardinality rather than preemptively timed.
+
+Raw HTML markup, footnotes, math, strikethrough, and unknown parser tokens are
+not interpreted. They are dropped and reported with stable
+`markdown-construct-dropped` warnings and 1-based source lines. Text enclosed by
+inline HTML tags remains ordinary text when the parser exposes it separately;
+the tags themselves are dropped. Strikethrough formatting and unsafe/local link
+destinations are dropped while their enclosed label text remains.
+`system-font-dependent` records that Typst's
+embedded fonts may fall back to installed fonts, so line wrapping/page counts
+can vary between machines. Reports include only bounded counts, settings, and
+construct names/lines—never source text, URL values, or raw Typst diagnostics.
+At most 256 distinct construct/line entries are reported; one synthetic summary
+then records the omitted count. Report details expose
+`dropped_constructs_truncated`, `dropped_constructs_omitted`, and
+`dropped_construct_report_limit` so callers can detect that aggregation.
+
+CLI image references must be relative to the Markdown file and remain within
+its containing directory. Remote/data/file/UNC/absolute, query-bearing,
+traversing, escaping-symlink, Windows reparse/junction, missing, binary, or
+multi-frame assets are refused. A POSIX symlink whose resolved target remains
+inside the Markdown directory is accepted. Accepted HEIC/HEIF, JPEG, PNG, TIFF,
+BMP, and WebP inputs are copied from identity-checked pinned handles to private
+neutral snapshots, signature-checked again there, and normalized as single-frame
+PNGs under neutral names in the private job workspace; source metadata, EXIF,
+text chunks, and ICC-profile
+bytes are discarded, while EXIF orientation is applied to pixels first.
+Referenced image bytes count toward job limits and
+an output may not alias any source or image even with overwrite enabled.
+
+Only generated source and normalized assets are placed beneath Typst's
+`--root`; imports/plugins/packages are unsupported, package directories and the
+dependency manifest are audited, diagnostics are bounded and withheld on
+failure, and the compiler runs with a hard remaining-job timeout. Even when the
+general timeout is disabled, Typst retains a 600-second safety ceiling. This narrows
+the external executable boundary but is not an OS filesystem or network
+sandbox. The generated PDF must also stay within the configured page, temporary,
+and output limits and pass the standard full-PDF reopen/syntax/page/render
+validation before atomic publication.
 
 ### Registry-derived agent brief
 
@@ -360,7 +426,7 @@ poll-based; this release does not claim a streaming/SSE channel.
 
 `operation` is one of `merge`, `split`, `remove-pages`, `extract-pages`,
 `organize`, `rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images`,
-`pdf-to-md`, or `convert-images`.
+`pdf-to-md`, `md-to-pdf`, or `convert-images`.
 Upload each
 source under multipart field `files`. The server, not the request, chooses all
 output paths. Supported string form fields are:
@@ -377,6 +443,7 @@ output paths. Supported string form fields are:
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
 | pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), `preset` (`llm`), and `password` |
 | pdf-to-md | optional `pages`, `format` (`md`, `txt`, or `jsonl`; default `md`), strict boolean `page_anchors` (`true`/`false`; default `true`), and `password` |
+| md-to-pdf | exactly one `.md`/`.markdown` upload plus only referenced sibling raster-image uploads; optional `paper` (`A4`, `Letter`, or `Legal`), finite non-negative `margin`, and strict boolean `toc` (`true`/`false`) |
 | convert-images | optional `format` (png/jpeg/webp/tiff), `quality` (1–100), `max_dimension` (16–30000), `preset` (`llm`), boolean `keep_metadata`, and `background` |
 
 Unknown, duplicated, invalid, or out-of-range parameters return 422. Upload
@@ -430,9 +497,15 @@ For a `pdf-to-md` API job, the server-selected output is `document.md`,
 the CLI, the download artifact carries text while the job report carries only
 coverage and warnings.
 
+For `md-to-pdf`, the API selects `document.pdf`. Transport-renamed uploads are
+mapped back to distinct sanitized basenames so a Markdown image such as
+`![diagram](diagram.png)` can match a sibling upload. Directory-qualified image
+references and unreferenced extra uploads are refused; the API never interprets
+a client path as a server-side filesystem path.
+
 ## Planned (commands and job endpoints do not exist)
 
-`repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `md-to-pdf`, `pdf-to-pdfa`,
+`repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `pdf-to-pdfa`,
 `pdf-to-docx/pptx/xlsx`, `watermark`,
 `page-numbers`, `forms`, `protect`, `unlock`, `redact`, `sanitize`, `metadata`,
 `attachments`, `sign`, `verify-signatures`, `compare`, `validate`, `batch`,

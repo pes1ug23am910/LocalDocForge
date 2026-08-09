@@ -30,6 +30,9 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.5",
     "typer>=0.12",
+    # Direct hostile-input parser floor: 4.1 fixed quadratic token joins; 4.2
+    # is the first reviewed/locked release used by the Markdown-to-PDF surface.
+    "markdown-it-py>=4.2",
     "pikepdf>=9.0",
     "pypdfium2>=4.30",
     "pillow>=10.4",
