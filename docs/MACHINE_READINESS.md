@@ -137,7 +137,8 @@ Capabilities not listed here were not implemented in that snapshot.
 
 **2026-08-09 update:** the current registry additionally implements
 convert-images, pdf-to-markdown, and markdown-to-pdf. The S4/S6 operation
-probes and definitive 615-outcome gate are recorded in `docs/STATUS.md`.
+probes and definitive 616-outcome F1-remediation gate are recorded in
+`docs/STATUS.md`.
 
 ## 3. Engine inventory on this machine
 
