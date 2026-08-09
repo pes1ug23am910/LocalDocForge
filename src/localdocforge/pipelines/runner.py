@@ -134,6 +134,7 @@ def _gather_inputs(
     paths: list[Path],
     expected_types: tuple[str, ...],
     settings: Settings,
+    max_text_input_bytes: int | None = None,
 ) -> list[InputArtifact]:
     artifacts: list[InputArtifact] = []
     max_bytes = settings.limits.max_input_bytes
@@ -151,7 +152,6 @@ def _gather_inputs(
                     "strict-offline mode forbids network filesystem inputs"
                 ) from exc
             raise ContentTypeError(str(exc)) from exc
-        media = require_media_type(path, *expected_types)
         size = path.stat().st_size
         total_bytes += size
         if max_bytes is not None and total_bytes > max_bytes:
@@ -159,6 +159,11 @@ def _gather_inputs(
                 f"Inputs total {total_bytes:,} bytes, over the configured per-job input "
                 f"limit of {max_bytes:,} bytes"
             )
+        media = require_media_type(
+            path,
+            *expected_types,
+            max_text_bytes=max_text_input_bytes,
+        )
         artifact = InputArtifact(path=path.resolve(), media_type=media, size_bytes=size)
         if media == "application/pdf":
             # Encrypted or damaged inputs keep page_count=None here; the
@@ -194,6 +199,7 @@ def run_pipeline(
     progress: ProgressCallback | None = None,
     fallback_engine: str | None = None,
     details: dict[str, Any] | None = None,
+    max_text_input_bytes: int | None = None,
 ) -> ConversionReport:
     """Run one operation end to end and return its report.
 
@@ -220,7 +226,12 @@ def run_pipeline(
     )
 
     try:
-        inputs = _gather_inputs(input_paths, input_types, settings)
+        inputs = _gather_inputs(
+            input_paths,
+            input_types,
+            settings,
+            max_text_input_bytes=max_text_input_bytes,
+        )
     except (ContentTypeError, FileNotFoundError, OSError) as exc:
         report.errors.append(str(exc))
         raise PipelineError(str(exc), report) from exc

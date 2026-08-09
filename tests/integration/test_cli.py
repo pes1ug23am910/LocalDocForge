@@ -187,6 +187,7 @@ class TestVersionAndHelp:
             "split",
             "rotate",
             "pdf-to-md",
+            "md-to-pdf",
             "doctor",
             "inspect",
             "agent-brief",
@@ -210,6 +211,13 @@ class TestVersionAndHelp:
         assert "Usage:" in result.output
         assert "merge" in result.output
         assert cli_main._state["password_stdin_requested"] is False
+
+    def test_md_to_pdf_help_lists_options(self):
+        result = runner.invoke(app, ["md-to-pdf", "--help"])
+
+        assert result.exit_code == 0, combined_output(result)
+        for option in ("--output", "--paper", "--margin", "--toc"):
+            assert option in result.output
 
     def test_strict_offline_refuses_explicit_nonlocal_web_bind(self):
         result = runner.invoke(
@@ -956,6 +964,90 @@ class TestPdfToMdCommand:
         decoded = output.read_bytes().decode("utf-8", errors="strict")
         assert unicodedata.is_normalized("NFC", decoded)
         assert "Café naïve Ångström" in json.loads(decoded)["text"]
+
+
+class TestMdToPdfCommand:
+    def test_converts_markdown_and_reports_options(self, tmp_path):
+        source = tmp_path / "report.md"
+        source.write_text(
+            "# Integration report\n\n"
+            "This paragraph exercises the ordinary Markdown-to-PDF command.\n",
+            encoding="utf-8",
+        )
+        output = tmp_path / "report.pdf"
+
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "md-to-pdf",
+                str(source),
+                "-o",
+                str(output),
+                "--paper",
+                "Letter",
+                "--margin",
+                "15.5",
+                "--toc",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        report = json.loads(result.stdout)
+        assert report["status"] == "success"
+        assert report["operation"] == "md-to-pdf"
+        assert report["engine"] == "typst"
+        assert report["details"] | {
+            "paper": "Letter",
+            "margin_mm": 15.5,
+            "toc": True,
+        } == report["details"]
+        with pikepdf.open(output) as pdf:
+            assert len(pdf.pages) >= 1
+
+    @pytest.mark.parametrize(
+        ("arguments", "message"),
+        [
+            (["--paper", "Tabloid"], "Unknown paper size"),
+            (["--margin", "-1"], "finite, non-negative"),
+            (["--margin", "nan"], "finite, non-negative"),
+            (["--margin", "105"], "no drawable area"),
+        ],
+    )
+    def test_rejects_invalid_paper_and_margin(self, tmp_path, arguments, message):
+        source = tmp_path / "invalid.md"
+        source.write_text("# Invalid options\n", encoding="utf-8")
+        output = tmp_path / "never.pdf"
+
+        result = runner.invoke(
+            app,
+            ["md-to-pdf", str(source), "-o", str(output), *arguments],
+        )
+
+        assert result.exit_code == EXIT_USAGE
+        assert message in combined_output(result)
+        assert not output.exists()
+
+    def test_missing_typst_maps_to_no_engine(self, tmp_path, monkeypatch):
+        source = tmp_path / "missing-engine.md"
+        source.write_text("# Missing engine\n", encoding="utf-8")
+        output = tmp_path / "never.pdf"
+        registry = default_registry()
+        typst = registry.get("typst")
+        assert typst is not None
+        unavailable = typst.probe().model_copy(
+            update={"available": False, "install_hint": "install synthetic typst"}
+        )
+        monkeypatch.setattr(typst, "probe", lambda: unavailable)
+
+        result = runner.invoke(
+            app,
+            ["md-to-pdf", str(source), "-o", str(output)],
+        )
+
+        assert result.exit_code == EXIT_NO_ENGINE
+        assert "install synthetic typst" in result.stderr
+        assert not output.exists()
 
 
 class TestConvertImagesCommand:

@@ -42,7 +42,7 @@ class FidelityWarning(BaseModel):
 
 
 class ResourceLimits(BaseModel):
-    """Bounds enforced on every job. ``None`` disables an individual bound."""
+    """Job bounds; ``None`` disables one unless an operation documents a safety floor."""
 
     max_input_bytes: int | None = 2 * 1024**3  # 2 GiB
     max_output_bytes: int | None = 4 * 1024**3

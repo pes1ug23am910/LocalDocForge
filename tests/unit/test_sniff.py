@@ -45,6 +45,52 @@ class TestDetect:
         as_other.write_bytes(content)
         assert detect_media_type(as_other) is None
 
+    @pytest.mark.parametrize("suffix", [".md", ".markdown", ".MD"])
+    def test_markdown_requires_a_markdown_extension_and_full_valid_utf8(self, tmp_path, suffix):
+        markdown = tmp_path / f"report{suffix}"
+        markdown.write_text("# Résumé 履歴書\n\nStrict UTF-8.\n", encoding="utf-8-sig")
+
+        assert detect_media_type(markdown) == "text/markdown"
+        assert require_media_type(markdown, "text/markdown") == "text/markdown"
+
+        same_bytes = tmp_path / "report.txt"
+        same_bytes.write_bytes(markdown.read_bytes())
+        assert detect_media_type(same_bytes) is None
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            b"# valid prefix\n" + b"a" * 5000 + b"\xff",
+            b"# valid prefix\n" + b"a" * 5000 + b"\x00binary",
+        ],
+    )
+    def test_markdown_detection_checks_beyond_the_header(self, tmp_path, content):
+        markdown = tmp_path / "hostile.md"
+        markdown.write_bytes(content)
+
+        assert detect_media_type(markdown) is None
+        with pytest.raises(ContentTypeError, match="Could not identify"):
+            require_media_type(markdown, "text/markdown")
+
+    def test_signature_still_outranks_a_markdown_extension(self, tmp_path):
+        disguised = tmp_path / "disguised.md"
+        disguised.write_bytes(PNG_HEADER)
+
+        assert detect_media_type(disguised) == "image/png"
+        with pytest.raises(ContentTypeError, match="image/png"):
+            require_media_type(disguised, "text/markdown")
+
+    def test_markdown_detection_honours_a_bounded_full_text_scan(self, tmp_path):
+        markdown = tmp_path / "bounded.md"
+        markdown.write_bytes(b"# heading\n" + b"x" * 128)
+
+        assert detect_media_type(markdown, max_text_bytes=16) is None
+        with pytest.raises(ContentTypeError, match="Could not identify"):
+            require_media_type(markdown, "text/markdown", max_text_bytes=16)
+        assert detect_media_type(markdown, max_text_bytes=markdown.stat().st_size) == (
+            "text/markdown"
+        )
+
 
 class TestRequire:
     def test_wrong_content_rejected_despite_extension(self, tmp_path):

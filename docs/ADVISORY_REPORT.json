@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportId": "localdocforge-advisory-license-review-2026-07-19",
   "accessDate": "2026-07-19",
-  "amendedDate": "2026-08-08",
+  "amendedDate": "2026-08-09",
   "scope": {
     "sbom": "docs/SBOM.cdx.json",
     "profileSboms": {
@@ -31,7 +31,7 @@
     "versionedReviewRecordCount": 48,
     "optionalEngines": {
       "reviewed": false,
-      "reason": "No optional external executable is enabled or distributed. Typst is locally detectable but its capability is unwired; qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
+      "reason": "Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by these Python profiles and remains outside their component inventory. qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
     }
   },
   "summary": {
@@ -122,6 +122,45 @@
         }
       ],
       "releaseDisposition": "not-cleared"
+    },
+    {
+      "accessDate": "2026-08-09",
+      "scope": "Markdown-to-PDF activation: exact-version license and advisory re-review of markdown-it-py 4.2.0 and mdurl 0.1.2 before attacker-controlled Markdown becomes reachable",
+      "dataBoundary": "Only public component names and exact public versions were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "markdown-it-py 4.2.0 and mdurl 0.1.2 (PyPI)",
+          "conclusion": "The official OSV batch API returned no matching vulnerability records for either exact PyPI name/version query.",
+          "disposition": "Both exact versions remain time-bounded no-findings, not safety guarantees."
+        },
+        {
+          "url": "https://api.github.com/advisories",
+          "exactVersions": "markdown-it-py 4.2.0 and mdurl 0.1.2",
+          "conclusion": "GitHub reviewed global advisories returned no matches for either exact pip package/version query.",
+          "disposition": "The empty results corroborate the OSV exact-version queries but do not prove the parser or URL normalizer safe."
+        },
+        {
+          "url": "https://github.com/executablebooks/markdown-it-py/releases/tag/v4.1.0",
+          "exactVersions": "markdown-it-py release lineage through 4.2.0",
+          "conclusion": "The upstream v4.1.0 release records a quadratic-complexity fix in fragments_join/text_join; the published LocalDocForge compatibility floor is therefore 4.2, matching the reviewed lock, rather than allowing 4.0 on the new hostile-input surface.",
+          "disposition": "minimum supported direct dependency set to markdown-it-py>=4.2"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE",
+          "exactVersions": "markdown-it-py 4.2.0",
+          "conclusion": "The exact release-tag text and installed wheel licenses/LICENSE plus licenses/LICENSE.markdown-it are MIT notices; the installed files have SHA-256 4a2260d6e2cd0f5a151a1e86dbfe7d3ed552b1e2beabf9941c1ba5c49cbce484 and 792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473.",
+          "disposition": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE",
+          "exactVersions": "mdurl 0.1.2",
+          "conclusion": "The exact release-tag and installed wheel license are MIT notices retaining both the Python port and original JavaScript authors; the installed file has SHA-256 7c605df6e28667a9603118e98274f64a49ce3eed0d26fccce9534a345e0ef955.",
+          "disposition": "verified-upstream-and-installed-wheel"
+        }
+      ],
+      "releaseDisposition": "not-cleared",
+      "releaseRationale": "The two exact Python versions have no matching OSV or GitHub reviewed advisory in this refresh, but hostile Markdown materially increases parser and URL-normalization reachability. The repository-wide disposition remains not-cleared because the existing affected OpenJPEG/libheif and advisory-unknown PDFium findings are unchanged."
     }
   ],
   "method": {
@@ -327,6 +366,29 @@
         "queriedBomRefs": [
           "pkg:generic/libheif@1.23.0",
           "pkg:generic/libde265@1.1.1"
+        ],
+        "results": []
+      },
+      "osv-pypi-exact-2026-08-09": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "PyPI",
+        "accessDate": "2026-08-09",
+        "results": {
+          "pkg:pypi/markdown-it-py@4.2.0": [],
+          "pkg:pypi/mdurl@0.1.2": []
+        }
+      },
+      "github-reviewed-pip-exact-2026-08-09": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "pip",
+        "accessDate": "2026-08-09",
+        "queriedBomRefs": [
+          "pkg:pypi/markdown-it-py@4.2.0",
+          "pkg:pypi/mdurl@0.1.2"
         ],
         "results": []
       }
@@ -781,23 +843,25 @@
       "name": "markdown-it-py",
       "version": "4.2.0",
       "kind": "runtime-python",
+      "reviewDate": "2026-08-09",
       "profiles": ["lite", "standard", "full"],
-      "role": "Rich Markdown rendering dependency for local CLI presentation; user-document Markdown input/rendering and Markdown-to-PDF are not enabled.",
+      "role": "Direct parser for attacker-controlled Markdown in the Markdown-to-PDF pipeline; also retained transitively by Rich for local CLI presentation.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream-with-bundled-notice",
         "upstreamText": "https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE",
-        "exactReleaseMetadata": "https://pypi.org/project/markdown-it-py/4.2.0/"
+        "exactReleaseMetadata": "https://pypi.org/project/markdown-it-py/4.2.0/",
+        "localVersionEvidence": "Installed wheel metadata reports markdown-it-py 4.2.0 with sole mandatory dependency mdurl~=0.1 and preserves MIT files licenses/LICENSE (SHA-256 4a2260d6e2cd0f5a151a1e86dbfe7d3ed552b1e2beabf9941c1ba5c49cbce484) and licenses/LICENSE.markdown-it (SHA-256 792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473)."
       },
       "security": {
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact-2026-08-09", "github-reviewed-pip-exact-2026-08-09"],
         "upstream": "https://github.com/executablebooks/markdown-it-py/security/advisories",
-        "applicability": "User documents are not parsed as Markdown; only application-controlled CLI presentation uses this dependency.",
-        "remediation": "Keep the hash lock and repeat review before enabling attacker-controlled Markdown input or rendering.",
-        "residualRisk": "Future rendering of attacker-controlled Markdown would materially change reachability."
+        "applicability": "Attacker-controlled Markdown reaches this parser through md-to-pdf. The CommonMark parser enables only the built-in table rule; linkify and plugin extras are excluded, raw HTML is dropped by the conversion boundary, and execution remains inside the bounded job pipeline.",
+        "remediation": "Keep the direct floor at markdown-it-py>=4.2 and the exact hash lock current; retain input, nesting, memory, worker, and timeout limits; do not enable linkify or third-party parser plugins without a fresh closure and security review.",
+        "residualRisk": "A crafted document can still trigger unpublished parser complexity or memory defects; safe PDF output additionally depends on complete token-to-Typst escaping and subprocess containment."
       }
     },
     {
@@ -805,23 +869,25 @@
       "name": "mdurl",
       "version": "0.1.2",
       "kind": "runtime-python",
+      "reviewDate": "2026-08-09",
       "profiles": ["lite", "standard", "full"],
-      "role": "URL parser used by markdown-it-py; user-document Markdown input/rendering and Markdown-to-PDF are disabled.",
+      "role": "URL normalizer used by markdown-it-py for attacker-controlled Markdown link destinations in the Markdown-to-PDF pipeline.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream-with-derived-code-notice",
         "upstreamText": "https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE",
-        "exactReleaseMetadata": "https://pypi.org/project/mdurl/0.1.2/"
+        "exactReleaseMetadata": "https://pypi.org/project/mdurl/0.1.2/",
+        "localVersionEvidence": "Installed wheel metadata reports mdurl 0.1.2 with no mandatory dependencies and preserves its combined MIT notice (SHA-256 7c605df6e28667a9603118e98274f64a49ce3eed0d26fccce9534a345e0ef955)."
       },
       "security": {
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact-2026-08-09", "github-reviewed-pip-exact-2026-08-09"],
         "upstream": "https://github.com/executablebooks/mdurl/security/advisories",
-        "applicability": "No untrusted document URL is routed to mdurl in current capabilities.",
-        "remediation": "Preserve both MIT notices and repeat review before enabling Markdown input.",
-        "residualRisk": "URL normalization issues become relevant if attacker-controlled Markdown is later enabled."
+        "applicability": "Explicit link destinations from attacker-controlled Markdown can reach mdurl through markdown-it-py. LocalDocForge emits link text and destinations into escaped Typst output but does not dereference ordinary links or enable fuzzy-link discovery.",
+        "remediation": "Keep mdurl in the exact hash lock, preserve its combined MIT notice, validate and bound hostile destinations, reject unsupported schemes, and repeat exact-version review on upgrade.",
+        "residualRisk": "Crafted URL normalization may still consume disproportionate resources or produce surprising destination semantics even though the conversion does not fetch ordinary links."
       }
     },
     {

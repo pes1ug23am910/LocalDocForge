@@ -135,10 +135,13 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         "markdown-to-pdf",
         "Markdown to PDF",
         "Convert to PDF",
-        None,
-        False,
-        notes="planned: Phase 3",
-        install_hint="Typst is a candidate renderer, but no adapter pipeline is implemented",
+        adapters.OP_MD_TO_PDF,
+        True,
+        notes=(
+            "Local CommonMark-subset rendering through Typst >=0.15.1; unsupported raw HTML, "
+            "footnotes, and math are dropped with stable warnings."
+        ),
+        install_hint="Requires Typst >=0.15.1 (winget install Typst.Typst)",
     ),
     CapabilitySpec(
         "pdf-to-pdfa",

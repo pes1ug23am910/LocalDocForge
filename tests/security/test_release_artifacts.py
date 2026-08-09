@@ -16,8 +16,9 @@ PROFILES = ("lite", "standard", "full")
 PYTHON_COUNTS = {"lite": 21, "standard": 29, "full": 30}
 NATIVE_COUNT = 18
 UNVERSIONED_COUNT = 18
-REVIEW_DATES = {"2026-07-19", "2026-08-08"}
+REVIEW_DATES = {"2026-07-19", "2026-08-08", "2026-08-09"}
 BASE_DIRECT = {
+    "pkg:pypi/markdown-it-py@4.2.0",
     "pkg:pypi/pi-heif@1.4.0",
     "pkg:pypi/pikepdf@10.10.0",
     "pkg:pypi/pillow@12.3.0",
@@ -97,8 +98,8 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         metadata_properties = _properties(sbom["metadata"])
         assert metadata_properties["localdocforge:profile"] == profile
         assert metadata_properties["localdocforge:advisoryAccessDate"] == "2026-07-19"
-        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-08-08"
-        assert sbom["metadata"]["timestamp"] == "2026-08-08T00:00:00Z"
+        assert metadata_properties["localdocforge:advisoryAmendedDate"] == "2026-08-09"
+        assert sbom["metadata"]["timestamp"] == "2026-08-09T00:00:00Z"
         assert "SHA-256 artifact hashes" in metadata_properties[
             "localdocforge:lockEvidence"
         ]
@@ -257,9 +258,9 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     assert report["schemaVersion"] == 1
     assert report["accessDate"] == "2026-07-19"
-    assert report["amendedDate"] == "2026-08-08"
+    assert report["amendedDate"] == "2026-08-09"
     refresh = report["verificationRuns"][-1]
-    assert refresh["accessDate"] == "2026-08-08"
+    assert refresh["accessDate"] == "2026-08-09"
     assert refresh["releaseDisposition"] == "not-cleared"
     assert all(source["url"].startswith("https://") for source in refresh["sources"])
     assert all(source["exactVersions"] for source in refresh["sources"])
@@ -269,6 +270,7 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     assert report["scope"]["versionedBundledNativeComponents"] == NATIVE_COUNT
     assert report["scope"]["unversionedNestedNativeComponents"] == UNVERSIONED_COUNT
     assert report["scope"]["optionalEngines"]["reviewed"] is False
+    assert "Typst 0.15.1 is an enabled" in report["scope"]["optionalEngines"]["reason"]
     components = report["components"]
     assert len({component["bomRef"] for component in components}) == 48
     assert Counter(component["kind"] for component in components) == {
@@ -340,6 +342,27 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     }
     assert "no x265 encoder" in pi_heif_record["license"]["localVersionEvidence"]
 
+    markdown_it = by_ref["pkg:pypi/markdown-it-py@4.2.0"]
+    assert markdown_it["reviewDate"] == "2026-08-09"
+    assert markdown_it["license"]["concluded"] == "MIT"
+    assert "Direct parser for attacker-controlled Markdown" in markdown_it["role"]
+    assert markdown_it["security"]["disposition"] == "no-known-applicable-advisory"
+    assert markdown_it["security"]["sourceRefs"] == [
+        "osv-pypi-exact-2026-08-09",
+        "github-reviewed-pip-exact-2026-08-09",
+    ]
+    assert "markdown-it-py>=4.2" in markdown_it["security"]["remediation"]
+
+    mdurl = by_ref["pkg:pypi/mdurl@0.1.2"]
+    assert mdurl["reviewDate"] == "2026-08-09"
+    assert mdurl["license"]["concluded"] == "MIT"
+    assert "attacker-controlled Markdown link destinations" in mdurl["role"]
+    assert mdurl["security"]["disposition"] == "no-known-applicable-advisory"
+    assert mdurl["security"]["sourceRefs"] == [
+        "osv-pypi-exact-2026-08-09",
+        "github-reviewed-pip-exact-2026-08-09",
+    ]
+
     libde265 = by_ref["pkg:generic/libde265@1.1.1"]
     assert libde265["security"]["disposition"] == "no-known-applicable-advisory"
     assert "OSV-2020-2308" in libde265["security"]["applicability"]
@@ -401,6 +424,8 @@ def test_notice_index_and_profile_notices_disclose_required_uncertainty():
         assert "pi-heif wheels are decode-only builds" in notices
         assert "no GPLv2 x265" in notices
         assert "PDFium 152.0.7947.0 is advisory-unknown" in notices
+        assert "Typst 0.15.1 is an enabled" in notices
+        assert "No optional external executable was enabled" not in notices
         assert "not a safety guarantee" in notices
         assert "No vulnerability or security-advisory lookup was performed" not in notices
         assert "profiles are not implemented" not in notices

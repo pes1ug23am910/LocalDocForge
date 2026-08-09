@@ -35,6 +35,7 @@ from localdocforge.jobs.workspace import (
     cleanup_stale_workspaces,
 )
 from localdocforge.operations import images as image_ops
+from localdocforge.operations import markdown as markdown_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.operations import text as text_ops
@@ -614,6 +615,40 @@ def pdf_to_md_cmd(
         password=_password_value(),
     )
     _run(text_ops.pdf_to_md, input_file, output, options=options)
+
+
+@app.command("md-to-pdf")
+def md_to_pdf_cmd(
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    paper: Annotated[
+        str,
+        typer.Option("--paper", help="A4 | Letter | Legal (default A4)."),
+    ] = "A4",
+    margin: Annotated[
+        float,
+        typer.Option("--margin", help="Page margin in millimetres (default 20)."),
+    ] = 20.0,
+    toc: Annotated[
+        bool,
+        typer.Option("--toc", help="Insert an outline-based table of contents."),
+    ] = False,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Render a safe CommonMark subset to a validated PDF through Typst."""
+    try:
+        paper_info = markdown_ops.normalize_paper(paper)
+        markdown_ops.validate_margin(margin, paper_info)
+    except PipelineError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_USAGE) from exc
+    options = markdown_ops.MdToPdfOptions(
+        paper=paper_info[0],
+        margin_mm=margin,
+        toc=toc,
+        collision=collision,
+    )
+    _run(markdown_ops.md_to_pdf, input_file, output, options=options, password_retry=False)
 
 
 # --------------------------------------------------------------------------- organize

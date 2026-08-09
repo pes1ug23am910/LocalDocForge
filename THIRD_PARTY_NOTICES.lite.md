@@ -1,7 +1,7 @@
 # Third-Party Notices — Lite profile
 
 Generated offline by `scripts/generate_release_artifacts.py` from the hash-bearing `lite` lock and `docs/ADVISORY_REPORT.json`.
-License/advisory sources were accessed 2026-07-19; verification sources were refreshed 2026-08-08. A no-finding disposition is not a safety guarantee or legal advice.
+License/advisory sources were accessed 2026-07-19; verification sources were refreshed 2026-08-09. A no-finding disposition is not a safety guarantee or legal advice.
 
 ## Runtime Python distributions
 
@@ -90,4 +90,4 @@ These children are enumerated because aggregate wheel evidence names or links th
 - pi-heif wheels are decode-only builds of pillow-heif with an LGPLv3 license ceiling (libheif + libde265). They bundle no GPLv2 x265 encoder; the full pillow-heif package is a dev-profile test-fixture tool only and ships in no runtime profile.
 - This notice and its universal-profile SBOM use native evidence from Windows x86-64 / CPython 3.14 wheels only. They do not assert identical native composition on Linux or macOS; re-inventory every target wheel.
 - The CycloneDX composition is explicitly `incomplete`: 18 native records have versions, 18 known children do not, and additional static or platform-specific children may exist.
-- No optional external executable was enabled or distributed, so Typst, qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are outside this report's reviewed component set.
+- Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by any Python profile and remains outside this report's component inventory. qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles.
