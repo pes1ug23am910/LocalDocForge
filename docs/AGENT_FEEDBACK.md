@@ -53,3 +53,11 @@ and friction feed the roadmap.
 - Observed: Exit 1 before LocalDocForge started because the sandbox denied access to the venv's external Python interpreter (`Access is denied`); no JSON report or warning code was produced.
 - Fallback: none; the root executor had already completed the identical read-only brief successfully with approved filesystem access.
 - Suggestion: none for `ldf`; route repository-venv launchers through the approved read-only permission when the interpreter lives outside the workspace sandbox.
+
+### 2026-08-09 — Codex, GPT-5.6 Sol — ok
+- Task: Verify the live capability source while completing the commissioned S3/S4 external agent-document sync.
+- Command: `& 'E:\Sem-VI-Break\Pdf-Conversion-Tool\.venv\Scripts\ldf.exe' --json agent-brief`
+- Version: 0.1.0 @ b743ab0
+- Observed: The sandboxed launcher attempt was denied before LocalDocForge started; the approved read-only rerun exited 0 with valid registry-derived JSON and reported `pdf-to-markdown` implemented and available with `ldf pdf-to-md` usage.
+- Fallback: none; the same command succeeded with permission to access the venv's external Python interpreter.
+- Suggestion: none for `ldf`; the initial denial was an agent sandbox boundary rather than a product failure.
