@@ -85,7 +85,6 @@ _PAPERS_MM: dict[str, tuple[str, float, float]] = {
 _IMAGE_INPUT_TYPES = tuple(image_ops.IMAGE_MEDIA_TYPES)
 _FOOTNOTE_DEFINITION = re.compile(r"^ {0,3}\[\^[^\]\r\n]+\]:")
 _FOOTNOTE_REFERENCE = re.compile(r"\[\^[^\]\r\n]+\]")
-_INLINE_DOLLAR_MATH = re.compile(r"(?<!\\)\$(?!\s|\$)(.+?)(?<!\s|\\)\$")
 _INLINE_PAREN_MATH = re.compile(r"(?<!\\)\\\((.+?)(?<!\\)\\\)")
 _PYTHON_SPLITLINE_SINGLETONS = frozenset(
     {"\n", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"}
@@ -609,7 +608,6 @@ class _TypstRenderer:
             return ""
 
         value = _FOOTNOTE_REFERENCE.sub(remove_footnote, value)
-        value = _INLINE_DOLLAR_MATH.sub(remove_math, value)
         return _INLINE_PAREN_MATH.sub(remove_math, value)
 
     def _inline_nodes(self, token: Token) -> list[_Node]:

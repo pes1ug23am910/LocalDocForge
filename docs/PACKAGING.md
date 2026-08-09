@@ -323,6 +323,23 @@ modes and every source/wheel profile, and recorded
 `8216c2d879f0a7af04ca9a2d6b5f281750777de2502340e0dd13b156796887dc`;
 retained artifacts/evidence remained untouched.
 
+#### F1 literal-dollar remediation identity
+
+The S6 review remediation removes the custom inline-dollar detector so ordinary
+CommonMark currency prose remains literal. A 30.4-second build-only gate used a
+fresh system-temporary directory, reproduced both direct builds and the
+sdist-to-wheel build, and refreshed only the live manifest below. Retained
+`dist/` and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `d5d841401632212c646159f347aa2b5d1271ca2b71623870f4812e13be62b22e` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `5cdc94118b52d2fe5bc14245287044060014aa0beb856f98bc834b1e83fe0d7b` | 140,192 |
+| `localdocforge-0.1.0.tar.gz` | `41a8d07447859e5d7acbcfd5d4904cc3db8190425185171f7ddab99f91a1a5d5` | 126,706 |
+
+The definitive clean-tree verify-mode gate remains pending until the coherent
+remediation commit exists.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source

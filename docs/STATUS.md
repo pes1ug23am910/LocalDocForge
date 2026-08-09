@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S6 `md-to-pdf` implementation handoff; definitive
-Windows-AMD64 gate passed on the 615-outcome implementation tree).
+Last updated: 2026-08-09 (S6 currency-dollar F1 remediation; pre-commit
+616-outcome suite passed, clean-tree release gate pending).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,7 +20,7 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (615 outcomes as of
+SBOM/notices drift, the complete collected test suite (616 outcomes as of
 2026-08-09) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
@@ -558,6 +558,15 @@ result applies only to the recorded OS, architecture, and interpreter.
   `8216c2d879f0a7af04ca9a2d6b5f281750777de2502340e0dd13b156796887dc`.
   The evidence truthfully identifies base revision `9f27b4e` with working-tree
   changes; retained `dist/` and `packaging-evidence/` were not modified.
+- F1 remediation removes the non-CommonMark inline-dollar detector so `$5-$10`,
+  `$5 and$10`, and `$20` remain literal text without a dropped-construct warning.
+  The pre-commit 616-outcome suite passed with 613 passes and three documented
+  platform skips; Ruff, mypy, generated-artifact drift, focused semantic
+  round-trip, and 200-DPI rendered-page inspection are clean. A disposable
+  30.4-second build-only gate refreshed the package identity to source
+  `d5d84140…`, wheel `5cdc9411…` (140,192 bytes), and sdist `41a8d074…`
+  (126,706 bytes). The definitive clean-tree verify gate remains pending;
+  retained `dist/` and `packaging-evidence/` were not modified.
 
 ## Implemented hardening
 
