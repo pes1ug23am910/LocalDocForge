@@ -366,9 +366,15 @@ the sdist-to-wheel build, and refreshed only the live manifest below. Retained
 | `localdocforge-0.1.0.tar.gz` | `0ad3304e7342721bdf67b6f079c0881e3979fc865ae50042c63e4b468ab781d0` | 132,183 |
 
 The build-only refresh passed byte-identical direct builds, Twine/member/
-metadata checks, and sdist-to-wheel equivalence. The clean-tree definitive
-verify-mode gate follows the coherent S5 implementation commit; its disposable
-evidence will be recorded in `docs/STATUS.md`.
+metadata checks, and sdist-to-wheel equivalence. A subsequent 485.3-second
+clean-tree verify-mode gate at S5 implementation commit
+`073b7b32812ad08af86eed261dbaf776bb6a92bd` reproduced the identity, passed both
+639-outcome suite modes and every source/wheel profile, and recorded
+`release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and `source.working_tree_changes: false`.
+Disposable evidence SHA-256 was
+`9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
+temporary output was removed and retained artifacts/evidence stayed untouched.
 
 ## Clean profile/full-test matrices
 

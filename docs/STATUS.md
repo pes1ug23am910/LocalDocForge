@@ -1,8 +1,7 @@
 # STATUS — LocalDocForge
 
 Last updated: 2026-08-10 (S5 opt-in PDF-to-Markdown table reconstruction;
-pre-review suite, dependency, artifact, and visual checks passed; definitive
-clean-tree Windows-AMD64 gate follows the implementation commit).
+definitive Windows-AMD64 gate passed on clean 639-outcome revision `073b7b3`).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -615,13 +614,21 @@ result applies only to the recorded OS, architecture, and interpreter.
   suite collected 639 outcomes and passed 636 with three documented platform
   skips; Ruff, mypy over 35 source files, lock drift, generated artifacts, and
   release-artifact/packaging contracts are clean. Retained `dist/` and
-  `packaging-evidence/` remain untouched; a clean-tree definitive gate is still
-  required after the coherent implementation commit.
+  `packaging-evidence/` remain untouched.
 - A 29.066-second disposable build-only gate reproduced two direct builds and
   the sdist-to-wheel build, then refreshed the live Windows-AMD64 manifest to
   source `66e25069…`, wheel `7076cabd…` (145,443 bytes), and sdist
   `0ad3304e…` (132,183 bytes). The temporary output was removed; retained
   artifacts/evidence remain untouched.
+- The subsequent 485.3-second clean-tree verify-mode gate at implementation
+  commit `073b7b32812ad08af86eed261dbaf776bb6a92bd` reproduced that identity;
+  passed native/Linux/macOS mypy, both 639-outcome suite modes, reproducible
+  builds, and every Base/Lite/Standard/Full source/wheel profile; and recorded
+  `release_manifest_verified: true`, `source_install_syntax_tested: true`,
+  `full_tests.status: passed`, and `source.working_tree_changes: false`.
+  Disposable evidence SHA-256 was
+  `9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
+  its temporary directory was removed and retained evidence stayed untouched.
 
 ## Implemented hardening
 
