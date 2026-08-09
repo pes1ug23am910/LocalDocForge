@@ -10,6 +10,7 @@ Probed state on this machine is always visible via `ldf doctor`.
 | pikepdf (libqpdf) | 10.10.0 / qpdf 12.3.2 | MPL-2.0 (pikepdf) / Apache-2.0 (qpdf) | Primary structural engine: merge/split/remove/extract/organize/rotate/crop/inspect | Mature, actively maintained, binds qpdf (the reference structural tool), preserves objects faithfully, handles encryption, robust against malformed files |
 | pypdf | 6.14.2 | BSD-3-Clause | Installed library used for independent text assertions in tests; no production operation is wired to it | It remains probed for diagnostics but is not advertised or selected as a fallback |
 | pypdfium2 (PDFium) | 5.12.1 / PDFium 152.0.7947.0 | Apache-2.0 OR BSD-3-Clause (wrapper); bundled PDFium uses BSD-style and `BUILD_LICENSES` notices | Rendering: validation renders and pdf-to-images; text/geometry extraction for pdf-to-md and inspect coverage | Chrome's widely deployed PDF engine: robust on hostile files, exposes page-scoped text rectangles/font geometry without another runtime dependency, permissive license, abi3 wheels |
+| pdfplumber | 0.11.10 | MIT | Opt-in, Markdown-only explicit-line table detection and cell extraction for `pdf-to-md --tables` | Its line strategy exposes table/cell geometry without an AGPL dependency. LocalDocForge adds strict rectangular confidence and resource bounds, uses pdfplumber text only inside an accepted table region, and falls back to PDFium flowed text rather than emitting a doubtful table |
 | Pillow | 12.3.0 | MIT-CMU; bundled codecs have per-component terms | Image decode/encode, images-to-pdf composition, convert-images transcoding | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 | pi-heif (libheif) | 1.4.0 / libheif 1.23.0, libde265 1.1.1 | BSD-3-Clause wrapper; LGPL-3.0-or-later libheif + libde265 | HEIF/HEIC **decode-only** Pillow plugin: iPhone photo input for convert-images and images-to-pdf | The decode-only distribution of pillow-heif — its wheels bundle no GPLv2 x265 encoder, keeping the runtime license ceiling at LGPLv3; the full pillow-heif package is a dev-profile fixture-encoding tool only |
 | Typst | 0.15.1 | Apache-2.0 | Separately installed executable for Markdown→PDF; not bundled in Python profiles | Fast deterministic PDF generation, explicit project root, dependency manifest, bounded subprocess runner, and a permissive license. Availability requires a parseable version ≥0.15.1; generated source uses only application-controlled code and escaped strings |
@@ -26,8 +27,10 @@ one-page-at-a-time extraction without expanding the dependency closure.
 Layout and heading reconstruction remain documented heuristics. **PyMuPDF and
 pymupdf4llm are banned from core**: linking/importing their AGPL runtime would
 exceed this project's weak-copyleft-or-lighter license ceiling. They are not a
-fallback and are not optional adapters. Structured table extraction is a
-separate future slice rather than a reason to mislabel flattened PDFium text.
+fallback and are not optional adapters. The opt-in pdfplumber path emits only
+confident explicit-line rectangles. PDFium remains the source for ordinary
+regions; within an accepted table region, pdfplumber alone supplies cell text,
+so the two extractors are never interleaved for the same content.
 
 ## Other optional executable probes (features gated off; availability varies)
 
@@ -46,7 +49,10 @@ separate future slice rather than a reason to mislabel flattened PDFium text.
   stays empty until the pipeline using it lands with tests.
 - External tools run only through the hardened subprocess runner
   (allowlist in `security/subproc.py`).
-- Engine names + versions are recorded in every `ConversionReport`.
+- The selected primary operation engine name + version is recorded in every
+  `ConversionReport`. Imported secondary parsers such as pdfplumber are pinned
+  in the release locks/SBOM; their safe status and counters may appear in report
+  details without replacing the primary engine identity.
 - `--engine` lets users override selection where multiple engines support an
   operation (registry enforces support + availability).
 
@@ -57,8 +63,9 @@ separate future slice rather than a reason to mislabel flattened PDFium text.
   a WeasyPrint fallback only with equivalent isolation, licensing, and output
   validation evidence; Typst's project root is defense in depth, not an OS
   filesystem or network sandbox.
-- PDF→Markdown follow-up: evaluate S5's separately licensed table extractor and
-  confidence thresholds. Keep PDFium text as the source for ordinary regions;
-  do not interleave competing text engines or weaken the PyMuPDF ban.
+- PDF→Markdown follow-up: evaluate richer borderless and merged-cell semantics
+  only with equally conservative confidence and resource thresholds. Keep
+  PDFium text as the source for ordinary regions; do not interleave competing
+  text engines or weaken the PyMuPDF ban.
 - Semantic PDF→DOCX (Phase 2/3): candidate pdf2docx; verify license and
   output honesty before adoption.

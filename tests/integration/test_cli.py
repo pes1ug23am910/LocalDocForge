@@ -903,6 +903,55 @@ class TestPdfToMdCommand:
             for record in records
         )
 
+    def test_tables_flag_emits_gfm_and_reports_best_effort(
+        self, fixtures_dir, out_dir
+    ):
+        output = out_dir / "table.md"
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "pdf-to-md",
+                str(fixtures_dir / "text-ruled-table.pdf"),
+                "-o",
+                str(output),
+                "--tables",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        report = json.loads(result.stdout)
+        assert report["details"]["tables"] == {
+            "requested": True,
+            "engine_status": "available",
+            "emitted": 1,
+            "flattened_candidates": 0,
+        }
+        assert any(
+            warning["code"] == "table-fidelity-best-effort"
+            for warning in report["fidelity_warnings"]
+        )
+        assert "| Quarter | Units | Revenue |" in output.read_text(encoding="utf-8")
+
+    def test_tables_flag_requires_markdown_format(self, fixtures_dir, out_dir):
+        output = out_dir / "never.txt"
+        result = runner.invoke(
+            app,
+            [
+                "pdf-to-md",
+                str(fixtures_dir / "text-ruled-table.pdf"),
+                "-o",
+                str(output),
+                "--format",
+                "txt",
+                "--tables",
+            ],
+        )
+
+        assert result.exit_code == EXIT_USAGE
+        assert "requires --format md" in combined_output(result)
+        assert not output.exists()
+
     def test_unknown_format_is_usage_error(self, fixtures_dir, out_dir):
         output = out_dir / "never.html"
         result = runner.invoke(

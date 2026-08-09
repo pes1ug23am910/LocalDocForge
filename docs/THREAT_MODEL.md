@@ -18,9 +18,10 @@ inherit these controls automatically.
 
 - Every input document and upload is untrusted, regardless of extension.
 - CLI operations invoke pikepdf/libqpdf, PDFium (rendering and text extraction),
-  Pillow, and — for HEIC/HEIF input — the libheif/libde265 decoders (via
-  pi-heif) in-process. Markdown-to-PDF invokes the separately installed Typst
-  executable through the hardened subprocess runner. API
+  pdfplumber/pdfminer.six (only for opt-in Markdown table analysis), Pillow,
+  and — for HEIC/HEIF input — the libheif/libde265 decoders (via pi-heif)
+  in-process. Markdown-to-PDF invokes the separately installed Typst executable
+  through the hardened subprocess runner. API
   operations invoke them in a fresh spawned child with process/resource
   containment. Both retain the user's filesystem authority; the worker is a
   failure boundary, not a restricted filesystem or kernel sandbox.
@@ -55,8 +56,22 @@ inherit these controls automatically.
 - Generated Markdown/TXT/JSONL must decode as strict UTF-8. `pdf-to-md` also
   validates its required coverage report, exact page-anchor cardinality, or
   exact JSONL record schema/counts before publication. These checks defend the
-  output contract; they do not prove correct language, reading order, or table
-  reconstruction.
+  output contract; they do not prove correct language, reading order, table
+  detection, or table semantics.
+- `pdf-to-md --tables` is off by default and valid only for Markdown. It asks
+  pdfplumber for explicit-line grids only after PDFium path analysis passes
+  fixed bounds. Accepted regions must be complete, rectangular, non-overlapping,
+  coordinate-compatible, and text-consistent. PDFium fragments are removed only
+  when wholly contained; pdfplumber is the sole text source inside that region.
+  Partial overlap or any low-confidence/parser condition keeps flowed PDFium
+  text instead of risking duplicate or plausible-looking corrupt content.
+- Structured table finding is skipped once the PDFium scan exceeds 8,192 path
+  segments and refuses structured output above 1,024 edges, 4,096
+  vertical×horizontal pairs, 32 detected tables per
+  page, 4,096 cumulative cells per page, or 4 MiB of normalized cell text per
+  page. The cell-text ceiling is further lowered by extraction-byte and memory
+  budgets. These checks bound cardinality and memory; they do not make an
+  in-process third-party parser preemptible in the CLI.
 - Aggregate input bytes, aggregate output bytes, PDF page counts, image pixel
   counts, and decompressed image bytes are enforced in the implemented
   pipelines. Encrypted PDFs are page-counted again after opening. Output totals
@@ -106,7 +121,10 @@ inherit these controls automatically.
   conversion is unavailable.
 - Extracted Markdown is untrusted document content, not executable application
   input. `pdf-to-md` creates only plain UTF-8 artifacts and invokes no Markdown
-  renderer. Markdown/TXT, with or without structural page anchors, escapes
+  renderer. Opt-in GFM cells escape backslashes and pipes and replace embedded
+  newlines with `<br>` for table framing, not sanitization; downstream renderers
+  still receive untrusted document text. Markdown/TXT, with or without
+  structural page anchors, escapes
   source lines matching either reserved page-marker syntax
   (`<!-- ldf:page N -->` or `--- ldf:page N ---`) so content
   cannot forge provenance boundaries; JSONL preserves them as ordinary framed
@@ -225,9 +243,11 @@ inherit these controls automatically.
   return a generic message and hardening headers rather than exception details.
 - `pdf-to-md` deliberately writes document text only to the requested output
   artifact. Its reports and worker IPC retain counts, booleans, and stable
-  warning codes but never per-page text. On Windows, stdout/console encoding is
-  not a fidelity boundary: the CLI prints only its report there, while the
-  artifact is written explicitly as UTF-8.
+  warning codes but never per-page text or table-cell values. The text-free
+  `details.tables` object contains only requested/engine status and emitted/
+  flattened-candidate counters. On Windows, stdout/console encoding is not a
+  fidelity boundary: the CLI prints only its report there, while the artifact
+  is written explicitly as UTF-8.
 - `md-to-pdf` reports only paper/margin/TOC, source-line and image counts,
   construct names/line numbers, font policy, and engine/version. It omits source
   text, link destinations, asset source paths from operation details, generated

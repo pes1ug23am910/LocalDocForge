@@ -81,7 +81,7 @@ def test_usage_templates_exactly_cover_implemented_specs() -> None:
     assert "--preset llm" in USAGE_BY_CAPABILITY_ID["pdf-to-images"]
     assert USAGE_BY_CAPABILITY_ID["pdf-to-markdown"] == (
         "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
-        "[--format md|txt|jsonl] [--no-page-anchors]"
+        "[--format md|txt|jsonl] [--no-page-anchors] [--tables]"
     )
     assert USAGE_BY_CAPABILITY_ID["markdown-to-pdf"] == (
         "ldf md-to-pdf INPUT.md -o OUTPUT.pdf "

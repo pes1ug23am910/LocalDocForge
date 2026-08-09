@@ -1256,6 +1256,9 @@ def _run_pdf_to_md(paths, output_dir, params, settings, progress=None):
             422,
             "'format' must be one of: " + ", ".join(text_ops.TEXT_OUTPUT_FORMATS),
         )
+    tables = _strict_bool_param(params, "tables", default=False)
+    if tables and output_format != "md":
+        raise _ApiError(422, "'tables' requires 'format' to be 'md'")
     options = text_ops.PdfToMdOptions(
         output_format=output_format,
         pages=_range_or_none(params.get("pages"), what="pages"),
@@ -1264,6 +1267,7 @@ def _run_pdf_to_md(paths, output_dir, params, settings, progress=None):
             "page_anchors",
             default=True,
         ),
+        tables=tables,
         collision=CollisionPolicy.RENAME,
         settings=settings,
         progress=progress,
@@ -1376,7 +1380,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "pdf-to-images": frozenset(
         {"format", "dpi", "pages", "quality", "preset", "password"}
     ),
-    "pdf-to-md": frozenset({"pages", "format", "page_anchors", "password"}),
+    "pdf-to-md": frozenset({"pages", "format", "page_anchors", "tables", "password"}),
     "md-to-pdf": frozenset({"paper", "margin", "toc"}),
     "convert-images": frozenset(
         {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}

@@ -67,7 +67,8 @@ and hand an `execute()` closure to the pipeline runner.
   byte/page totals, timing, `security_warnings`, `fidelity_warnings`,
   `errors`, `validation` (per-check results), and operation-specific
   `details`. Never contains document text or passwords; `pdf-to-md` puts only
-  coverage counts and warning codes in `details`. `to_human()` renders
+  coverage counts, table status/counters, and warning codes in `details`.
+  `to_human()` renders
   the CLI summary; it is a Pydantic model, so `--json` is just
   `model_dump_json()`.
 - `SecurityWarning` / `FidelityWarning` — stable `code` + message + severity
@@ -220,7 +221,7 @@ Failures raise `PipelineError` with the failed report attached
 | compress | pikepdf (+ PDFium compare) | lossless only: `remove_unreferenced_resources()` (failure → `resource-cleanup-skipped`, info), then save with `compress_streams=True`, `stream_decode_level=generalized` (never decodes DCT/JPX image data), `object_stream_mode=generate`, `recompress_flate=True`, `deterministic_id=True`. Then ≤5 sampled pages of source and candidate are rendered identically (scale 1.0) and compared per-channel via `ImageChops.difference`; **any nonzero delta or size mismatch blocks publication**. `details.compression` reports exact bytes/reduction; `compress-no-reduction` (info) when output ≥ input. Presets `balanced`/`aggressive`/`archival` are refused |
 | images-to-pdf | Pillow | multipage-TIFF aware, EXIF orientation honored; fixed page sizes composed on a raster canvas at `dpi` (36–600), `fit`/`stretch`/`center`, alpha flattened onto `background`; `image` page size keeps the pixel grid; photographs pass one JPEG generation (`images-reencoded` info) |
 | pdf-to-images | PDFium | 18–1200 dpi, PNG/JPEG/WebP/TIFF, page ranges; incremental pixel/byte limit checks; syntax-damaged inputs refused |
-| pdf-to-md | PDFium text API | Streams selected occurrences one page at a time; UTF-8/LF + NFC; Markdown `<!-- ldf:page N -->`, TXT `--- ldf:page N ---` (or form-feed without anchors), or exact-schema JSONL. Top-to-bottom/left-to-right ordering and font-size headings are heuristics; no bidi repair or silent dehyphenation. Per-page raw-character/memory preflight, 50,000-rectangle fallback, and bounded 4,096-object/15-level/512-ruling scans prevent unbounded layout work. Coverage/warning metadata only in reports |
+| pdf-to-md | PDFium text API + pdfplumber (opt-in tables) | Streams selected occurrences one page at a time; UTF-8/LF + NFC; Markdown `<!-- ldf:page N -->`, TXT `--- ldf:page N ---` (or form-feed without anchors), or exact-schema JSONL. Top-to-bottom/left-to-right ordering and font-size headings are heuristics; no bidi repair or silent dehyphenation. Markdown-only `tables=True` uses explicit line grids, infers the first physical row as the GFM header, escapes backslashes/pipes/newlines, and uses pdfplumber as the sole text source inside each accepted region. Borderless, merged-cell, rotated, dense, overlapping, and low-confidence candidates remain flowed text. Per-page raw-character/memory preflight, 50,000-rectangle fallback, and fixed object/table bounds prevent unbounded layout work. Coverage/warning/table-counter metadata only in reports |
 | md-to-pdf | markdown-it-py + Typst ≥0.15.1 | Strict-UTF-8 CommonMark subset with GFM tables; known tokens become application-controlled Typst function calls and all untrusted values use a punctuation/control-escaping string serializer. A4/Letter/Legal, finite margin, optional outline/TOC. Preprocessing is capped at min(16 MiB, input bytes, memory/512, temporary/64), 100k lines, 250k tokens, and 256 image occurrences; detailed drops cap at 256 plus a summary. Relative contained raster images are signature-checked additional inputs, single-frame decoded, metadata-stripped, and normalized to neutral PNGs. Typst runs through the hardened subprocess runner with private root/home/temp/package paths, hard remaining-job timeout, bounded hidden diagnostics, static generated-source audit, empty-package and exact dependency-manifest checks. Post-compile `max_pages` plus full standard PDF validation apply. Unsupported constructs emit `markdown-construct-dropped`; font fallback emits `system-font-dependent` |
 
 ### 8.1 Fidelity and security warning model
@@ -235,12 +236,18 @@ emit critical `signature-invalidated` when signature fields exist and critical
 output. Full vocabulary: `docs/CONVERSION_FIDELITY.md`.
 
 Text extraction emits at most one aggregate entry for each of
-`no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
-`tables-flattened`. Exact page attribution is the ordered
+`no-text-layer`, `headings-inferred`, `reading-order-uncertain`,
+`table-fidelity-best-effort`, and `tables-flattened`. The table-fidelity code
+marks emitted GFM grids; the flattened code marks a detected candidate kept as
+flowed text because table mode was disabled or confidence/resource checks
+refused it. Exact page attribution is the ordered
 `details.coverage.per_page[].warning_codes` array. Coverage keys are
 `pages_total`, `pages_with_text`, `pages_with_text_layer`,
 `char_count_min`, `char_count_median`, `char_count_max`, and `per_page`; the
-report never embeds extracted text.
+report never embeds extracted text. `details.tables` contains only `requested`,
+`engine_status`, `emitted`, and `flattened_candidates`. Absence of a table
+warning is not proof that no table exists; it means only that the bounded
+heuristics found no evidence.
 
 ## 9. Resource limits
 
@@ -270,6 +277,11 @@ Typst child still receives a non-disableable 600-second safety ceiling.
 PDF text extraction checks selection length against `max_pages`, writes and
 accounts output incrementally, and releases each PDFium page before advancing;
 its report grows only with compact per-page counts/codes, not text bodies.
+Table mode skips structured finding above 8,192 PDF path segments, 1,024
+pdfplumber edges, 4,096 vertical×horizontal pairs, 32 detected tables per
+page, 4,096 cumulative cells per page, and 4 MiB of normalized table-cell UTF-8
+per page. The last ceiling is further lowered by the remaining extraction-byte
+budget and `max_memory_bytes // 64`; over-limit candidates stay flowed text.
 
 ## 10. Configuration (`config/settings.py`)
 
@@ -300,9 +312,10 @@ instead of mutating the environment.
   Startup sweeps stale workspaces.
   Security warnings echo to stderr; `--report-dir` writes
   `<op>-<job-id>.report.{json,txt}`.
-- `pdf-to-md` accepts `--pages`, `--format md|txt|jsonl`, and
-  `--no-page-anchors`. Extracted text is always written to the explicit output
-  path as UTF-8; stdout remains report/diagnostic output.
+- `pdf-to-md` accepts `--pages`, `--format md|txt|jsonl`,
+  `--no-page-anchors`, and Markdown-only `--tables` (default off). Extracted
+  text is always written to the explicit output path as UTF-8; stdout remains
+  report/diagnostic output.
 - `ldf web` refuses non-loopback binds without `--allow-nonlocal`, refuses
   them entirely under strict-offline, and translates Windows Ctrl+Break into
   the graceful shutdown path (exit 0, session lease released).
@@ -339,8 +352,9 @@ DELETE /api/jobs/{id}        delete private files, forget the job
 
 Operations = the twelve worker-backed conversion operations; allowed form fields per operation are
 allowlisted (`_OPERATION_PARAMS`) — unknown/duplicate/out-of-range fields are
-422. `pdf-to-md` honors `pages`, `format`, `page_anchors`, and `password`
-(`md`/true defaults). Job states: `queued, running, success, failed, cancelled, timed_out,
+422. `pdf-to-md` honors `pages`, `format`, `page_anchors`, strict boolean
+`tables`, and `password` (`md`/true/false defaults); `tables=true` with a
+non-Markdown format is 422. Job states: `queued, running, success, failed, cancelled, timed_out,
 crashed, limit_exceeded`.
 
 ### 12.3 Admission and transport

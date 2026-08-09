@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportId": "localdocforge-advisory-license-review-2026-07-19",
   "accessDate": "2026-07-19",
-  "amendedDate": "2026-08-09",
+  "amendedDate": "2026-08-10",
   "scope": {
     "sbom": "docs/SBOM.cdx.json",
     "profileSboms": {
@@ -20,15 +20,15 @@
       "standard": "requirements/locks/standard.txt",
       "full": "requirements/locks/full.txt"
     },
-    "runtimePythonComponents": 30,
+    "runtimePythonComponents": 36,
     "runtimePythonComponentsByProfile": {
-      "lite": 21,
-      "standard": 29,
-      "full": 30
+      "lite": 27,
+      "standard": 35,
+      "full": 36
     },
-    "versionedBundledNativeComponents": 18,
-    "unversionedNestedNativeComponents": 18,
-    "versionedReviewRecordCount": 48,
+    "versionedBundledNativeComponents": 52,
+    "unversionedNestedNativeComponents": 19,
+    "versionedReviewRecordCount": 88,
     "optionalEngines": {
       "reviewed": false,
       "reason": "Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by these Python profiles and remains outside their component inventory. qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
@@ -38,8 +38,8 @@
     "dispositionCounts": {
       "affected": 2,
       "contains-affected-component": 3,
-      "contains-unknown-component": 1,
-      "no-known-applicable-advisory": 41,
+      "contains-unknown-component": 2,
+      "no-known-applicable-advisory": 80,
       "unknown": 1
     },
     "uniqueApplicableAdvisories": 3,
@@ -49,7 +49,7 @@
       "OSV-2025-219"
     ],
     "releaseDisposition": "not-cleared",
-    "releaseRationale": "Bundled OpenJPEG 2.5.4 is affected by OSV-2025-219 even though JP2/J2K is rejected by the current LocalDocForge media-type boundary. Bundled libheif 1.23.0 is enumerated as affected by the OSS-Fuzz memory-safety records OSV-2020-2308 and OSV-2023-1129 (introduced with no fixed release enumerated), and untrusted HEIC/HEIF inputs reach that decoder by design of the HEIF input feature. PDFium 152.0.7947.0 and all enumerated version-unknown nested children remain advisory-unknown. Empty exact-version database results are not treated as proof of safety, and the Windows-native inventory is compositionally incomplete for other target platforms."
+    "releaseRationale": "Bundled OpenJPEG 2.5.4 is affected by OSV-2025-219 even though JP2/J2K is rejected by the current LocalDocForge media-type boundary. Bundled libheif 1.23.0 is enumerated as affected by the OSS-Fuzz memory-safety records OSV-2020-2308 and OSV-2023-1129 (introduced with no fixed release enumerated), and untrusted HEIC/HEIF inputs reach that decoder by design of the HEIF input feature. cryptography is constrained to fixed 50.0.0 because GHSA-g6cj-pr64-35w5 affects releases from 44.0.0 through 49.0.0; the affected PKCS#7 API is not used by pdfminer.six, but the project does not ship a known-affected component. PDFium 152.0.7947.0 and all enumerated version-unknown nested children remain advisory-unknown. Empty exact-version database results are not treated as proof of safety, and the Windows-native inventory is compositionally incomplete for other target platforms."
   },
   "verificationRuns": [
     {
@@ -161,6 +161,63 @@
       ],
       "releaseDisposition": "not-cleared",
       "releaseRationale": "The two exact Python versions have no matching OSV or GitHub reviewed advisory in this refresh, but hostile Markdown materially increases parser and URL-normalization reachability. The repository-wide disposition remains not-cleared because the existing affected OpenJPEG/libheif and advisory-unknown PDFium findings are unchanged."
+    },
+    {
+      "accessDate": "2026-08-10",
+      "scope": "PDF table extraction: exact-version dependency, supplier-SBOM runtime boundary, license, and advisory review for pdfplumber 0.11.10 and its new closure",
+      "dataBoundary": "Only public component names, exact public versions, supplier SBOM identifiers, and published source metadata were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "pdfplumber 0.11.10, pdfminer.six 20260107, charset-normalizer 3.4.9, cryptography 50.0.0, cffi 2.1.0, pycparser 3.0, and 32 external Cargo records",
+          "conclusion": "Exact-version OSV queries returned no matching record for the six Python distributions or the 32 supplier-SBOM Cargo records.",
+          "disposition": "The empty results are time-bounded no-findings, not safety guarantees."
+        },
+        {
+          "url": "https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5",
+          "exactVersions": "cryptography 50.0.0 and affected lineage >=44.0.0,<50.0.0",
+          "conclusion": "The Moderate-severity PKCS#7 EnvelopedData Bleichenbacher oracle is fixed in 50.0.0; the lock and shipped wheel metadata enforce cryptography>=50.0.0.",
+          "disposition": "fixed version selected; no claim that pdfminer.six reaches the affected PKCS#7 API"
+        },
+        {
+          "url": "https://cryptography.io/en/latest/changelog/#v50-0-0",
+          "exactVersions": "cryptography 50.0.0",
+          "conclusion": "The official changelog independently records the GHSA-g6cj-pr64-35w5 fix in 50.0.0.",
+          "disposition": "minimum supported direct dependency set to cryptography>=50.0.0"
+        },
+        {
+          "url": "https://pypi.org/project/cryptography/50.0.0/",
+          "exactVersions": "cryptography 50.0.0 Windows x86-64 wheel, embedded cryptography-rust CycloneDX SBOM, and embedded OpenSSL SBOM",
+          "conclusion": "The supplier SBOM identifies 32 scope-required Cargo children, seven scope-excluded build dependencies, and OpenSSL 4.0.1. This report includes the runtime-required boundary and excludes only the seven supplier-excluded build records.",
+          "disposition": "strict supplier-SBOM runtime boundary recorded; composition remains incomplete"
+        },
+        {
+          "url": "https://pypi.org/project/cffi/2.1.0/",
+          "exactVersions": "cffi 2.1.0 sdist and Windows wheel",
+          "conclusion": "The CFFI source release embeds libffi source while the wheel exposes no trustworthy separate libffi version. The source-header MIT notice is preserved verbatim and libffi is enumerated as an unversioned native child.",
+          "disposition": "cffi contains an advisory-unknown child; exact child provenance remains required"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/pdfminer/_saslprep.py",
+          "exactVersions": "pdfminer.six 20260107 exact source tag and installed wheel file",
+          "conclusion": "The shipped _saslprep.py header identifies MongoDB/PyMongo-derived Apache-2.0 code and pyHanko-licensed changes, while the wheel installs only pdfminer.six's top-level MIT LICENSE.",
+          "disposition": "pdfminer.six license conclusion corrected to MIT AND Apache-2.0; exact header attribution preserved"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/docs/licenses/LICENSE.pyHanko",
+          "exactVersions": "pdfminer.six 20260107 pyHanko-derived source",
+          "conclusion": "The exact source tag provides the pyHanko MIT notice (Copyright 2020 Matthias Valvekens) referenced by _saslprep.py but omitted from the published wheel RECORD.",
+          "disposition": "exact pyHanko notice preserved in generated profile notices"
+        },
+        {
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "exactVersions": "canonical Apache License 2.0 text required by pdfminer.six 20260107 _saslprep.py",
+          "conclusion": "The canonical terms are embedded deterministically in the offline generator and SHA-256 bound to cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.",
+          "disposition": "full Apache-2.0 terms preserved in every generated profile notice"
+        }
+      ],
+      "releaseDisposition": "not-cleared",
+      "releaseRationale": "The S5 dependency closure is fully versioned and reviewed at the Python layer, cryptography is constrained to the fixed 50.0.0 release, and the supplier-declared runtime Cargo/OpenSSL boundary is represented. Existing affected OpenJPEG/libheif and advisory-unknown PDFium findings remain, libffi lacks an exact binary/source binding, and the pre-existing pydantic-core Cargo inventory is still unflattened."
     }
   ],
   "method": {
@@ -182,11 +239,18 @@
       "platformEvidence": "Nested native versions and wheel notice bundles were inspected from Windows x86-64 / CPython 3.14 artifacts. Each other target platform requires equivalent wheel inventory and license retention.",
       "networkAccessDate": "2026-07-19"
     },
+    "embeddedSbomRuntimeBoundary": {
+      "evidence": "cryptography 50.0.0 Windows x86-64 wheel: cryptography-50.0.0.dist-info/sboms/cryptography-rust.cyclonedx.json and sbom.json",
+      "inclusionRule": "Include the cryptography-rust metadata subject, all 32 supplier records marked scope=required, and the separately declared OpenSSL 4.0.1 component. Include CFFI's physically embedded libffi as version-unknown.",
+      "exclusionRule": "Exclude exactly the seven supplier records marked scope=excluded (cc, find-msvc-tools, pkg-config, pyo3-build-config, shlex, target-lexicon, and vcpkg) and the nested cryptography_rust bin-target duplicate, which is a target representation rather than a distinct dependency identity.",
+      "platform": "Windows x86-64 / CPython abi3 wheel",
+      "limitation": "The supplier cryptography Cargo SBOM was generated with all_targets=true and therefore may over-approximate Windows linkage, including proc-macro crates. Required scope is retained rather than second-guessed. The pre-existing pydantic-core 2.46.4 embedded Cargo SBOM is not flattened by this S5 change and remains a disclosed inventory gap."
+    },
     "unversionedComponentPolicy": {
       "securityDisposition": "unknown",
       "affectedVersionRanges": null,
-      "licenseTreatment": "Retain the complete aggregate wheel notice named by each record; no exact-version license conclusion is inferred when the child version is unavailable.",
-      "applicability": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec.",
+      "licenseTreatment": "Retain the complete aggregate wheel notice or exact parent-source license header named by each record. A license conclusion may be recorded when exact source evidence applies to the physically embedded child even though the child's independent release version is unknown; the version limitation must remain explicit and no unrelated exact-version terms may be inferred.",
+      "applicability": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate.",
       "remediation": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established.",
       "residualRisk": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
     },
@@ -391,13 +455,74 @@
           "pkg:pypi/mdurl@0.1.2"
         ],
         "results": []
+      },
+      "osv-pypi-exact-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "PyPI",
+        "accessDate": "2026-08-10",
+        "results": {
+          "pkg:pypi/pdfplumber@0.11.10": [],
+          "pkg:pypi/pdfminer-six@20260107": [],
+          "pkg:pypi/charset-normalizer@3.4.9": [],
+          "pkg:pypi/cryptography@50.0.0": [],
+          "pkg:pypi/cffi@2.1.0": [],
+          "pkg:pypi/pycparser@3.0": []
+        }
+      },
+      "github-reviewed-pip-exact-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "pip",
+        "accessDate": "2026-08-10",
+        "queriedBomRefs": [
+          "pkg:pypi/pdfplumber@0.11.10",
+          "pkg:pypi/pdfminer-six@20260107",
+          "pkg:pypi/charset-normalizer@3.4.9",
+          "pkg:pypi/cryptography@50.0.0",
+          "pkg:pypi/cffi@2.1.0",
+          "pkg:pypi/pycparser@3.0"
+        ],
+        "results": []
+      },
+      "osv-crates-exact-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "crates.io",
+        "accessDate": "2026-08-10",
+        "queriedPackageCount": 32,
+        "includedRequiredResults": {
+          "asn1@0.24.1": [], "asn1_derive@0.24.1": [], "base64@0.23.0": [], "bitflags@2.13.1": [], "cfg-if@1.0.4": [], "foreign-types@0.3.2": [], "foreign-types-shared@0.1.1": [], "heck@0.5.0": [], "itoa@1.0.18": [], "libc@0.2.189": [], "once_cell@1.21.4": [], "openssl@0.10.81": [], "openssl-macros@0.1.1": [], "openssl-sys@0.9.117": [], "pem@4.0.0": [], "portable-atomic@1.14.0": [], "proc-macro2@1.0.107": [], "pyo3@0.29.0": [], "pyo3-ffi@0.29.0": [], "pyo3-macros@0.29.0": [], "pyo3-macros-backend@0.29.0": [], "quote@1.0.47": [], "self_cell@1.3.0": [], "syn@2.0.119": [], "unicode-ident@1.0.24": []
+        },
+        "supplierExcludedBuildResults": {
+          "cc@1.4.0": [], "find-msvc-tools@0.1.9": [], "pkg-config@0.3.33": [], "pyo3-build-config@0.29.0": [], "shlex@2.0.1": [], "target-lexicon@0.13.5": [], "vcpkg@0.2.15": []
+        }
+      },
+      "cryptography-embedded-sbom-2026-08-10": {
+        "authority": "supplier-generated embedded CycloneDX and OpenSSL SBOM evidence",
+        "accessDate": "2026-08-10",
+        "wheel": "cryptography-50.0.0-cp39-abi3-win_amd64.whl",
+        "wheelSha256": "d24fead1d4d076e1bfb006dcec392074a3cd8d7b4fc8a595aa64073b2b7a96ba",
+        "runtimeBoundary": "cryptography-rust subject plus 32 scope-required records and OpenSSL 4.0.1; seven scope-excluded build records and one duplicate bin target excluded"
+      },
+      "openssl-advisories-exact-2026-08-10": {
+        "authority": "official OpenSSL advisory index and exact embedded-source review",
+        "endpoint": "https://openssl-library.org/news/vulnerabilities/",
+        "accessDate": "2026-08-10",
+        "version": "4.0.1",
+        "results": [],
+        "limitation": "No matching published advisory was identified for exact OpenSSL 4.0.1 on the access date; this is not proof of safety."
       }
     },
     "limitations": [
       "Database results are a time-bounded snapshot, not proof that a component has no vulnerability.",
       "GitHub repository security tabs may omit vulnerabilities published only through OSS-Fuzz, vendor trackers, or private disclosure; OpenJPEG is a demonstrated example.",
       "PDFium security bugs are generally handled through Chromium/Google private disclosure. The installed wheel records PDFium 152.0.7947.0 with n_commits=0 and hash=null, so public release notices cannot be mapped authoritatively to this binary.",
-      "The components array contains versioned review records, not an exhaustive native inventory. Known unversioned PDFium and Pillow/libavif children are enumerated separately, inherit unknown advisory provenance, and make the CycloneDX composition incomplete.",
+      "The components array contains versioned review records, not an exhaustive native inventory. Known unversioned PDFium, Pillow/libavif, and CFFI/libffi children are enumerated separately, inherit unknown advisory provenance, and make the CycloneDX composition incomplete.",
+      "The pre-existing pydantic-core 2.46.4 wheel contains an embedded Cargo SBOM with 103 components (101 supplier-marked required) that this S5 dependency delta does not flatten. Those Cargo records remain outside the LocalDocForge component array; the CycloneDX composition stays incomplete until every runtime wheel receives the same supplier-SBOM boundary review.",
       "Native evidence comes from Windows x86-64 / CPython 3.14 wheels even though the Python lock and generated SBOM files are universal-profile artifacts. Other platform wheels require independent native inventory.",
       "Platform markers mean a package can be absent on a particular operating system. Dispositions apply whenever the listed artifact is installed."
     ]
@@ -616,6 +741,21 @@
       "versionEvidence": "LOCAL",
       "licenseConclusion": "retain complete Pillow/libavif aggregate notices; exact-version terms not re-concluded",
       "licenseNotice": "Pillow 12.3.0 wheel licenses/LICENSE and libavif-1.4.2 aggregate notices",
+      "advisoryDisposition": "unknown",
+      "policyRef": "method.unversionedComponentPolicy"
+    },
+    {
+      "bomRef": "urn:localdocforge:native:cffi:libffi:unversioned",
+      "name": "libffi (CFFI child)",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "parentBomRef": "pkg:pypi/cffi@2.1.0",
+      "evidencePlatform": "Windows x86-64 / CPython 3.14 CFFI wheel and exact CFFI 2.1.0 sdist",
+      "versionEvidence": "CFFI 2.1.0 source embeds src/c/libffi_x86_x64; ffi.h describes historical 'libffi 2.00-beta' source, but no trustworthy exact libffi release or binary/source binding is present in the wheel",
+      "licenseConclusion": "MIT",
+      "licenseNotice": "cffi-2.1.0.tar.gz src/c/libffi_x86_x64/ffi.h; sdist SHA256=efc1cdd798b1aaf39b4610bba7aad28c9bea9b910f25c784ccf9ec1fa719d1f9",
+      "licenseVerification": "verified verbatim from exact hash-locked CFFI 2.1.0 sdist source header; exact child version unavailable",
+      "fullLicenseText": "libffi 2.00-beta - Copyright (c) 1996-2003  Red Hat, Inc.\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n``Software''), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS\nOR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\nIN NO EVENT SHALL CYGNUS SOLUTIONS BE LIABLE FOR ANY CLAIM, DAMAGES OR\nOTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,\nARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR\nOTHER DEALINGS IN THE SOFTWARE.",
       "advisoryDisposition": "unknown",
       "policyRef": "method.unversionedComponentPolicy"
     }
@@ -1870,6 +2010,431 @@
         "remediation": "Track libde265 releases together with pi-heif/libheif and keep HEVC decoding inside contained workers with resource limits.",
         "residualRisk": "HEVC decoders have an extensive historical CVE record; an empty exact-version result is a time-bounded no-finding, not a safety verdict."
       }
+    },
+    {
+      "bomRef": "pkg:pypi/pdfplumber@0.11.10",
+      "name": "pdfplumber",
+      "version": "0.11.10",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Secondary PDF parser used only when explicitly requested for best-effort table geometry; PDFium remains the primary text engine.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/jsvine/pdfplumber/v0.11.10/LICENSE.txt",
+        "exactReleaseMetadata": "https://pypi.org/project/pdfplumber/0.11.10/",
+        "localVersionEvidence": "pdfplumber-0.11.10.dist-info license classifier and license file SHA256=0d48994da4d1321e395b5e64a724ed4dec63fb96b88ac5b88fc014771e690821"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/jsvine/pdfplumber/security/advisories",
+        "applicability": "When --tables is requested, attacker-controlled PDFs reach pdfplumber/pdfminer parsing inside the same resource-bounded conversion worker; table candidates are cross-checked against PDFium text before emission.",
+        "remediation": "Keep the exact lock current, preserve table-mode opt-in and cross-engine validation, and re-review before expanding pdfplumber beyond table geometry.",
+        "residualRisk": "Complex PDF parser states and table-geometry heuristics can contain unpublished denial-of-service or fidelity defects."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pdfminer-six@20260107",
+      "name": "pdfminer.six",
+      "version": "20260107",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Transitive parser behind pdfplumber for table characters, lines, and coordinates in opt-in table mode.",
+      "license": {
+        "concluded": "MIT AND Apache-2.0",
+        "status": "verified-exact-source-and-installed-wheel-with-missing-wheel-notices-restored",
+        "upstreamText": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pdfminer.six/20260107/",
+        "localVersionEvidence": "pdfminer_six-20260107.dist-info declares License-Expression: MIT and installs only the top-level MIT LICENSE (SHA256=f01e5d699a33766b5caf4a5099f2856aba4f3f75ea1df05dc0572b34b4bea8f2). The installed pdfminer/_saslprep.py is derived from MongoDB/PyMongo under Apache-2.0 and carries pyHanko MIT changes. Its header points to notices not installed by the wheel; the exact source tag supplies LICENSE.pyHanko, while the canonical Apache-2.0 terms are source-bound below. Generated notices restore the omitted attribution and terms without representing the wheel metadata as complete.",
+        "preservedNotices": [
+          {
+            "name": "pdfminer.six MongoDB/PyMongo-derived SASLprep attribution",
+            "source": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/pdfminer/_saslprep.py",
+            "text": "# Copyright 2016-present MongoDB, Inc.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n# http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n#\n# Some changes copyright 2021-present Matthias Valvekens,\n# licensed under the license of the pyHanko project (see LICENSE file)."
+          },
+          {
+            "name": "Apache License 2.0 terms for pdfminer.six SASLprep code",
+            "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+            "textId": "Apache-2.0",
+            "sourceSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "name": "pdfminer.six pyHanko-derived code notice",
+            "source": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/docs/licenses/LICENSE.pyHanko",
+            "text": "This package contains various elements based on code from the pyHanko project, of which we reproduce the license below.\n\nMIT License\n\nCopyright (c) 2020 Matthias Valvekens\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+          }
+        ]
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/pdfminer/pdfminer.six/security/advisories",
+        "applicability": "Untrusted PDF structure reaches pdfminer.six only in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API.",
+        "remediation": "Keep pdfminer.six exactly paired with pdfplumber's pin, contain parsing, and repeat exact-version review on either upgrade.",
+        "residualRisk": "Parser complexity, decompression, font, and layout processing remain hostile-input surfaces despite the empty exact-version query."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/charset-normalizer@3.4.9",
+      "name": "charset-normalizer",
+      "version": "3.4.9",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Transitive text-encoding detector used by pdfminer.six.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/jawah/charset_normalizer/3.4.9/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/charset-normalizer/3.4.9/",
+        "localVersionEvidence": "installed LICENSE SHA256=18577485d3704f1a479ded8e573c0976cfed315fd2fd17983fa988da4c2f70d1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/jawah/charset_normalizer/security/advisories",
+        "applicability": "May inspect attacker-controlled byte strings reached through pdfminer.six's PDF parsing path.",
+        "remediation": "Keep the hash lock current and repeat review when pdfminer.six changes its encoding dependency.",
+        "residualRisk": "Pathological encoding detection can consume resources even without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/cryptography@50.0.0",
+      "name": "cryptography",
+      "version": "50.0.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5.",
+      "license": {
+        "concluded": "Apache-2.0 OR BSD-3-Clause",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/cryptography/50.0.0/",
+        "localVersionEvidence": "installed LICENSE SHA256=3e0c7c091a948b82533ba98fd7cbb40432d6f1a9acbf85f5922d2f99a93ae6bb; LICENSE.APACHE=aac73b3148f6d1d7111dbca32099f68d26c644c6813ae1e4f05f6579aa2663fe; LICENSE.BSD=602c4c7482de6479dd2e9793cda275e5e63d773dacd1eca689232ab7008fb4fb"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [">=44.0.0,<50.0.0: GHSA-g6cj-pr64-35w5; exact installed 50.0.0 is fixed"],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"],
+        "upstream": "https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5",
+        "applicability": "pdfminer.six uses cryptography for PDF RC4/AES decryption. Its path does not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component.",
+        "remediation": "Keep cryptography>=50.0.0 as direct wheel metadata, retain the package-specific 2026-08-01 resolution cutoff, and re-review both Python and embedded native/Cargo inventories on upgrade.",
+        "residualRisk": "The exact fixed release can have unpublished defects; cryptographic parser/decryption code remains reachable for encrypted PDFs."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/cffi@2.1.0",
+      "name": "cffi",
+      "version": "2.1.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "CPython native-call bridge used by cryptography; its Windows wheel embeds a version-unknown libffi source-derived implementation.",
+      "license": {
+        "concluded": "MIT-0",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/python-cffi/cffi/v2.1.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/cffi/2.1.0/",
+        "localVersionEvidence": "installed CFFI LICENSE SHA256=5ba24ddc57067f9249add644c3afc41a5d6dc37e23433ef759d95df370b0af63; embedded libffi carries distinct MIT terms preserved from the exact sdist"
+      },
+      "security": {
+        "disposition": "contains-unknown-component",
+        "advisories": [],
+        "affectedVersionRanges": null,
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/python-cffi/cffi/security/advisories",
+        "applicability": "cryptography reaches the CFFI backend in supported encrypted-PDF paths; the embedded libffi identity cannot be mapped to an exact advisory range.",
+        "remediation": "Require CFFI to expose exact libffi source/build provenance or rebuild from a vetted exact libffi release, then repeat license and advisory review.",
+        "residualRisk": "The CFFI version is exact and had no matching advisory, but its embedded libffi child remains advisory-unknown."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pycparser@3.0",
+      "name": "pycparser",
+      "version": "3.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Transitive C parser dependency of CFFI; runtime use is limited by CFFI's installed interfaces.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/eliben/pycparser/release_v3.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pycparser/3.0/",
+        "localVersionEvidence": "installed LICENSE SHA256=0c846399369ea76ddd7b5c44fe6d16497415fcf015f5cbb508c24bf98b81c5b1"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/eliben/pycparser/security/advisories",
+        "applicability": "No supported operation accepts attacker-supplied C source; the package is present through CFFI's dependency declaration.",
+        "remediation": "Keep aligned with CFFI and remove if future CFFI metadata no longer requires it.",
+        "residualRisk": "Future dynamic FFI compilation would materially expand reachability and require a new review."
+      }
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "name": "cryptography-rust",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography",
+      "parentBomRef": "pkg:pypi/cryptography@50.0.0",
+      "role": "Supplier-SBOM aggregate for the Rust extension compiled into cryptography 50.0.0.",
+      "evidencePlatform": "cryptography 50.0.0 Windows x86-64 wheel embedded CycloneDX SBOM",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "embedded SBOM metadata subject cryptography-rust@0.50.0, scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "The compiled extension and its supplier-declared required dependency set implement cryptography operations reachable through pdfminer.six.", "remediation": "Upgrade cryptography as an atomic wheel and re-inventory its embedded SBOMs.", "residualRisk": "The aggregate can contain unpublished Rust/native defects and its all_targets supplier SBOM may over-approximate platform linkage."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-cffi@0.50.0",
+      "name": "cryptography-cffi",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA Rust crate bridging cryptography's CFFI-facing surface.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-cffi@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the reachable cryptography extension.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-crypto@0.50.0",
+      "name": "cryptography-crypto",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA cryptographic operation crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-crypto@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the reachable cryptography extension.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-keepalive@0.50.0",
+      "name": "cryptography-keepalive",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA lifetime-management crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-keepalive@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the reachable cryptography extension.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-key-parsing@0.50.0",
+      "name": "cryptography-key-parsing",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA key parsing crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-key-parsing@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the reachable cryptography extension; key parsing is not directly invoked by the current pdfminer.six path.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Future call-path changes may make currently unused parsers reachable."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-openssl@0.50.0",
+      "name": "cryptography-openssl",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA OpenSSL backend crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-openssl@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the reachable cryptography extension and connects operations to bundled OpenSSL.", "remediation": "Upgrade with cryptography and re-review both supplier SBOMs.", "residualRisk": "Backend binding defects and OpenSSL interaction defects may be unpublished."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-x509@0.50.0",
+      "name": "cryptography-x509",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA X.509 parsing crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-x509@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the wheel; current PDF table extraction does not invoke X.509 parsing.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Future features can expand reachability to certificate parsing."}
+    },
+    {
+      "bomRef": "pkg:cargo/cryptography-x509-verification@0.50.0",
+      "name": "cryptography-x509-verification",
+      "version": "0.50.0",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Internal PyCA X.509 verification crate.",
+      "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR BSD-3-Clause", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE", "localVersionEvidence": "supplier SBOM cryptography-x509-verification@0.50.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10"], "upstream": "https://github.com/pyca/cryptography/security/advisories", "applicability": "Compiled into the wheel; current PDF table extraction does not invoke certificate verification.", "remediation": "Upgrade with cryptography and re-review the supplier SBOM.", "residualRisk": "Future features can expand reachability to certificate verification."}
+    },
+    {
+      "bomRef": "pkg:generic/openssl@4.0.1",
+      "name": "OpenSSL",
+      "version": "4.0.1",
+      "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "bundledBy": "cryptography-rust",
+      "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0",
+      "role": "Native cryptographic library statically bundled in the cryptography wheel.",
+      "evidencePlatform": "cryptography 50.0.0 Windows x86-64 wheel embedded OpenSSL SBOM",
+      "license": {"concluded": "Apache-2.0", "status": "verified-supplier-sbom-and-upstream", "upstreamText": "https://raw.githubusercontent.com/openssl/openssl/openssl-4.0.1/LICENSE.txt", "localVersionEvidence": "embedded SBOM names OpenSSL 4.0.1, source SHA256=2db3f3a0d6ea4b59e1f094ace2c8cd536dffb87cdc39084c5afa1e6f7f37dd09; build flags no-zlib no-shared no-module no-comp no-apps no-docs no-sm2-precomp no-atexit"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["cryptography-embedded-sbom-2026-08-10", "openssl-advisories-exact-2026-08-10"], "upstream": "https://openssl-library.org/news/vulnerabilities/", "applicability": "Reachable through cryptography operations used for encrypted PDF handling.", "remediation": "Adopt a cryptography wheel bundling a fixed OpenSSL release if a matching advisory appears; re-review every cryptography upgrade.", "residualRisk": "Empty public-advisory results are time-bounded and do not cover private or unpublished defects."}
+    },
+    {
+      "bomRef": "pkg:cargo/asn1@0.24.1", "name": "asn1", "version": "0.24.1", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required ASN.1 parser crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "BSD-3-Clause", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/asn1/0.24.1", "exactReleaseMetadata": "https://crates.io/crates/asn1/0.24.1", "localVersionEvidence": "supplier SBOM asn1@0.24.1 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Compiled into cryptography; current PDF path does not deliberately parse attacker-supplied ASN.1.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Future cryptography call paths may expand ASN.1 reachability; empty results are not proof of safety."}
+    },
+    {
+      "bomRef": "pkg:cargo/asn1_derive@0.24.1", "name": "asn1_derive", "version": "0.24.1", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required ASN.1 procedural-macro crate retained under the all_targets supplier boundary.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "BSD-3-Clause", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/asn1_derive/0.24.1", "exactReleaseMetadata": "https://crates.io/crates/asn1_derive/0.24.1", "localVersionEvidence": "supplier SBOM asn1_derive@0.24.1 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; procedural macros ordinarily run at build time, so physical runtime linkage may be over-approximated.", "remediation": "Follow the supplier scope until PyCA publishes a target-specific runtime SBOM.", "residualRisk": "The conservative boundary may overcount but avoids silently discarding a supplier-required identity."}
+    },
+    {
+      "bomRef": "pkg:cargo/base64@0.23.0", "name": "base64", "version": "0.23.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required Base64 codec crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/base64/0.23.0", "exactReleaseMetadata": "https://crates.io/crates/base64/0.23.0", "localVersionEvidence": "supplier SBOM base64@0.23.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Compiled into cryptography; current PDF path may reach internal encoding helpers.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Malformed-data complexity or semantic defects may be unpublished."}
+    },
+    {
+      "bomRef": "pkg:cargo/bitflags@2.13.1", "name": "bitflags", "version": "2.13.1", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required flag representation crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/bitflags/2.13.1", "exactReleaseMetadata": "https://crates.io/crates/bitflags/2.13.1", "localVersionEvidence": "supplier SBOM bitflags@2.13.1 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Compiled support code is reachable with cryptography.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Empty exact-version results are not proof of safety."}
+    },
+    {
+      "bomRef": "pkg:cargo/cfg-if@1.0.4", "name": "cfg-if", "version": "1.0.4", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required conditional-compilation helper retained under the supplier boundary.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/cfg-if/1.0.4", "exactReleaseMetadata": "https://crates.io/crates/cfg-if/1.0.4", "localVersionEvidence": "supplier SBOM cfg-if@1.0.4 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the identity required; its macros select compiled code paths.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Supplier scope can over-approximate separately linked runtime identities."}
+    },
+    {
+      "bomRef": "pkg:cargo/foreign-types@0.3.2", "name": "foreign-types", "version": "0.3.2", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required foreign-type wrapper used by OpenSSL bindings.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/foreign-types/0.3.2", "exactReleaseMetadata": "https://crates.io/crates/foreign-types/0.3.2", "localVersionEvidence": "supplier SBOM foreign-types@0.3.2 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Reachable as support code for bundled OpenSSL bindings.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "FFI ownership defects can be security-relevant despite empty advisory results."}
+    },
+    {
+      "bomRef": "pkg:cargo/foreign-types-shared@0.1.1", "name": "foreign-types-shared", "version": "0.1.1", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required shared foreign-type traits used by OpenSSL bindings.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/foreign-types-shared/0.1.1", "exactReleaseMetadata": "https://crates.io/crates/foreign-types-shared/0.1.1", "localVersionEvidence": "supplier SBOM foreign-types-shared@0.1.1 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Reachable as support code for bundled OpenSSL bindings.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "FFI ownership defects can be security-relevant despite empty advisory results."}
+    },
+    {
+      "bomRef": "pkg:cargo/heck@0.5.0", "name": "heck", "version": "0.5.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required case-conversion crate retained under the all_targets supplier boundary.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/heck/0.5.0", "exactReleaseMetadata": "https://crates.io/crates/heck/0.5.0", "localVersionEvidence": "supplier SBOM heck@0.5.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the identity required; usage may be limited to generated binding code.", "remediation": "Follow supplier scope until a target-specific runtime SBOM is available.", "residualRisk": "The conservative boundary may overcount a build-time helper."}
+    },
+    {
+      "bomRef": "pkg:cargo/itoa@1.0.18", "name": "itoa", "version": "1.0.18", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required integer-formatting crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/itoa/1.0.18", "exactReleaseMetadata": "https://crates.io/crates/itoa/1.0.18", "localVersionEvidence": "supplier SBOM itoa@1.0.18 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Compiled support code may be reached by cryptography formatting paths.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Empty exact-version results are not proof of safety."}
+    },
+    {
+      "bomRef": "pkg:cargo/libc@0.2.189", "name": "libc", "version": "0.2.189", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required platform FFI definitions crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/libc/0.2.189", "exactReleaseMetadata": "https://crates.io/crates/libc/0.2.189", "localVersionEvidence": "supplier SBOM libc@0.2.189 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "FFI definitions underpin reachable native cryptography code.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Platform ABI interaction defects may not be represented as crate advisories."}
+    },
+    {
+      "bomRef": "pkg:cargo/once_cell@1.21.4", "name": "once_cell", "version": "1.21.4", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required one-time initialization crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/once_cell/1.21.4", "exactReleaseMetadata": "https://crates.io/crates/once_cell/1.21.4", "localVersionEvidence": "supplier SBOM once_cell@1.21.4 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Initialization support is reachable when the extension loads or cryptography primitives initialize.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Concurrency defects may be unpublished or interaction-specific."}
+    },
+    {
+      "bomRef": "pkg:cargo/openssl@0.10.81", "name": "openssl (Rust crate)", "version": "0.10.81", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required safe Rust bindings for bundled OpenSSL.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/openssl/0.10.81", "exactReleaseMetadata": "https://crates.io/crates/openssl/0.10.81", "localVersionEvidence": "supplier SBOM openssl@0.10.81 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Reachable wrapper layer for cryptography's bundled OpenSSL backend.", "remediation": "Upgrade through cryptography and review both wrapper and native OpenSSL versions.", "residualRisk": "Bindings can expose backend defects or introduce FFI unsoundness not captured by native-library advisories."}
+    },
+    {
+      "bomRef": "pkg:cargo/openssl-macros@0.1.1", "name": "openssl-macros", "version": "0.1.1", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required procedural-macro crate for OpenSSL bindings, conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/openssl-macros/0.1.1", "exactReleaseMetadata": "https://crates.io/crates/openssl-macros/0.1.1", "localVersionEvidence": "supplier SBOM openssl-macros@0.1.1 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; procedural macros ordinarily run during compilation.", "remediation": "Follow the supplier scope until PyCA publishes target-specific runtime data.", "residualRisk": "The conservative boundary may overcount build-time code but avoids unsupported exclusion."}
+    },
+    {
+      "bomRef": "pkg:cargo/openssl-sys@0.9.117", "name": "openssl-sys", "version": "0.9.117", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required raw FFI bindings to bundled OpenSSL.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/openssl-sys/0.9.117", "exactReleaseMetadata": "https://crates.io/crates/openssl-sys/0.9.117", "localVersionEvidence": "supplier SBOM openssl-sys@0.9.117 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Directly underpins reachable OpenSSL calls from cryptography.", "remediation": "Upgrade through cryptography and review wrapper/native version pairing.", "residualRisk": "FFI declarations can be unsound or mismatched even when neither package has a published advisory."}
+    },
+    {
+      "bomRef": "pkg:cargo/pem@4.0.0", "name": "pem", "version": "4.0.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required PEM encoding/decoding crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/pem/4.0.0", "exactReleaseMetadata": "https://crates.io/crates/pem/4.0.0", "localVersionEvidence": "supplier SBOM pem@4.0.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Compiled into the wheel; current encrypted-PDF path does not deliberately parse PEM.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Future key/certificate features can make malformed PEM attacker-reachable."}
+    },
+    {
+      "bomRef": "pkg:cargo/portable-atomic@1.14.0", "name": "portable-atomic", "version": "1.14.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required portable atomic-operations crate compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0 OR MIT", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/portable-atomic/1.14.0", "exactReleaseMetadata": "https://crates.io/crates/portable-atomic/1.14.0", "localVersionEvidence": "supplier SBOM portable-atomic@1.14.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Concurrency support may be reached by the cryptography extension.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Architecture-specific atomic behavior may have unpublished defects."}
+    },
+    {
+      "bomRef": "pkg:cargo/proc-macro2@1.0.107", "name": "proc-macro2", "version": "1.0.107", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required procedural-macro support crate conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/proc-macro2/1.0.107", "exactReleaseMetadata": "https://crates.io/crates/proc-macro2/1.0.107", "localVersionEvidence": "supplier SBOM proc-macro2@1.0.107 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; procedural macro support ordinarily runs during compilation.", "remediation": "Follow supplier scope until target-specific runtime data is published.", "residualRisk": "The strict boundary may overcount build-time code."}
+    },
+    {
+      "bomRef": "pkg:cargo/pyo3@0.29.0", "name": "pyo3", "version": "0.29.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required Rust/Python binding runtime compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/pyo3/0.29.0", "exactReleaseMetadata": "https://crates.io/crates/pyo3/0.29.0", "localVersionEvidence": "supplier SBOM pyo3@0.29.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Directly underpins the importable cryptography Rust extension.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Python/Rust boundary and lifetime defects may be unpublished or interaction-specific."}
+    },
+    {
+      "bomRef": "pkg:cargo/pyo3-ffi@0.29.0", "name": "pyo3-ffi", "version": "0.29.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required raw CPython FFI layer compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/pyo3-ffi/0.29.0", "exactReleaseMetadata": "https://crates.io/crates/pyo3-ffi/0.29.0", "localVersionEvidence": "supplier SBOM pyo3-ffi@0.29.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Directly underpins the importable cryptography Rust extension.", "remediation": "Upgrade through cryptography and repeat exact Cargo review.", "residualRisk": "Raw FFI ABI/lifetime defects may be security-relevant despite empty advisory results."}
+    },
+    {
+      "bomRef": "pkg:cargo/pyo3-macros@0.29.0", "name": "pyo3-macros", "version": "0.29.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required PyO3 procedural-macro crate conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/pyo3-macros/0.29.0", "exactReleaseMetadata": "https://crates.io/crates/pyo3-macros/0.29.0", "localVersionEvidence": "supplier SBOM pyo3-macros@0.29.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; procedural macros ordinarily run during compilation.", "remediation": "Follow supplier scope until target-specific runtime data is published.", "residualRisk": "The strict boundary may overcount build-time code."}
+    },
+    {
+      "bomRef": "pkg:cargo/pyo3-macros-backend@0.29.0", "name": "pyo3-macros-backend", "version": "0.29.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required PyO3 macro backend conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/pyo3-macros-backend/0.29.0", "exactReleaseMetadata": "https://crates.io/crates/pyo3-macros-backend/0.29.0", "localVersionEvidence": "supplier SBOM pyo3-macros-backend@0.29.0 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; macro backends ordinarily run during compilation.", "remediation": "Follow supplier scope until target-specific runtime data is published.", "residualRisk": "The strict boundary may overcount build-time code."}
+    },
+    {
+      "bomRef": "pkg:cargo/quote@1.0.47", "name": "quote", "version": "1.0.47", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required token-generation crate conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/quote/1.0.47", "exactReleaseMetadata": "https://crates.io/crates/quote/1.0.47", "localVersionEvidence": "supplier SBOM quote@1.0.47 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; token generation ordinarily occurs during compilation.", "remediation": "Follow supplier scope until target-specific runtime data is published.", "residualRisk": "The strict boundary may overcount build-time code."}
+    },
+    {
+      "bomRef": "pkg:cargo/self_cell@1.3.0", "name": "self_cell", "version": "1.3.0", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required self-referential data helper compiled into cryptography.", "evidencePlatform": "supplier embedded CycloneDX scope=required",
+      "license": {"concluded": "Apache-2.0", "status": "verified-supplier-sbom-and-exact-release-license-option-selected", "upstreamText": "https://crates.io/crates/self_cell/1.3.0", "exactReleaseMetadata": "https://crates.io/crates/self_cell/1.3.0", "localVersionEvidence": "supplier expression Apache-2.0 OR GPL-2.0-only; Apache-2.0 option selected for redistribution"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Memory/lifetime support is compiled into the reachable cryptography extension.", "remediation": "Upgrade through cryptography and retain the Apache-2.0 license election.", "residualRisk": "Unsoundness defects in self-referential abstractions can be security-relevant despite empty advisory results."}
+    },
+    {
+      "bomRef": "pkg:cargo/syn@2.0.119", "name": "syn", "version": "2.0.119", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required Rust syntax parser conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "MIT OR Apache-2.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/syn/2.0.119", "exactReleaseMetadata": "https://crates.io/crates/syn/2.0.119", "localVersionEvidence": "supplier SBOM syn@2.0.119 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; syntax parsing ordinarily occurs during macro expansion at build time.", "remediation": "Follow supplier scope until target-specific runtime data is published.", "residualRisk": "The strict boundary may overcount build-time code."}
+    },
+    {
+      "bomRef": "pkg:cargo/unicode-ident@1.0.24", "name": "unicode-ident", "version": "1.0.24", "kind": "bundled-native", "reviewDate": "2026-08-10", "profiles": ["lite", "standard", "full"], "bundledBy": "cryptography-rust", "parentBomRef": "pkg:cargo/cryptography-rust@0.50.0", "role": "Supplier-marked required Unicode identifier tables conservatively retained.", "evidencePlatform": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage",
+      "license": {"concluded": "(MIT OR Apache-2.0) AND Unicode-3.0", "status": "verified-supplier-sbom-and-exact-release", "upstreamText": "https://crates.io/crates/unicode-ident/1.0.24", "exactReleaseMetadata": "https://crates.io/crates/unicode-ident/1.0.24", "localVersionEvidence": "supplier SBOM unicode-ident@1.0.24 scope=required"},
+      "security": {"disposition": "no-known-applicable-advisory", "advisories": [], "affectedVersionRanges": [], "sourceRefs": ["osv-crates-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"], "upstream": "https://rustsec.org/advisories/", "applicability": "Supplier marks the crate required; Unicode identifier parsing ordinarily supports build-time syntax processing.", "remediation": "Follow supplier scope and preserve both the code and Unicode data license obligations.", "residualRisk": "The strict boundary may overcount build-time code; Unicode data defects can cause semantic differences."}
     }
   ]
 }

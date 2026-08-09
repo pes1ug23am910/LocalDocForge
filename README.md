@@ -52,7 +52,7 @@ source before anything was published.*
 | Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
 | Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
-| Convert | PDF → UTF-8 Markdown/plain text/JSONL via PDFium (`pdf-to-md`, page anchors, per-page coverage and honest layout warnings) · Markdown → validated PDF through Typst ≥0.15.1 (`md-to-pdf`, bounded CommonMark + GFM tables, local raster images, honest dropped-construct warnings) · images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
+| Convert | PDF → UTF-8 Markdown/plain text/JSONL via PDFium (`pdf-to-md`, page anchors, per-page coverage, honest layout warnings, and opt-in conservative ruled tables through pdfplumber) · Markdown → validated PDF through Typst ≥0.15.1 (`md-to-pdf`, bounded CommonMark + GFM tables, local raster images, honest dropped-construct warnings) · images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
 | Inspect | page count, encryption, page sizes, per-page extracted character counts, annotations, outlines, forms, attachments, JavaScript presence |
 | Agent integration | deterministic `ldf agent-brief` Markdown/JSON generated from implemented `CAPABILITY_SPECS` plus one live capability probe, including usage, exit codes, gotchas, workflow, and feedback rules |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
@@ -127,6 +127,7 @@ ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
 ldf pdf-to-md input.pdf -o content.md                    # Markdown + source-page anchors
+ldf pdf-to-md report.pdf -o content.md --tables          # confident ruled grids → GFM tables
 ldf pdf-to-md input.pdf -o content.jsonl --format jsonl # one UTF-8 JSON record per page
 ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
 ldf convert-images photos/*.HEIC -d ready/ --preset llm  # iPhone photos → AI-ready JPEGs
@@ -155,10 +156,17 @@ contract: [`docs/CLI.md`](docs/CLI.md).
 `pdf-to-md` writes extracted content to the requested file using strict UTF-8
 and normalized LF line endings; stdout remains the report/diagnostic channel,
 not a text-fidelity channel. Markdown headings and reading order are explicitly
-heuristic. The report summarizes selected-page coverage and attributes the
-stable `no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
-`tables-flattened` codes without copying document text into the report. For a
-page with no usable text layer, render it with `pdf-to-images --preset llm`.
+heuristic. Markdown-only `--tables` is off by default; when enabled, it emits
+only bounded, rectangular tables found from explicit ruling lines, treats the
+first physical row as the inferred GFM header, and keeps lower-confidence,
+borderless, merged-cell, rotated, or overly dense candidates as flowed text.
+The report summarizes selected-page coverage and attributes the stable
+`no-text-layer`, `headings-inferred`, `reading-order-uncertain`,
+`table-fidelity-best-effort`, and `tables-flattened` codes without copying
+document text into the report. Absence of a table warning is not proof that a
+page has no table; it means only that the bounded heuristics found no caveat.
+For a page with no usable text layer, render it with
+`pdf-to-images --preset llm`.
 
 `md-to-pdf` accepts strict UTF-8 `.md`/`.markdown` files and renders a bounded
 CommonMark subset plus GFM tables. Relative local raster images are validated,
@@ -258,7 +266,7 @@ reality. Start at [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 ## Roadmap
 
 Lossy compression presets, repair, OCR, Office↔PDF, PDF/A, and
-advanced PDF→Markdown table/semantic reconstruction,
+advanced PDF→Markdown borderless/merged-cell table and semantic reconstruction,
 editor, forms, encryption, redaction, signatures, compare, scanner
 acquisition, full browser UI — phased plan in
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), current truth
