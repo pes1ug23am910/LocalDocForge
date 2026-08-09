@@ -2,21 +2,25 @@
 
 import pytest
 
+import localdocforge.engines.adapters as adapters_module
 from localdocforge.engines.adapters import (
     OP_CONVERT_IMAGES,
     OP_INSPECT,
+    OP_MD_TO_PDF,
     OP_MERGE,
     OP_PDF_TO_IMAGES,
     OP_PDF_TO_MD,
     OP_RENDER,
+    ExternalToolEngine,
 )
 from localdocforge.engines.base import EngineUnavailableError
 from localdocforge.engines.registry import CAPABILITY_SPECS, EngineRegistry
+from localdocforge.security.subproc import ToolResult
 
 IMPLEMENTED_IDS = {
     "merge", "split", "remove-pages", "extract-pages", "organize",
     "rotate", "crop", "inspect", "compress", "images-to-pdf", "pdf-to-images",
-    "pdf-to-markdown", "convert-images",
+    "pdf-to-markdown", "markdown-to-pdf", "convert-images",
 }
 
 
@@ -58,6 +62,13 @@ class TestSelection:
 
     def test_engine_for_pdf_to_md_is_pdfium(self, registry):
         assert registry.engine_for(OP_PDF_TO_MD).name == "pdfium"
+
+    def test_engine_for_md_to_pdf_is_typst_when_minimum_version_is_present(self, registry):
+        typst = registry.get("typst")
+        assert typst is not None
+        if not typst.probe().available:
+            pytest.skip("Typst >=0.15.1 is unavailable on this host")
+        assert registry.engine_for(OP_MD_TO_PDF).name == "typst"
 
     def test_engine_for_convert_images_is_pillow(self, registry):
         assert registry.engine_for(OP_CONVERT_IMAGES).name == "pillow"
@@ -119,6 +130,13 @@ class TestCapabilityHonesty:
         assert matching[0].operation == OP_PDF_TO_MD
         assert all(spec.id != "pdf-to-md" for spec in CAPABILITY_SPECS)
 
+    def test_markdown_to_pdf_keeps_stable_capability_id(self):
+        matching = [spec for spec in CAPABILITY_SPECS if spec.id == "markdown-to-pdf"]
+        assert len(matching) == 1
+        assert matching[0].implemented
+        assert matching[0].operation == OP_MD_TO_PDF
+        assert all(spec.id != "md-to-pdf" for spec in CAPABILITY_SPECS)
+
     def test_only_implemented_capabilities_can_be_available(self, registry):
         for capability in registry.capabilities():
             if capability.available:
@@ -140,3 +158,48 @@ class TestCapabilityHonesty:
     def test_every_spec_has_category_and_title(self):
         for spec in CAPABILITY_SPECS:
             assert spec.title and spec.category
+
+
+@pytest.mark.parametrize(
+    ("version_output", "available"),
+    [
+        ("typst 0.15.0 (old)", False),
+        ("typst 0.15.1 (minimum)", True),
+        ("typst 0.16.0", True),
+        ("typst development-build", False),
+    ],
+)
+def test_external_engine_minimum_version_is_enforced_fail_closed(
+    monkeypatch,
+    version_output,
+    available,
+):
+    monkeypatch.setattr(adapters_module, "find_executable", lambda _name: "C:/tools/typst.exe")
+    monkeypatch.setattr(
+        adapters_module,
+        "run_tool",
+        lambda *_args, **_kwargs: ToolResult(returncode=0, output=version_output),
+    )
+    engine = ExternalToolEngine(
+        "typst",
+        version_args=["--version"],
+        license_name="Apache-2.0",
+        install_hint_windows="install Typst",
+        operations=frozenset({OP_MD_TO_PDF}),
+        minimum_version=(0, 15, 1),
+    )
+
+    info = engine.probe()
+
+    assert info.available is available
+    assert info.version == version_output
+    assert engine.supported_operations() == frozenset({OP_MD_TO_PDF})
+    registry = EngineRegistry(engines=[engine])
+    if available:
+        assert registry.engine_for(OP_MD_TO_PDF) is engine
+        assert info.install_hint == ""
+    else:
+        with pytest.raises(EngineUnavailableError):
+            registry.engine_for(OP_MD_TO_PDF)
+        assert info.install_hint == "install Typst"
+        assert "requires version >= 0.15.1" in info.notes

@@ -3,14 +3,15 @@
 A practical, task-oriented guide to using LocalDocForge on Windows 11. Every
 original command set in this guide was executed and verified on the primary
 workstation on 2026-08-03 (see `docs/MACHINE_READINESS.md` for that evidence
-run); the S4 text-extraction additions are recorded in `docs/STATUS.md`. The
-authoritative reference for flags, grammar, exit codes, and the API contract
-remains `docs/CLI.md`; this guide does not replace it.
+run); the S4 text-extraction and S6 Markdown-rendering additions are recorded
+in `docs/STATUS.md`. The authoritative reference for flags, grammar, exit
+codes, and the API contract remains `docs/CLI.md`; this guide does not replace
+it.
 
 > **Scope honesty:** LocalDocForge is early alpha. What this guide shows —
 > PDF organization, page editing, lossless compression, PDF text extraction,
-> image↔PDF conversion, inspection, and the localhost API — is everything that
-> exists. Lossy
+> Markdown→PDF rendering, image↔PDF conversion, inspection, and the localhost
+> API — is everything that exists. Lossy
 > compression presets, OCR, Office conversion, redaction, signatures, and the
 > rest of the roadmap are **not available** and no command in this build
 > pretends otherwise. The project's
@@ -54,10 +55,11 @@ ldf --json doctor   # machine-readable; same data the status page uses
 
 `doctor` is the live truth. A capability is listed as available only when its
 implementation and an engine probe both pass; nothing is a placeholder. The
-current build has thirteen implemented capability entries: merge, split,
+current build has fourteen implemented capability entries: merge, split,
 remove-pages, extract-pages, organize, rotate, crop, inspect, compress,
-images-to-pdf, pdf-to-images, convert-images, and pdf-to-markdown. Runtime
-availability still depends on the listed engine probes.
+images-to-pdf, pdf-to-images, convert-images, pdf-to-markdown, and
+markdown-to-pdf. Runtime availability still depends on the listed engine
+probes.
 
 ## 3. Everyday recipes
 
@@ -169,6 +171,21 @@ not implemented.
 
 The full format/separator contract, exact JSONL keys, coverage schema, and
 limitations are in `docs/CLI.md` and `docs/CONVERSION_FIDELITY.md`.
+
+### Render Markdown to a validated PDF
+
+```powershell
+ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
+```
+
+This machine's Typst 0.15.1 probe enables the command. Inputs must be strict
+UTF-8 `.md`/`.markdown` files. The supported subset covers ordinary CommonMark,
+code, safe web/mail/telephone links, and GFM tables; local raster images may be
+referenced relative to the Markdown file but cannot escape its directory.
+Remote assets, imports/packages, raw HTML, footnotes, and math are not executed;
+unsupported constructs are dropped with source-line warnings. All generated
+PDF pages are reopened, syntax-checked, and rendered before publication. See
+`docs/CLI.md` for the precise subset, warning codes, and sandbox limitations.
 
 ### Inspect without modifying
 
@@ -308,7 +325,7 @@ to `None` is disabled — see `ResourceLimits` in
 
 | External engine | Installed here? | Needed by (future phase) |
 |---|---|---|
-| Typst 0.15.1 | ✅ (winget) | Markdown→PDF (P3) — **installed but unwired; unused today** |
+| Typst 0.15.1 | ✅ (winget) | Markdown→PDF — **wired and available when the ≥0.15.1 probe passes** |
 | qpdf CLI | ❌ `winget install qpdf.qpdf` | repair/compression diagnostics (P2) |
 | Tesseract + OCRmyPDF | ❌ `winget install UB-Mannheim.TesseractOCR` | OCR (P2) |
 | Ghostscript | ❌ `winget install ArtifexSoftware.GhostScript` | PDF/A (P2) |
@@ -316,9 +333,10 @@ to `None` is disabled — see `ResourceLimits` in
 | Pandoc | ❌ `winget install JohnMacFarlane.Pandoc` | possible future document paths; not used by pdf-to-md |
 | veraPDF | ❌ verapdf.org installer | PDF/A validation (P2/P5) |
 
-Installing an executable today changes nothing: capabilities unlock only when
-their pipeline **and** tests land (`docs/FEATURE_MATRIX.md` rules). There is
-no need to pre-install anything until the phase that uses it ships.
+Installing an executable alone does not unlock a capability: its pipeline,
+registry bit, tests, and compatible live probe must all agree
+(`docs/FEATURE_MATRIX.md` rules). Typst is the one currently wired optional
+executable; the other listed tools remain future inputs.
 
 ## 8. Sensitive documents — read before trusting it with them
 

@@ -83,6 +83,10 @@ def test_usage_templates_exactly_cover_implemented_specs() -> None:
         "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
         "[--format md|txt|jsonl] [--no-page-anchors]"
     )
+    assert USAGE_BY_CAPABILITY_ID["markdown-to-pdf"] == (
+        "ldf md-to-pdf INPUT.md -o OUTPUT.pdf "
+        "[--paper A4|Letter|Legal] [--margin MM] [--toc]"
+    )
 
 
 def test_brief_uses_spec_order_one_probe_and_keeps_unavailable_implemented() -> None:

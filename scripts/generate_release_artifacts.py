@@ -140,8 +140,8 @@ def load_report(path: Path) -> dict[str, Any]:
         raise ValueError("unsupported advisory report schema")
     if report.get("accessDate") != "2026-07-19":
         raise ValueError("advisory report access date must be 2026-07-19")
-    if report.get("amendedDate") != "2026-08-08":
-        raise ValueError("advisory report amended date must be 2026-08-08")
+    if report.get("amendedDate") != "2026-08-09":
+        raise ValueError("advisory report amended date must be 2026-08-09")
     components = report.get("components")
     if not isinstance(components, list) or len(components) != 48:
         raise ValueError("advisory report must contain 48 versioned review records")
@@ -573,7 +573,7 @@ def build_sbom(
         "specVersion": "1.6",
         "version": 1,
         "metadata": {
-            "timestamp": "2026-08-08T00:00:00Z",
+            "timestamp": "2026-08-09T00:00:00Z",
             "tools": {
                 "components": [
                     {
@@ -801,9 +801,11 @@ def build_profile_notices(
             f"- The CycloneDX composition is explicitly `incomplete`: {len(native)} "
             f"native records have versions, {len(unversioned)} known children do "
             "not, and additional static or platform-specific children may exist.",
-            "- No optional external executable was enabled or distributed, so Typst, "
-            "qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and "
-            "veraPDF are outside this report's reviewed component set.",
+            "- Typst 0.15.1 is an enabled, separately installed subprocess engine for "
+            "Markdown-to-PDF, but it is not distributed by any Python profile and "
+            "remains outside this report's component inventory. qpdf CLI, Tesseract, "
+            "OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped "
+            "by these profiles.",
             "",
         ]
     )

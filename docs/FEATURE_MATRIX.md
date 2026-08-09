@@ -30,7 +30,7 @@ Interfaces legend: **Lib** Python API · **CLI** · **API** local HTTP · **UI**
 | Office → PDF | ❌ planned P2 | needs LibreOffice (not installed) | — | — | |
 | HTML → PDF | ❌ planned P2 | — | — | — | |
 | PDF → PDF/A | ❌ planned P2 | needs Ghostscript + veraPDF (not installed) | — | — | |
-| Markdown → PDF | ❌ planned P3 | Typst 0.15.1 installed, unwired | — | — | |
+| Markdown → PDF | ✅ when Typst ≥0.15.1 is available | markdown-it-py + separately installed Typst | Lib, CLI, API | `test_markdown_ops.py`, `test_cli.py`, `test_api.py`, `test_documentation_consistency.py` | Strict-UTF-8 CommonMark subset plus GFM tables; A4/Letter/Legal, margin, optional TOC, and contained local raster images. User values become escaped Typst strings; packages/imports and remote/escaping images are refused. Raw HTML, math, footnotes, and unknown constructs are dropped with source-line warnings; system-font fallback can change wrapping. Every PDF is fully rendered before publication |
 | PDF → DOCX/PPTX/XLSX | ❌ planned P2/P3 | — | — | — | |
 | Edit PDF (editor) | ❌ planned P4 | — | — | — | |
 | PDF forms | ❌ planned P4 | — | — | — | |
@@ -51,7 +51,7 @@ under "not implemented in this build"); flipping to ✅ requires pipeline +
 tests in the same change, enforced by `test_registry.py`.
 
 Explicitly unavailable in this checkpoint include lossy compression presets,
-repair, OCR, Office-to-PDF, HTML-to-PDF, Markdown-to-PDF, advanced PDF text
+repair, OCR, Office-to-PDF, HTML-to-PDF, advanced PDF text
 reconstruction (including table extraction), PDF/A/PDF/UA conformance,
 interactive editing/forms, cryptographic signatures, secure redaction, and
 scanner/camera acquisition. Installed executables alone do not make an unwired capability

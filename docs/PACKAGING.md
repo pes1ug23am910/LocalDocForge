@@ -30,16 +30,17 @@ Profiles describe shipped Python dependencies, not the feature roadmap.
 
 | Install | Shipped behavior | Direct additions over base |
 |---|---|---|
-| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, and image conversion | none; Lite is an explicit base alias |
+| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, and Markdown parsing/render orchestration | none; Lite is an explicit base alias |
 | `standard` | Lite plus localhost FastAPI service and status page | FastAPI, Uvicorn, python-multipart |
 | `full` | Standard plus optional pypdf diagnostic adapter | pypdf |
 | `dev` | Full plus test, lint, type, build, and artifact tools | pytest, ReportLab, HTTPX, Ruff, mypy, build, Twine |
 
 “Full” means all shipped Python adapters. It does not add OCR,
-Office/HTML/Markdown-to-PDF conversion, PDF/A/PDF/UA, editing, signatures,
-scanner support, external executables, or the planned React UI. PDF-to-Markdown
-text extraction is already part of every profile. `ldf doctor` is the live
-capability authority.
+Office/HTML-to-PDF conversion, PDF/A/PDF/UA, editing, signatures, scanner
+support, external executables, or the planned React UI. PDF-to-Markdown text
+extraction and the `markdown-it-py>=4.2` side of Markdown-to-PDF are part of
+every profile. Typst ≥0.15.1 is separately installed and never bundled by these
+profiles, so `ldf doctor` remains the live capability authority.
 
 The Windows-primary reproducible Standard install is:
 
@@ -298,6 +299,51 @@ revision `961e3e54bf9274d3f533bdce835aef9097e85206`; fresh temporary evidence
 records `release_manifest_verified: true`, `source_install_syntax_tested: true`,
 `full_tests.status: passed`, and SHA-256
 `626d4885463d005d5a3611cdd625baee7f4d4b47bf7a396623da85375e74d3c9`.
+
+### 2026-08-09 S6 Markdown-to-PDF manifest identity
+
+S6 packages the bounded `operations/markdown.py` pipeline and makes
+`markdown-it-py>=4.2` a direct base dependency; Typst remains a separately
+installed subprocess and is not bundled. A build-only reproducibility gate used
+disposable system-temporary artifacts and left retained `dist/` and
+`packaging-evidence/` records untouched.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `b2d8dfe9abe5bfea5c99ace8504d505e0b29cf5988e045a86cc768f8677688a9` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `98d2701037611e2313ddd89efd4ec6f5247cc3089b4c7a8aaf05d1bc11b3d432` | 140,233 |
+| `localdocforge-0.1.0.tar.gz` | `29aa62fae063b934f6fb539ddee3ef71f55195913a040668f81c4a01589c369d` | 126,744 |
+
+The 34.6-second refresh passed two byte-identical direct builds, Twine/member/
+metadata checks, and sdist-to-wheel equivalence. A separate 552.2-second
+verify-mode full gate reproduced the identity, passed both 615-outcome suite
+modes and every source/wheel profile, and recorded
+`release_manifest_verified: true`, `source_install_syntax_tested: true`, and
+`full_tests.status: passed`. Its disposable evidence SHA-256 is
+`8216c2d879f0a7af04ca9a2d6b5f281750777de2502340e0dd13b156796887dc`;
+retained artifacts/evidence remained untouched.
+
+#### F1 literal-dollar remediation identity
+
+The S6 review remediation removes the custom inline-dollar detector so ordinary
+CommonMark currency prose remains literal. A 30.4-second build-only gate used a
+fresh system-temporary directory, reproduced both direct builds and the
+sdist-to-wheel build, and refreshed only the live manifest below. Retained
+`dist/` and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `d5d841401632212c646159f347aa2b5d1271ca2b71623870f4812e13be62b22e` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `5cdc94118b52d2fe5bc14245287044060014aa0beb856f98bc834b1e83fe0d7b` | 140,192 |
+| `localdocforge-0.1.0.tar.gz` | `41a8d07447859e5d7acbcfd5d4904cc3db8190425185171f7ddab99f91a1a5d5` | 126,706 |
+
+A subsequent 491.6-second clean-tree verify-mode gate at remediation commit
+`f83a2b7d4c20c11aa5d56a3fcedef6a1a31e6863` reproduced this identity, passed
+both 616-outcome suite modes and every source/wheel profile, and recorded
+`release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and `source.working_tree_changes: false`.
+Disposable artifacts/evidence were removed after verification; retained
+artifacts/evidence remained untouched.
 
 ## Clean profile/full-test matrices
 

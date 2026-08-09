@@ -3,7 +3,7 @@
 Decisions recorded when made; revisit points listed at the bottom.
 Probed state on this machine is always visible via `ldf doctor`.
 
-## Selected for Phase 0/1 (installed, probed, in use)
+## Selected, installed, probed, and in use
 
 | Engine | Version (this env) | License | Role | Why |
 |---|---|---|---|---|
@@ -12,6 +12,7 @@ Probed state on this machine is always visible via `ldf doctor`.
 | pypdfium2 (PDFium) | 5.12.1 / PDFium 152.0.7947.0 | Apache-2.0 OR BSD-3-Clause (wrapper); bundled PDFium uses BSD-style and `BUILD_LICENSES` notices | Rendering: validation renders and pdf-to-images; text/geometry extraction for pdf-to-md and inspect coverage | Chrome's widely deployed PDF engine: robust on hostile files, exposes page-scoped text rectangles/font geometry without another runtime dependency, permissive license, abi3 wheels |
 | Pillow | 12.3.0 | MIT-CMU; bundled codecs have per-component terms | Image decode/encode, images-to-pdf composition, convert-images transcoding | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 | pi-heif (libheif) | 1.4.0 / libheif 1.23.0, libde265 1.1.1 | BSD-3-Clause wrapper; LGPL-3.0-or-later libheif + libde265 | HEIF/HEIC **decode-only** Pillow plugin: iPhone photo input for convert-images and images-to-pdf | The decode-only distribution of pillow-heif — its wheels bundle no GPLv2 x265 encoder, keeping the runtime license ceiling at LGPLv3; the full pillow-heif package is a dev-profile fixture-encoding tool only |
+| Typst | 0.15.1 | Apache-2.0 | Separately installed executable for Markdown→PDF; not bundled in Python profiles | Fast deterministic PDF generation, explicit project root, dependency manifest, bounded subprocess runner, and a permissive license. Availability requires a parseable version ≥0.15.1; generated source uses only application-controlled code and escaped strings |
 
 Rationale for the split: structural edits (pikepdf) and rendering/text
 extraction (PDFium) are different failure domains; no single library is trusted for
@@ -28,7 +29,7 @@ exceed this project's weak-copyleft-or-lighter license ceiling. They are not a
 fallback and are not optional adapters. Structured table extraction is a
 separate future slice rather than a reason to mislabel flattened PDFium text.
 
-## Optional executable probes (features gated off; availability varies)
+## Other optional executable probes (features gated off; availability varies)
 
 | Engine | License | Planned role | Install hint (Windows) |
 |---|---|---|---|
@@ -38,7 +39,6 @@ separate future slice rather than a reason to mislabel flattened PDFium text.
 | Ghostscript | AGPL-3.0 / commercial | PDF/A conversion, compression fallback | `winget install ArtifexSoftware.GhostScript` — exact upstream terms and the intended distribution/use model require review before enablement or redistribution |
 | LibreOffice | MPL-2.0 | Office↔PDF in isolated headless mode | `winget install TheDocumentFoundation.LibreOffice` |
 | Pandoc | GPL-2.0+ | Markdown/Office conversions (invoked, not linked) | `winget install JohnMacFarlane.Pandoc` |
-| Typst | Apache-2.0 | **Present on this machine** (0.15.1) — candidate Markdown→PDF renderer for Phase 3 | `winget install Typst.Typst` |
 | veraPDF | GPL-3.0+ / MPL | Authoritative PDF/A validation | installer from verapdf.org |
 
 ## Rules
@@ -53,8 +53,10 @@ separate future slice rather than a reason to mislabel flattened PDFium text.
 ## Revisit points
 - Compression (Phase 2): pikepdf image recompression vs Ghostscript
   pipelines — decide with benchmarks and quality-floor checks.
-- Markdown→PDF (Phase 3): Typst (installed, fast, hermetic) vs WeasyPrint
-  (HTML/CSS themes, pure-Python install) — likely Typst primary.
+- Markdown→PDF follow-up: Typst is the implemented primary. Revisit themes and
+  a WeasyPrint fallback only with equivalent isolation, licensing, and output
+  validation evidence; Typst's project root is defense in depth, not an OS
+  filesystem or network sandbox.
 - PDF→Markdown follow-up: evaluate S5's separately licensed table extractor and
   confidence thresholds. Keep PDFium text as the source for ordinary regions;
   do not interleave competing text engines or weaken the PyMuPDF ban.

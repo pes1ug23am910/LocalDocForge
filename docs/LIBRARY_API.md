@@ -3,7 +3,8 @@
 The CLI and the local API are thin layers over a typed Python library. This
 reference covers that library surface for scripting and embedding. Every code
 original sample set below was executed against this repository on 2026-08-03;
-the S4 extraction sample is backed by its 2026-08-09 integration coverage.
+the S4 extraction and S6 Markdown-rendering samples are backed by 2026-08-09
+integration coverage.
 Import paths are stable within 0.x only in the sense that
 `docs/STATUS.md` records interface decisions; this is an early-alpha project.
 
@@ -17,7 +18,9 @@ raise instead of guessing.
 
 Any profile works for the core library (`pip install localdocforge` from a
 checkout — see `docs/PACKAGING.md` for the hash-locked reproducible recipe).
-The API service extras are only needed for `ldf web`.
+The API service extras are only needed for `ldf web`. `md_to_pdf` also requires
+a separately installed Typst executable at version 0.15.1 or newer; its live
+engine probe remains the availability authority.
 
 ## The result object: `ConversionReport`
 
@@ -144,6 +147,55 @@ Each ordered `per_page` record is `{page, char_count, has_text_layer,
 warning_codes}`. Aggregate `fidelity_warnings` contains at most one entry for
 each stable extraction code, while the per-page lists preserve exact
 attribution. See `docs/CONVERSION_FIDELITY.md` for the heuristic limits.
+
+### Markdown rendering (`operations.markdown`)
+
+```python
+from localdocforge.jobs.workspace import CollisionPolicy
+from localdocforge.operations.markdown import MdToPdfOptions, md_to_pdf
+
+report = md_to_pdf(
+    notes_md,
+    out_dir / "notes.pdf",
+    options=MdToPdfOptions(
+        paper="Letter",
+        margin_mm=18,
+        toc=True,
+        collision=CollisionPolicy.RENAME,
+    ),
+)
+assert report.output_page_count == report.outputs[0].page_count
+```
+
+`MdToPdfOptions` fields are `paper` (`A4`, `Letter`, or `Legal`), finite
+non-negative `margin_mm` (default 20), `toc`, `collision`, `settings`, and
+`progress`. The primary input must be strict UTF-8 and end in `.md` or
+`.markdown`. The parser supports a bounded CommonMark subset plus the built-in
+GFM table rule. Relative raster-image references are resolved beneath the
+Markdown file's directory, signature checked, included in input-byte/alias
+limits, and normalized to private neutral PNGs before Typst runs. API adapters
+may pass `image_inputs={"diagram.png": uploaded_path}` to map sanitized sibling
+uploads; every supplied asset must be referenced.
+
+Preprocessing admits at most the lowest of 16 MiB, `max_input_bytes`,
+`max_memory_bytes / 512`, and `max_temporary_bytes / 64` (4 MiB by default),
+then enforces 100,000 source lines, 250,000 parser tokens, and 256 image
+occurrences. It happens before `run_pipeline` creates the cooperative CLI job
+clock, so those explicit cardinality/byte bounds are the in-process protection;
+the API parent watchdog covers the complete worker call.
+
+All source text, code, link destinations, and image alt text become escaped
+Typst string literals. Imports/packages and remote, absolute, traversing, or
+reparse-point image paths are refused. Unsupported raw HTML, footnotes, math,
+strikethrough, and unknown tokens produce `markdown-construct-dropped` with
+1-based source-line metadata. `system-font-dependent` records the remaining
+font-fallback variance. Reports omit Markdown text, link values, and tool
+diagnostics. Detailed dropped-construct metadata is capped at 256 distinct
+construct/line entries plus one aggregate summary; callers can inspect
+`dropped_constructs_truncated`, `dropped_constructs_omitted`, and
+`dropped_construct_report_limit`. The candidate remains private until page
+limits and the standard
+full-PDF reopen/syntax/page-count/render validation pass.
 
 ### Read-only inspection
 
