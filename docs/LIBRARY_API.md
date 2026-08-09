@@ -128,11 +128,20 @@ report = pdf_to_md(
 coverage = report.details["coverage"]
 assert coverage["pages_total"] == 6
 assert len(coverage["per_page"]) == 6
+
+table_report = pdf_to_md(
+    source_pdf,
+    out_dir / "content.md",
+    options=PdfToMdOptions(tables=True),
+)
+assert table_report.details["tables"]["requested"] is True
 ```
 
 `PdfToMdOptions` fields are `output_format` (`md`, `txt`, or `jsonl`, default
-`md`), optional `pages`, `page_anchors` (default true), `password`, `collision`,
-`settings`, and `progress`. Markdown uses exact `<!-- ldf:page N -->` anchors;
+`md`), optional `pages`, `page_anchors` (default true), `tables` (default false),
+`password`, `collision`, `settings`, and `progress`. `tables=True` is valid only
+with Markdown; pairing it with `txt` or `jsonl` raises `PipelineError` before
+the input is opened. Markdown uses exact `<!-- ldf:page N -->` anchors;
 TXT uses exact `--- ldf:page N ---` anchors or form-feed separators when
 anchors are disabled. JSONL always has one object per selected occurrence with
 keys, in order, `page`, `text`, `char_count`, `has_text_layer`.
@@ -146,7 +155,20 @@ keys `pages_total`, `pages_with_text`, `pages_with_text_layer`,
 Each ordered `per_page` record is `{page, char_count, has_text_layer,
 warning_codes}`. Aggregate `fidelity_warnings` contains at most one entry for
 each stable extraction code, while the per-page lists preserve exact
-attribution. See `docs/CONVERSION_FIDELITY.md` for the heuristic limits.
+attribution. `details.tables` contains only `requested`, `engine_status`,
+`emitted`, and `flattened_candidates`; no table cells or document text enter the
+report.
+
+Table mode uses pdfplumber's explicit-line strategy and emits only complete,
+bounded rectangular grids. The first physical row becomes the inferred GFM
+header; backslashes and pipes are escaped and cell newlines become `<br>`.
+PDFium supplies ordinary regions and pdfplumber supplies accepted table regions,
+never both for the same region. Borderless, merged-cell, rotated, dense-vector,
+overlapping, and other low-confidence candidates remain flowed text with
+`tables-flattened` when detected. An emitted table carries
+`table-fidelity-best-effort`; absence of either warning does not prove that no
+table exists. See `docs/CONVERSION_FIDELITY.md` for the confidence and resource
+limits.
 
 ### Markdown rendering (`operations.markdown`)
 

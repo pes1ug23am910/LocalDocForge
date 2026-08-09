@@ -145,8 +145,11 @@ Format fidelity and provenance:
   content. A whitespace-only text layer may therefore have
   `has_text_layer=true` and `char_count=0`. An image-only page is false.
   `char_count` equals Python's Unicode-code-point length of the normalized
-  extracted page text before anchors/Markdown markup (and equals the JSONL
-  record's text length), not the UTF-8 byte length or grapheme-cluster count.
+  combined plain page text before anchors/Markdown markup. With an accepted
+  table, pdfplumber supplies that region's cell text and PDFium supplies the
+  ordinary regions; for JSONL, where table mode is unavailable, the count
+  equals the record's text length. It is not the UTF-8 byte length or
+  grapheme-cluster count.
   A single selected empty page with anchors disabled may therefore produce a
   valid zero-byte MD/TXT artifact; the report still carries its coverage and
   text-layer distinction.
@@ -154,9 +157,27 @@ Format fidelity and provenance:
 Markdown reading order is a deterministic best-effort baseline: text rectangles
 are ordered top-to-bottom, then left-to-right. Larger-font clustering may turn a
 line into a heading, but that is explicitly a heuristic. Multi-column pages,
-rotated or angled text, and RTL scripts can be ordered incorrectly. Tables are
-flattened into ordinary text in this slice; conservative ruled-grid detection
-can identify some cases, but no warning is proof that a page has no table.
+rotated or angled text, and RTL scripts can be ordered incorrectly.
+
+Table reconstruction is opt-in through `--tables`/`PdfToMdOptions(tables=True)`
+and valid only for Markdown; the default remains flowed PDFium text. The
+pdfplumber strategy requires explicit horizontal and vertical ruling lines.
+Only a bounded, non-overlapping rectangular grid with at least two rows and two
+columns, nonempty header cells, nonempty body rows, complete cell geometry, and
+matching region/cell character content is accepted. The first physical row is
+rendered as an **inferred** GFM header; this is not a claim about PDF semantics.
+Backslashes are doubled, `|` becomes `\|`, and newlines become `<br>` inside
+GFM cells.
+
+Each accepted region has one text source: pdfplumber cell text replaces wholly
+contained PDFium fragments, while PDFium remains authoritative outside it.
+Partial overlaps or coordinate disagreement reject the table, preventing the
+two engines from duplicating or interleaving one region. Borderless grids,
+merged/spanning cells, rotated pages, overlapping detections, dense vector
+graphics, parser errors, resource-limit cases, and every other low-confidence
+candidate remain flowed text. If bounded evidence identifies a rejected
+candidate, `tables-flattened` is emitted. Absence of a table warning is not
+proof that no table exists; it means only that the heuristics found no evidence.
 
 Stable codes (at most one aggregate `fidelity_warnings` entry per code):
 
@@ -166,18 +187,27 @@ Stable codes (at most one aggregate `fidelity_warnings` entry per code):
   clustering rather than document semantics.
 - `reading-order-uncertain` — columns, rotation, angled text, or RTL content
   makes the baseline reading order uncertain.
-- `tables-flattened` — conservative ruled-grid detection suggests a table was
-  emitted as flowed text; structured table extraction is deferred to S5.
+- `table-fidelity-best-effort` — one or more accepted explicit-line grids were
+  emitted as GFM. Verify the inferred header, cell order, and spanning-cell
+  fidelity.
+- `tables-flattened` — table output was disabled, or a candidate was emitted as
+  flowed text because confidence, geometry, parser, or resource checks refused
+  a rectangular GFM table.
 
-The aggregate warning message reports how many selected occurrences were
-affected. Exact attribution remains bounded in
+For non-table codes, the aggregate warning message reports how many selected
+occurrences were affected. The two table codes instead count emitted tables or
+flattened candidates, because one selected occurrence may contain more than one
+table region. Exact per-page attribution remains bounded in
 `details.coverage.per_page[]`, whose ordered records are
 `{"page": N, "char_count": N, "has_text_layer": bool,
 "warning_codes": [...]}`. `details.coverage` also contains
 `pages_total`, `pages_with_text`, `pages_with_text_layer`,
 `char_count_min`, `char_count_median`, and `char_count_max`. These values count
 selected occurrences, including repeats and reverse order. The report never
-contains extracted text.
+contains extracted text. `details.tables` contains only `requested`,
+`engine_status` (`not-requested`, `available`, or `fallback`), `emitted`, and
+`flattened_candidates`; these are status/counters, never cells or document
+content.
 
 Per-page work is bounded before layout materialization. These are memory and
 cardinality bounds, not a speed guarantee: per-page wall time scales with
@@ -196,6 +226,16 @@ extraction refuses with `[reading-order-uncertain]` rather than falsely
 asserting `no-text-layer`. Pages above one million raw
 characters are also preflighted against the remaining output budget; the
 streaming writer remains authoritative for exact UTF-8/framing bytes.
+
+Table work has a second fixed set of fail-safe bounds. Structured table finding
+is skipped once the PDFium scan exceeds 8,192 PDF path segments. Structured
+output is refused above 1,024 pdfplumber edges,
+4,096 vertical×horizontal edge pairs, 32 detected tables per page, or 4,096
+cumulative cells per page. Normalized table-cell UTF-8 is capped at 4 MiB per
+page and further constrained by the remaining extraction-byte budget and
+`max_memory_bytes // 64`. Crossing a bound keeps flowed text; it never publishes
+a truncated table. These cardinality limits bound work and memory, not the wall
+time of every third-party parser call.
 
 The related read-only `inspect` inventory reports no document text and skips
 the font-size/angle sampling used only for extraction warnings and Markdown

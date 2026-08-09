@@ -344,8 +344,8 @@ The project's own release gate currently says **FAIL / not cleared for
 sensitive documents** (`docs/STATUS.md`), even though everything above works.
 The honest reasons, condensed:
 
-- Bundled OpenJPEG 2.5.4 and libheif 1.23.0 have recorded advisories; PDFium's
-  advisory status is unknown for 18 unversioned native children.
+- Bundled OpenJPEG 2.5.4 and libheif 1.23.0 have recorded advisories; PDFium and
+  the other version-unknown native inventory total 19 advisory-unknown children.
 - `--strict-offline` is application policy plus Python-level socket guards —
   **not** an OS firewall. No OS-enforced outbound+DNS denial has been proven on
   this machine.

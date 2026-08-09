@@ -595,6 +595,13 @@ def pdf_to_md_cmd(
             help="Omit page anchors (TXT uses form-feed separators instead).",
         ),
     ] = False,
+    tables: Annotated[
+        bool,
+        typer.Option(
+            "--tables",
+            help="Render confident ruled tables as GFM pipe tables (Markdown only).",
+        ),
+    ] = False,
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Extract PDF text to agent-friendly Markdown, text, or JSONL."""
@@ -607,10 +614,18 @@ def pdf_to_md_cmd(
             err=True,
         )
         raise typer.Exit(EXIT_USAGE)
+    if tables and format_key != "md":
+        typer.secho(
+            "Error: --tables requires --format md.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
     options = text_ops.PdfToMdOptions(
         output_format=format_key,
         pages=_parse_range(pages),
         page_anchors=not no_page_anchors,
+        tables=tables,
         collision=collision,
         password=_password_value(),
     )

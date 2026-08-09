@@ -245,6 +245,33 @@ class TestJobFlow:
         assert text.count("\f") == 1
         assert text.index("MARKER-ALPHA-PAGE-3") < text.index("MARKER-ALPHA-PAGE-1")
 
+    def test_pdf_to_md_tables_flag_emits_gfm(self, client, fixtures_dir):
+        response = client.post(
+            "/api/jobs/pdf-to-md",
+            headers=auth(),
+            files=[upload(fixtures_dir / "text-ruled-table.pdf")],
+            data={"format": "md", "tables": "true"},
+        )
+
+        assert response.status_code == 201, response.text
+        payload = response.json()
+        assert payload["report"]["details"]["tables"] == {
+            "requested": True,
+            "engine_status": "available",
+            "emitted": 1,
+            "flattened_candidates": 0,
+        }
+        assert any(
+            warning["code"] == "table-fidelity-best-effort"
+            for warning in payload["report"]["fidelity_warnings"]
+        )
+        downloaded = client.get(
+            f"/api/jobs/{payload['job_id']}/outputs/0",
+            headers=auth(),
+        )
+        assert downloaded.status_code == 200
+        assert b"| Quarter | Units | Revenue |" in downloaded.content
+
     def test_md_to_pdf_upload_with_sibling_image_and_options(
         self, client, fixtures_dir
     ):
@@ -448,6 +475,8 @@ class TestJobErrors:
         [
             ({"format": "html"}, "'format' must be one of"),
             ({"page_anchors": "1"}, "'page_anchors' must be true or false"),
+            ({"tables": "1"}, "'tables' must be true or false"),
+            ({"format": "txt", "tables": "true"}, "'tables' requires 'format'"),
         ],
     )
     def test_pdf_to_md_rejects_invalid_parameters(

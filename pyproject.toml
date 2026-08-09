@@ -35,6 +35,12 @@ dependencies = [
     "markdown-it-py>=4.2",
     "pikepdf>=9.0",
     "pypdfium2>=4.30",
+    # 0.11.10 pins pdfminer.six 20260107, after the custom-CMap RCE fix and
+    # with the follow-up xref-size validation used on hostile PDF inputs.
+    "pdfplumber>=0.11.10",
+    # Publish the security floor for pdfminer.six's mandatory cryptography
+    # edge; 50.0.0 fixes CVE-2026-69247 affecting releases >=44.0.0.
+    "cryptography>=50.0.0",
     "pillow>=10.4",
     # HEIF/HEIC decode plugin. pi-heif is the decode-only distribution of
     # pillow-heif: no bundled x265 encoder, so the wheel license ceiling stays
@@ -171,6 +177,7 @@ disable_error_code = ["type-arg"]
 required-version = "==0.11.26"
 default-groups = []
 exclude-newer = "2026-07-19T00:00:00Z"
+exclude-newer-package = { cryptography = "2026-08-01T00:00:00Z" }
 environments = [
     "sys_platform == 'win32' and implementation_name == 'cpython'",
     "sys_platform == 'linux' and implementation_name == 'cpython'",

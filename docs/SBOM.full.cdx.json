@@ -261,6 +261,186 @@
       "version": "4.14.2"
     },
     {
+      "bom-ref": "pkg:pypi/cffi@2.1.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-cffi/cffi/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/cffi/2.1.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-cffi/cffi/v2.1.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT-0"
+          }
+        }
+      ],
+      "name": "cffi",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "cryptography reaches the CFFI backend in supported encrypted-PDF paths; the embedded libffi identity cannot be mapped to an exact advisory range."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "contains-unknown-component"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Require CFFI to expose exact libffi source/build provenance or rebuild from a vetted exact libffi release, then repeat license and advisory review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT-0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed CFFI LICENSE SHA256=5ba24ddc57067f9249add644c3afc41a5d6dc37e23433ef759d95df370b0af63; embedded libffi carries distinct MIT terms preserved from the exact sdist"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "51"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0582a58f3051372229ca8e7f5f589f9e5632678208d8636fea3676711fdf7fe5,sha256:10537b1df4967ca26d21e5072d7d54188354483b91dc75058968d3f0cf13fbda,sha256:15faec4adfff450819f3aee0e2e02c812de6edb88203aa58807955db2003472a,sha256:1854b724d00f6654c742097d5387569021be12d3a0f770eae1df8f8acfcc6acd,sha256:1b96bfe2c4bd825681b7d311ad6d9b7280a091f43e8f63da5729638083cd3bfb,sha256:1e9f50d192a3e525b15a75ab5114e442d83d657b7ec29182a991bc9a88fd3a66,sha256:1ff3456eab0d889592d1936d6125bbfbc7ae4d3354a700f8bd80450a66445d4d,sha256:2282cd5e38aa8accd03e99d1256af8411c84cdbee6a89d841b563fdbd1f3e50f,sha256:276f20fffd7b396e12516ba8edf9509210ac248cbbc5acbc39cd512f9f59ebe6,sha256:33eb1ad83ebe8f313e0df035c406227d55a79456704a863fad9842136af5ad7d,sha256:379de10ce1ba048b1448599d1b37b24caee16309d1ac98d3982fc997f768700b,sha256:3b926723c13eba9f81d2ef3820d63aeceec3b2d4639906047bf675cb8a7a500d,sha256:46b1c8db8f6122420f32d02fffb924c2fe9bc772d228c7c711748fff56aabb2b,sha256:47ff3a8bfd8cb9da1af7524b965127095055654c177fcfc7578debcb015eecd0,sha256:510aeeeac94811b138077451da1fb18b308a5feab47dd2b603af55804155e1c8,sha256:5972433ad71a9e46516584ef60a0fda12d9dc459938d1539c3ddecf9bdc1368d,sha256:5ecbd0499275d57506d397eebe1981cee87b47fcd9ef5c22cab7ed7644a39a94,sha256:63960549e4f8dc41e31accb97b975abaecfc44c03e396c093a6436763c2ea7db,sha256:6af371f3767faeffc6ac1ef57cdfd25844403e9d3f476c5537caee499de96376,sha256:6ca4919c6e4f89aa99c42510b42cf54596892c00b3f9077f6bdd1505e24b9c8d,sha256:6d194185eabd279f1c05ebe3504265ddfc5ad2b58d0714f7db9f01da592e9eb6,sha256:702c436735fbe99d59ada02a1f65cfc0d31c0ee8b7290912f8fbc5cd1e4b16c3,sha256:716ff8ec22f20b4d988b12884086bcef0fc99737043e503f7a3935a6be99b1ea,sha256:78474632761faa0fb96f30b1c928c84ebcf68713cbb80d15bab09dfe61640fde,sha256:799416bae98336e400981ff6e532d67d5c709cfb30afb79865a1315f94b0e224,sha256:7d034dcffa09e9a46c93fa3a3be402096cb5354ac6e41ab8e5cc9cd8b642ad76,sha256:7d28dff1db6764108bc30788d85d61c876beff416d9a49cb9dd7c5a9f34f5804,sha256:7d5980a3433d4b71a5e120f9dd551403d7824e31e2e67124fe2769c404c06913,sha256:7ea6b3e2c4250ff1de21c630fe72d0f63eb95c2c32ffbf64a358cf4a8836d714,sha256:8e74a6135550c4748af665b1b1118b6aab33b1fc6a16f9aff630af107c3b4512,sha256:961be50688f7fba2fa65f63712d3b9b341a22311f5253460ce933f52f0de1c8c,sha256:98fff996e983a36d3aa2eca83af40c5821202e7e6f32d13ae94e3d2286f10cfe,sha256:9b8f0f26ca4e7513c534d351eca551947d053fac438f2a04ac96d882909b0d3a,sha256:a95b05f9baf29b91171b3a8bd2020b028835243e7b0ff6bb23e2a3c228518b1b,sha256:ac0f1a2d0cfa7eea3f2aaf006ab6e70e8feeb16b75d65b7e5939982ca2f11056,sha256:b6422532152adf4e59b110cb2808cee7a033800952f5c036b4af047ee43199e7,sha256:bf01d8c84cbea96b944c73b22182e6c7c432b3475632b8111dbfdc95ddad6e13,sha256:bf5c6cf48238b0eb4c086978c492ad1cbc22373fc5b2d7353b3a598ce6db887a,sha256:c16914df9fb7f500e440e6875fa23ff5e0b31db01fa9c06af98d59a91f0dc2e4,sha256:c351efb95e832a853a29361675f33a7ce53de1a109cd73fd47af0712213aa4ce,sha256:c4165821e131d6d4ca444347c2b694e2311bcfa3fe5a861cc72968f28867beac,sha256:c97f080ea627e2863524c5af3836e2270b5f5dfff1f104392b959f8df0c5d384,sha256:d2117334c3af3bdcb9a88522b844a2bdb5efdc4f71c6c822df55486ae1c3347a,sha256:d53d10f7da99ae46f7373b9150393e9c5eab9b224909982b43832668de4779f5,sha256:d9fafc5aa2e2a39aaf7f8cc0c1f044a9b07fca12e558dca53a3cc5c654ad67a7,sha256:db3eb7d46527159a878ec3460e9d40615bc25ba337d477db681aea6e4f05c5d2,sha256:dbf7c7a88e2bac086f06d14577332760bdeecc42bdec8ac4077f6260557d9326,sha256:df2b82571a1b30f58a87bf4e5a9e78d2b1eff6c6ce8fd3aa3757221f93f0863f,sha256:eb4e8997a49aa2c08a3e43c9045d224448b8941d88e7ac163c7d383e560cbf98,sha256:efc1cdd798b1aaf39b4610bba7aad28c9bea9b910f25c784ccf9ec1fa719d1f9,sha256:ff067a8d8d880e7809e4ac88eb009bb848870115317b306666502ccad30b147f"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'darwin') or (implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'linux') or (implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The CFFI version is exact and had no matching advisory, but its embedded libffi child remains advisory-unknown."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "CPython native-call bridge used by cryptography; its Windows wheel embeds a version-unknown libffi source-derived implementation."
+        }
+      ],
+      "purl": "pkg:pypi/cffi@2.1.0",
+      "type": "library",
+      "version": "2.1.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/charset-normalizer@3.4.9",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/jawah/charset_normalizer/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/charset-normalizer/3.4.9/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/jawah/charset_normalizer/3.4.9/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "charset-normalizer",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "May inspect attacker-controlled byte strings reached through pdfminer.six's PDF parsing path."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock current and repeat review when pdfminer.six changes its encoding dependency."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=18577485d3704f1a479ded8e573c0976cfed315fd2fd17983fa988da4c2f70d1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "54"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0327fcd59a935777d83410750c50600ee9571af2846f71ce40f25b13da1ef380,sha256:03d07803992c6c7bbc976327f34b18b6160327fc81cb82c9d504720ac0be3b62,sha256:0d861473f743244d349b50f850d10eb87aeb22bbdcc8e64f79273c94af5a8226,sha256:16b65ea0f2465b6fb52aa22de5eca612aa964ddfec00a912e26f4656cbef890b,sha256:19ac87f93086ce37b86e098888555c4b4bc48102279bae3350098c0ed664b501,sha256:21e764fd1e70b6a3e205a0e46f3051701f98a8cb3fad66eeb80e48bb502f8698,sha256:32286a2c8d167e897177b673176c1e3e00d4057caf5d2b64eef9a3666b03018e,sha256:33bdcc2a32c0a0e861f60841a512c8acc658c87c2ac59d89e3a46dacf7d866e4,sha256:40a126142a56b2dfc0aacbad1de8310cbf60da7656db0e6b16eebd48e3e93519,sha256:416c229f77e5ea25b3dfd4b582f8d73d7e43c22320302b9ab128a2d3a0b38efe,sha256:440eede837960000d74978f0eba527be106b5b9aee0daf779d395276ed0b0614,sha256:45b0cc4e3556cd875e09102988d1ab8356c998b596c9fced84547c8138b487a0,sha256:4b3dac63058cc36820b0dd072f89898604e2d39686fe05321729d00d8ac185a0,sha256:4d1c96a7a18b9690a4d46df09e3e3382406ae3213727cd1019ebade1c4a81917,sha256:51307f5c71007673a2bf8232ad973483d281e74cb99c8c5a990af1eefa6277d9,sha256:51447e9aa2684679af07ca5021c3db526e0284347ebf4ffcec1154c3350cfe32,sha256:5b10cd92fc5c498b35a8635df6d5a100207f88b63a4dc1de7ef9a548e1e2cd63,sha256:5e226f6218febc71f6c1fc2fafb91c226f75bdc1d8fb12d66823716e891608fd,sha256:609b3ba8fcc0fb5ab7af00719d0fb6ad0cb518e48e7712d12fd68f1327951198,sha256:60f44ade2cf573dad7a277e6f8ca9a51a21dda572b13bd7d8539bb3cd5dbedde,sha256:611057cc5d5c0afc743ba8be6bd828c17e0aaa8643f9d0a9b9bb7dea80eb8012,sha256:673611bbd43f0810bec0b0f028ddeaaa501190339cac411f347ac76917c3ae7b,sha256:68e5f26a1ad57ded6d1cfb85331d1c1a195314756471d97758c48498bb4dcdf5,sha256:69b157c5d3292bcd443faca052f3096f637f1e074b98212a933c074ae23dc3b8,sha256:75286256590a6320cf106a0d28970d3560aad9ee09aa7b34fb40524792436d35,sha256:78841cccf1af7b40f6f716338d50c0902dbe88d9f800b3c973b7a9a0a693a642,sha256:78fa18e436a1a0e58dbd7e02fc4473f3f32cceb12df9dfca542d075961c307d2,sha256:7b86a2b16095d250c6f58b3d9b2eee6f4147754344f3dab0922f7c9bf7d226c9,sha256:83aed2c10721ddd90f68140685391b50811a880af20654c59af6b6c66c40513c,sha256:84fd18bcc17526fc2b3c1af7d2b9217d32c9c04448c16ec693b9b4f1985c3d33,sha256:898f0e9068ca27d37f8e83a5b962821df851532e6c4a7d615c1c033f9da6eedf,sha256:8a79d9f4d8001473a30c163556b3c3bfebec837495a412dde78b51672f6134f9,sha256:90c44bc373b7687f6948b693cceaea1348ae0975d7474746559494468e3c1d84,sha256:9104ed0bd76a429d46f9ec0dbc9b08ad1d2dcdf2b00a5a0daa1c145329b35b44,sha256:9b2aff1c7b3884512b9512c3eaadd9bab39fb45042ffaaa1dd08ff2b9f8109d9,sha256:9b8e0f3107e2200b76f6054de99016eac3ee6762713587b36baaa7e4bd2ae177,sha256:9cdef90ae47919cae358d8ab15797a800ed41da7aba5d72419fb510729e2ed4b,sha256:a1786910334ed46ab1dd73222f2cd1e05c2c3bb39f6dddb4f8b36fc382058a39,sha256:a4cfde78a9f2880208d16a93b795726a3017d5977e08d1e162a7a31322479c41,sha256:a4fbdde9dd4a9ce5fd52c2b3a347bb50cc89483ef783f1cb00d408c13f7a96c0,sha256:bd47ba7fc3ca94896759ea0109775132d3e7ab921fbf54038e1bab2e46c313c9,sha256:c1c948747b03be832dceed96ca815cef7360de9aa19d37c730f8e3f6101aca48,sha256:c25fe15c70c59eb7c5ce8c06a1f3fa1da0ecc5ea1e7a5922c40fd2fa9b0d5046,sha256:cc1b0fff8ead343dae06305f954eb8468ba0ec1a97881f42489d198e4ce3c632,sha256:cd6c3d4b783c556fa00bf540854e42f135e2f256abd29669fcd0da0f2dec79c2,sha256:d4d6fcde76f94f5cb9e43e9e9a61f16dacefd228cbbf6f1a09bd9b219a92f1a1,sha256:df115d4d83168fdf2cae48ef1ff6d1cb4c466364e30861b37121de0f3bf1b990,sha256:e4fd89cc178bced6ad29cb3e6dd4aa63fa5017c3524dbd0b25998fb64a87cc8b,sha256:ee2f2a527e3c1a6e6411eb4209642e138b544a2d72fe5d0d76daf77b24063534,sha256:f7fb7d750cfa0a070d2c24e831fd3481019a60dd317ea2b39acbcebc08b6ed81,sha256:f840ed6d8ecba8255df8c42b87fadeda98ddfc6eeec05e2dc66e26d46dd6f58a,sha256:f86c6358749bd4fda175388691e3ba8c46e24c5347d0afd20f9b7edfc9faf07d,sha256:fa36ec09ef71d158186bc79e359ff5fdd6e7996fe8ab638f00d6b93139ba4fcf,sha256:fe2c7201c642b7c308f1675355ad7ff7b66acfe3541625efe5a3ad38f29d6115"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Pathological encoding detection can consume resources even without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Transitive text-encoding detector used by pdfminer.six."
+        }
+      ],
+      "purl": "pkg:pypi/charset-normalizer@3.4.9",
+      "type": "library",
+      "version": "3.4.9"
+    },
+    {
       "bom-ref": "pkg:pypi/click@8.4.2",
       "externalReferences": [
         {
@@ -431,6 +611,94 @@
       "purl": "pkg:pypi/colorama@0.4.6",
       "type": "library",
       "version": "0.4.6"
+    },
+    {
+      "bom-ref": "pkg:pypi/cryptography@50.0.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/cryptography/50.0.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "pdfminer.six uses cryptography for PDF RC4/AES decryption. Its path does not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep cryptography>=50.0.0 as direct wheel metadata, retain the package-specific 2026-08-01 resolution cutoff, and re-review both Python and embedded native/Cargo inventories on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=3e0c7c091a948b82533ba98fd7cbb40432d6f1a9acbf85f5922d2f99a93ae6bb; LICENSE.APACHE=aac73b3148f6d1d7111dbca32099f68d26c644c6813ae1e4f05f6579aa2663fe; LICENSE.BSD=602c4c7482de6479dd2e9793cda275e5e63d773dacd1eca689232ab7008fb4fb"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "40"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03,sha256:06a32a980526a6ab9a4b9bf8f7385800791e2bb960903cb6b530e4817509a3b7,sha256:07949c449a1abcf60d1ee6e88956d89404c7df3c8258f46589e912988e551987,sha256:105110f43a471dbd0060b9c9516cb8a6a79233631a04cc2ba16f28323ac6e025,sha256:11b74db56cdbe3cdee6e3f6982ecb70334fa10dce99ed58bf7894aaaa3b2a037,sha256:12b9c6996425c76ea6c457ace4f3073e715b8c545add07cd1a8f3a4f90691269,sha256:1489e263a8048bb8b6a8bac662eb2d402ea5d2b7b4699b72f385f1e2772db105,sha256:19736989797678c6af1e55cd49055cdbcb55d8f6b5583ac5335f933aba9101dc,sha256:1b4a266766514614f8aa60416e71f2fc6e575d36e7bdc90f644fadb2f4b75b95,sha256:2a8183b489dc1f7f80f135780fadc1108f14b31b8a40411c7a5b17425f65f28b,sha256:37fdb0d0111f1e2ff07139dfb79f1b49531f8e213c46f1163dd7642979b58c47,sha256:3f5735ffe4996d28b809371756219f5354864902a3b9e7c0b9ee87041209fc9c,sha256:49e7d93abdbd2990caced757e5fade25302f719c3c8fb6e6fff2dde98999fc41,sha256:65c2c3add92b45fd0709db8594536aea39c2a67af0e27ffcf049c498501140b7,sha256:6ba6a53445bd3cfa809ef3ef5f1589aa6ba08784a1d962bf47d0940e871dab1c,sha256:6e7d61120573a7f2cd94cc095f9e81f6967c61ccdf194285aa143ecec8e0b708,sha256:7cec5b856506da6defb290f30c9ee687d5f5e8cb0bd3f6459dde43b0b4fa40ef,sha256:80b63928fa35083b33966ce1efb70e5b9607181e49dcd1c22c8c005e319f667f,sha256:82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f,sha256:828743d939e9629bc267b8e2d08d8bb67cd4319c771a33d4b18b22dd8fb7440a,sha256:8d89f3976b10b4ce31118de72329025f70d2c6ead14a8217c5514dd2c6d5a78f,sha256:900131fafd8aead39ac7dd3a7e833be754c17a95cfd91221636949fe4eb0aa8a,sha256:910e1d2668e7de9648f2bcee30e180db2a6b15c30f887d7c4c93ddf96e3992e3,sha256:9aa87839c383bdbab6ef865787a1fb877af8dd03464c4400322726feaaadfc6d,sha256:a1b30560f2acc95aa8b2e06e716a13dbfc97314747b80d9707e307f77b40d6b3,sha256:a91296cb61e8df6f86d0c19cc4068228da256bf59bf86049fbd821084565327f,sha256:b42a28c1844fd9de8f3f7d540e36b66f3a9c83fceac7170ebc7a6a19edd9dcae,sha256:bd1c592e4d5974f0d08d4888e432157adba757c66da0246918e43677fafa2d30,sha256:c87f62a3d3b9888ed0fdde100ec06aa61ca9cd44bad9057d1dff9a516b5f5bb9,sha256:ccdc4a71a4dabae05de219404f9f4abc38e3b58422177ff93d0da05967dafa07,sha256:d24fead1d4d076e1bfb006dcec392074a3cd8d7b4fc8a595aa64073b2b7a96ba,sha256:d58c3db7cd6eed54e6c06744db55456b65ebd7492ddeae9c1e93cfca7aa857d3,sha256:d764dcf130c428ef66786f866dd750f53182bc608813489915e9fc106bb0c82f,sha256:df2a58a472f332225671c35b0a830208b86d004f82baa8530fa3782c85646533,sha256:e722f16708d854fe924790e051061f6704a472c3bac347b6fd88033ea8dd0dc5,sha256:ecfed7367f965a0328cfbdd70da860f15441f002f613185668c6e6ebf5a0ac11,sha256:eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9,sha256:f59e38625469987d7ef6d495323c55e7db6c212eaf6112267e0d3b565a2e9c9f,sha256:f89831ef99dd7dd169ab06d63a831adb9e20a87aac6d380266bbda5823349169,sha256:fd9192b7b70c573d7f214eb1ae35e00d359f6f5e4b27c7e21e30de1fc6204645"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The exact fixed release can have unpublished defects; cryptographic parser/decryption code remains reachable for encrypted PDFs."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5."
+        }
+      ],
+      "purl": "pkg:pypi/cryptography@50.0.0",
+      "type": "library",
+      "version": "50.0.0"
     },
     {
       "bom-ref": "pkg:pypi/fastapi@0.139.2",
@@ -1041,6 +1309,184 @@
       "version": "26.2"
     },
     {
+      "bom-ref": "pkg:pypi/pdfminer-six@20260107",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pdfminer/pdfminer.six/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pdfminer.six/20260107/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT AND Apache-2.0"
+        }
+      ],
+      "name": "pdfminer-six",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Untrusted PDF structure reaches pdfminer.six only in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep pdfminer.six exactly paired with pdfplumber's pin, contain parsing, and repeat exact-version review on either upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT AND Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pdfminer_six-20260107.dist-info declares License-Expression: MIT and installs only the top-level MIT LICENSE (SHA256=f01e5d699a33766b5caf4a5099f2856aba4f3f75ea1df05dc0572b34b4bea8f2). The installed pdfminer/_saslprep.py is derived from MongoDB/PyMongo under Apache-2.0 and carries pyHanko MIT changes. Its header points to notices not installed by the wheel; the exact source tag supplies LICENSE.pyHanko, while the canonical Apache-2.0 terms are source-bound below. Generated notices restore the omitted attribution and terms without representing the wheel metadata as complete."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel-with-missing-wheel-notices-restored"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:366585ba97e80dffa8f00cebe303d2f381884d8637af4ce422f1df3ef38111a9,sha256:96bfd431e3577a55a0efd25676968ca4ce8fd5b53f14565f85716ff363889602"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Parser complexity, decompression, font, and layout processing remain hostile-input surfaces despite the empty exact-version query."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Transitive parser behind pdfplumber for table characters, lines, and coordinates in opt-in table mode."
+        }
+      ],
+      "purl": "pkg:pypi/pdfminer-six@20260107",
+      "type": "library",
+      "version": "20260107"
+    },
+    {
+      "bom-ref": "pkg:pypi/pdfplumber@0.11.10",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/jsvine/pdfplumber/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pdfplumber/0.11.10/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/jsvine/pdfplumber/v0.11.10/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pdfplumber",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "When --tables is requested, attacker-controlled PDFs reach pdfplumber/pdfminer parsing inside the same resource-bounded conversion worker; table candidates are cross-checked against PDFium text before emission."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact lock current, preserve table-mode opt-in and cross-engine validation, and re-review before expanding pdfplumber beyond table geometry."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "pdfplumber-0.11.10.dist-info license classifier and license file SHA256=0d48994da4d1321e395b5e64a724ed4dec63fb96b88ac5b88fc014771e690821"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:7741ea81bf165b474b153e6789d10d18e06b6ddcf3ec84289c3ef2fed6802580,sha256:b95b2d28c66efb0a794a83b88c6c6aea5987532a445d20a1cbcfa657022e6e57"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Complex PDF parser states and table-geometry heuristics can contain unpublished denial-of-service or fidelity defects."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Secondary PDF parser used only when explicitly requested for best-effort table geometry; PDFium remains the primary text engine."
+        }
+      ],
+      "purl": "pkg:pypi/pdfplumber@0.11.10",
+      "type": "library",
+      "version": "0.11.10"
+    },
+    {
       "bom-ref": "pkg:pypi/pi-heif@1.4.0",
       "externalReferences": [
         {
@@ -1301,6 +1747,96 @@
       "purl": "pkg:pypi/pillow@12.3.0",
       "type": "library",
       "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pycparser@3.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/eliben/pycparser/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pycparser/3.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/eliben/pycparser/release_v3.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "pycparser",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No supported operation accepts attacker-supplied C source; the package is present through CFFI's dependency declaration."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep aligned with CFFI and remove if future CFFI metadata no longer requires it."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=0c846399369ea76ddd7b5c44fe6d16497415fcf015f5cbb508c24bf98b81c5b1"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29,sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'darwin') or (implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'linux') or (implementation_name == 'cpython' and platform_python_implementation != 'PyPy' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/full.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future dynamic FFI compilation would materially expand reachability and require a new review."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Transitive C parser dependency of CFFI; runtime use is limited by CFFI's installed interfaces."
+        }
+      ],
+      "purl": "pkg:pypi/pycparser@3.0",
+      "type": "library",
+      "version": "3.0"
     },
     {
       "bom-ref": "pkg:pypi/pydantic@2.13.4",
@@ -2601,6 +3137,2626 @@
       "version": "0.51.0"
     },
     {
+      "bom-ref": "pkg:cargo/asn1@0.24.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/asn1/0.24.1"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/asn1/0.24.1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "asn1",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into cryptography; current PDF path does not deliberately parse attacker-supplied ASN.1."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM asn1@0.24.1 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future cryptography call paths may expand ASN.1 reachability; empty results are not proof of safety."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required ASN.1 parser crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/asn1@0.24.1",
+      "type": "library",
+      "version": "0.24.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/asn1_derive@0.24.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/asn1_derive/0.24.1"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/asn1_derive/0.24.1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "asn1_derive",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; procedural macros ordinarily run at build time, so physical runtime linkage may be over-approximated."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow the supplier scope until PyCA publishes a target-specific runtime SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM asn1_derive@0.24.1 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The conservative boundary may overcount but avoids silently discarding a supplier-required identity."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required ASN.1 procedural-macro crate retained under the all_targets supplier boundary."
+        }
+      ],
+      "purl": "pkg:cargo/asn1_derive@0.24.1",
+      "type": "library",
+      "version": "0.24.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/base64@0.23.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/base64/0.23.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/base64/0.23.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "base64",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into cryptography; current PDF path may reach internal encoding helpers."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM base64@0.23.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Malformed-data complexity or semantic defects may be unpublished."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required Base64 codec crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/base64@0.23.0",
+      "type": "library",
+      "version": "0.23.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/bitflags@2.13.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/bitflags/2.13.1"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/bitflags/2.13.1"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "bitflags",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled support code is reachable with cryptography."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM bitflags@2.13.1 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Empty exact-version results are not proof of safety."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required flag representation crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/bitflags@2.13.1",
+      "type": "library",
+      "version": "2.13.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/cfg-if@1.0.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/cfg-if/1.0.4"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/cfg-if/1.0.4"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "cfg-if",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the identity required; its macros select compiled code paths."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cfg-if@1.0.4 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Supplier scope can over-approximate separately linked runtime identities."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required conditional-compilation helper retained under the supplier boundary."
+        }
+      ],
+      "purl": "pkg:cargo/cfg-if@1.0.4",
+      "type": "library",
+      "version": "1.0.4"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-cffi@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-cffi",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the reachable cryptography extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-cffi@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA Rust crate bridging cryptography's CFFI-facing surface."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-cffi@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-crypto@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-crypto",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the reachable cryptography extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-crypto@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA cryptographic operation crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-crypto@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-keepalive@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-keepalive",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the reachable cryptography extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-keepalive@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Internal crates do not have independent ecosystem advisory identities; conclusions follow the exact PyCA release review."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA lifetime-management crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-keepalive@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-key-parsing@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-key-parsing",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the reachable cryptography extension; key parsing is not directly invoked by the current pdfminer.six path."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-key-parsing@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future call-path changes may make currently unused parsers reachable."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA key parsing crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-key-parsing@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-openssl@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-openssl",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the reachable cryptography extension and connects operations to bundled OpenSSL."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review both supplier SBOMs."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-openssl@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Backend binding defects and OpenSSL interaction defects may be unpublished."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA OpenSSL backend crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-openssl@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-rust@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-rust",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The compiled extension and its supplier-declared required dependency set implement cryptography operations reachable through pdfminer.six."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade cryptography as an atomic wheel and re-inventory its embedded SBOMs."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "cryptography 50.0.0 Windows x86-64 wheel embedded CycloneDX SBOM"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "embedded SBOM metadata subject cryptography-rust@0.50.0, scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The aggregate can contain unpublished Rust/native defects and its all_targets supplier SBOM may over-approximate platform linkage."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-SBOM aggregate for the Rust extension compiled into cryptography 50.0.0."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-rust@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-x509-verification@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-x509-verification",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the wheel; current PDF table extraction does not invoke certificate verification."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-x509-verification@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future features can expand reachability to certificate verification."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA X.509 verification crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-x509-verification@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cryptography-x509@0.50.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pyca/cryptography/security/advisories"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "cryptography-x509",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the wheel; current PDF table extraction does not invoke X.509 parsing."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade with cryptography and re-review the supplier SBOM."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM cryptography-x509@0.50.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future features can expand reachability to certificate parsing."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internal PyCA X.509 parsing crate."
+        }
+      ],
+      "purl": "pkg:cargo/cryptography-x509@0.50.0",
+      "type": "library",
+      "version": "0.50.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/foreign-types-shared@0.1.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/foreign-types-shared/0.1.1"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/foreign-types-shared/0.1.1"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "foreign-types-shared",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachable as support code for bundled OpenSSL bindings."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM foreign-types-shared@0.1.1 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "FFI ownership defects can be security-relevant despite empty advisory results."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required shared foreign-type traits used by OpenSSL bindings."
+        }
+      ],
+      "purl": "pkg:cargo/foreign-types-shared@0.1.1",
+      "type": "library",
+      "version": "0.1.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/foreign-types@0.3.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/foreign-types/0.3.2"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/foreign-types/0.3.2"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "foreign-types",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachable as support code for bundled OpenSSL bindings."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM foreign-types@0.3.2 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "FFI ownership defects can be security-relevant despite empty advisory results."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required foreign-type wrapper used by OpenSSL bindings."
+        }
+      ],
+      "purl": "pkg:cargo/foreign-types@0.3.2",
+      "type": "library",
+      "version": "0.3.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/heck@0.5.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/heck/0.5.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/heck/0.5.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "heck",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the identity required; usage may be limited to generated binding code."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until a target-specific runtime SBOM is available."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM heck@0.5.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The conservative boundary may overcount a build-time helper."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required case-conversion crate retained under the all_targets supplier boundary."
+        }
+      ],
+      "purl": "pkg:cargo/heck@0.5.0",
+      "type": "library",
+      "version": "0.5.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/itoa@1.0.18",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/itoa/1.0.18"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/itoa/1.0.18"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "itoa",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled support code may be reached by cryptography formatting paths."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM itoa@1.0.18 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Empty exact-version results are not proof of safety."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required integer-formatting crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/itoa@1.0.18",
+      "type": "library",
+      "version": "1.0.18"
+    },
+    {
+      "bom-ref": "pkg:cargo/libc@0.2.189",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/libc/0.2.189"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/libc/0.2.189"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "libc",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "FFI definitions underpin reachable native cryptography code."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM libc@0.2.189 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Platform ABI interaction defects may not be represented as crate advisories."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required platform FFI definitions crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/libc@0.2.189",
+      "type": "library",
+      "version": "0.2.189"
+    },
+    {
+      "bom-ref": "pkg:cargo/once_cell@1.21.4",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/once_cell/1.21.4"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/once_cell/1.21.4"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "once_cell",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Initialization support is reachable when the extension loads or cryptography primitives initialize."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM once_cell@1.21.4 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Concurrency defects may be unpublished or interaction-specific."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required one-time initialization crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/once_cell@1.21.4",
+      "type": "library",
+      "version": "1.21.4"
+    },
+    {
+      "bom-ref": "pkg:cargo/openssl-macros@0.1.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/openssl-macros/0.1.1"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/openssl-macros/0.1.1"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "openssl-macros",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; procedural macros ordinarily run during compilation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow the supplier scope until PyCA publishes target-specific runtime data."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM openssl-macros@0.1.1 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The conservative boundary may overcount build-time code but avoids unsupported exclusion."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required procedural-macro crate for OpenSSL bindings, conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/openssl-macros@0.1.1",
+      "type": "library",
+      "version": "0.1.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/openssl-sys@0.9.117",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/openssl-sys/0.9.117"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/openssl-sys/0.9.117"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "openssl-sys",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly underpins reachable OpenSSL calls from cryptography."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and review wrapper/native version pairing."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM openssl-sys@0.9.117 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "FFI declarations can be unsound or mismatched even when neither package has a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required raw FFI bindings to bundled OpenSSL."
+        }
+      ],
+      "purl": "pkg:cargo/openssl-sys@0.9.117",
+      "type": "library",
+      "version": "0.9.117"
+    },
+    {
+      "bom-ref": "pkg:cargo/openssl@0.10.81",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/openssl/0.10.81"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/openssl/0.10.81"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "openssl (Rust crate)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachable wrapper layer for cryptography's bundled OpenSSL backend."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and review both wrapper and native OpenSSL versions."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM openssl@0.10.81 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Bindings can expose backend defects or introduce FFI unsoundness not captured by native-library advisories."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required safe Rust bindings for bundled OpenSSL."
+        }
+      ],
+      "purl": "pkg:cargo/openssl@0.10.81",
+      "type": "library",
+      "version": "0.10.81"
+    },
+    {
+      "bom-ref": "pkg:cargo/pem@4.0.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/pem/4.0.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/pem/4.0.0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pem",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Compiled into the wheel; current encrypted-PDF path does not deliberately parse PEM."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM pem@4.0.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future key/certificate features can make malformed PEM attacker-reachable."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required PEM encoding/decoding crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/pem@4.0.0",
+      "type": "library",
+      "version": "4.0.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/portable-atomic@1.14.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/portable-atomic/1.14.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/portable-atomic/1.14.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR MIT"
+        }
+      ],
+      "name": "portable-atomic",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Concurrency support may be reached by the cryptography extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 OR MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM portable-atomic@1.14.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Architecture-specific atomic behavior may have unpublished defects."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required portable atomic-operations crate compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/portable-atomic@1.14.0",
+      "type": "library",
+      "version": "1.14.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/proc-macro2@1.0.107",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/proc-macro2/1.0.107"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/proc-macro2/1.0.107"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "proc-macro2",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; procedural macro support ordinarily runs during compilation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until target-specific runtime data is published."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM proc-macro2@1.0.107 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required procedural-macro support crate conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/proc-macro2@1.0.107",
+      "type": "library",
+      "version": "1.0.107"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3-ffi@0.29.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/pyo3-ffi/0.29.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/pyo3-ffi/0.29.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "pyo3-ffi",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly underpins the importable cryptography Rust extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM pyo3-ffi@0.29.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Raw FFI ABI/lifetime defects may be security-relevant despite empty advisory results."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required raw CPython FFI layer compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/pyo3-ffi@0.29.0",
+      "type": "library",
+      "version": "0.29.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3-macros-backend@0.29.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/pyo3-macros-backend/0.29.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/pyo3-macros-backend/0.29.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "pyo3-macros-backend",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; macro backends ordinarily run during compilation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until target-specific runtime data is published."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM pyo3-macros-backend@0.29.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required PyO3 macro backend conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/pyo3-macros-backend@0.29.0",
+      "type": "library",
+      "version": "0.29.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3-macros@0.29.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/pyo3-macros/0.29.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/pyo3-macros/0.29.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "pyo3-macros",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; procedural macros ordinarily run during compilation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until target-specific runtime data is published."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM pyo3-macros@0.29.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required PyO3 procedural-macro crate conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/pyo3-macros@0.29.0",
+      "type": "library",
+      "version": "0.29.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3@0.29.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/pyo3/0.29.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/pyo3/0.29.0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "pyo3",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly underpins the importable cryptography Rust extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and repeat exact Cargo review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM pyo3@0.29.0 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Python/Rust boundary and lifetime defects may be unpublished or interaction-specific."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required Rust/Python binding runtime compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/pyo3@0.29.0",
+      "type": "library",
+      "version": "0.29.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/quote@1.0.47",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/quote/1.0.47"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/quote/1.0.47"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "quote",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; token generation ordinarily occurs during compilation."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until target-specific runtime data is published."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM quote@1.0.47 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required token-generation crate conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/quote@1.0.47",
+      "type": "library",
+      "version": "1.0.47"
+    },
+    {
+      "bom-ref": "pkg:cargo/self_cell@1.3.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/self_cell/1.3.0"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/self_cell/1.3.0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "self_cell",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Memory/lifetime support is compiled into the reachable cryptography extension."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade through cryptography and retain the Apache-2.0 license election."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier expression Apache-2.0 OR GPL-2.0-only; Apache-2.0 option selected for redistribution"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release-license-option-selected"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Unsoundness defects in self-referential abstractions can be security-relevant despite empty advisory results."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required self-referential data helper compiled into cryptography."
+        }
+      ],
+      "purl": "pkg:cargo/self_cell@1.3.0",
+      "type": "library",
+      "version": "1.3.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/syn@2.0.119",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/syn/2.0.119"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/syn/2.0.119"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "name": "syn",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; syntax parsing ordinarily occurs during macro expansion at build time."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope until target-specific runtime data is published."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT OR Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM syn@2.0.119 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required Rust syntax parser conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/syn@2.0.119",
+      "type": "library",
+      "version": "2.0.119"
+    },
+    {
+      "bom-ref": "pkg:cargo/unicode-ident@1.0.24",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://rustsec.org/advisories/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://crates.io/crates/unicode-ident/1.0.24"
+        },
+        {
+          "type": "license",
+          "url": "https://crates.io/crates/unicode-ident/1.0.24"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "(MIT OR Apache-2.0) AND Unicode-3.0"
+        }
+      ],
+      "name": "unicode-ident",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Supplier marks the crate required; Unicode identifier parsing ordinarily supports build-time syntax processing."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Follow supplier scope and preserve both the code and Unicode data license obligations."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "supplier embedded CycloneDX scope=required; all_targets=true may over-approximate runtime linkage"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "(MIT OR Apache-2.0) AND Unicode-3.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "supplier SBOM unicode-ident@1.0.24 scope=required"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-exact-release"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The strict boundary may overcount build-time code; Unicode data defects can cause semantic differences."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Supplier-marked required Unicode identifier tables conservatively retained."
+        }
+      ],
+      "purl": "pkg:cargo/unicode-ident@1.0.24",
+      "type": "library",
+      "version": "1.0.24"
+    },
+    {
       "bom-ref": "pkg:generic/brotli@1.2.0",
       "externalReferences": [
         {
@@ -3535,6 +6691,84 @@
       "version": "2.5.4"
     },
     {
+      "bom-ref": "pkg:generic/openssl@4.0.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://openssl-library.org/news/vulnerabilities/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/openssl/openssl/openssl-4.0.1/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "OpenSSL",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachable through cryptography operations used for encrypted PDF handling."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Adopt a cryptography wheel bundling a fixed OpenSSL release if a matching advisory appears; re-review every cryptography upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "cryptography-rust"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "cryptography 50.0.0 Windows x86-64 wheel embedded OpenSSL SBOM"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "embedded SBOM names OpenSSL 4.0.1, source SHA256=2db3f3a0d6ea4b59e1f094ace2c8cd536dffb87cdc39084c5afa1e6f7f37dd09; build flags no-zlib no-shared no-module no-comp no-apps no-docs no-sm2-precomp no-atexit"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-supplier-sbom-and-upstream"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Empty public-advisory results are time-bounded and do not cover private or unpublished defects."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native cryptographic library statically bundled in the cryptography wheel."
+        }
+      ],
+      "purl": "pkg:generic/openssl@4.0.1",
+      "type": "library",
+      "version": "4.0.1"
+    },
+    {
       "bom-ref": "pkg:generic/pdfium@152.0.7947.0",
       "externalReferences": [
         {
@@ -3983,6 +7217,76 @@
       "version": "2.3.3"
     },
     {
+      "bom-ref": "urn:localdocforge:native:cffi:libffi:unversioned",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "libffi (CFFI child)",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "unknown"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Obtain an exact child version and source/build provenance, re-run authoritative license and advisory review, and rebuild or upgrade the parent wheel when provenance cannot be established."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:bundledBy",
+          "value": "pkg:pypi/cffi@2.1.0"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "bundled-native-unversioned"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "Windows x86-64 / CPython 3.14 CFFI wheel and exact CFFI 2.1.0 sdist"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseNotice",
+          "value": "cffi-2.1.0.tar.gz src/c/libffi_x86_x64/ffi.h; sdist SHA256=efc1cdd798b1aaf39b4610bba7aad28c9bea9b910f25c784ccf9ec1fa719d1f9"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified verbatim from exact hash-locked CFFI 2.1.0 sdist source header; exact child version unavailable"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "full"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Without an exact version or source revision, affected/not-affected status cannot be established; aggregate notice preservation does not resolve advisory provenance."
+        },
+        {
+          "name": "localdocforge:versionEvidence",
+          "value": "CFFI 2.1.0 source embeds src/c/libffi_x86_x64; ffi.h describes historical 'libffi 2.00-beta' source, but no trustworthy exact libffi release or binary/source binding is present in the wheel"
+        },
+        {
+          "name": "localdocforge:versionStatus",
+          "value": "unknown"
+        }
+      ],
+      "type": "library"
+    },
+    {
       "bom-ref": "urn:localdocforge:native:libavif:aom:local",
       "licenses": [
         {
@@ -3995,7 +7299,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4065,7 +7369,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4135,7 +7439,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4205,7 +7509,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4275,7 +7579,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4345,7 +7649,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4415,7 +7719,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4485,7 +7789,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4555,7 +7859,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4625,7 +7929,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4695,7 +7999,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4765,7 +8069,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4835,7 +8139,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4905,7 +8209,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -4975,7 +8279,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -5045,7 +8349,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -5115,7 +8419,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -5185,7 +8489,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent parser/codec."
+          "value": "The child is physically represented by, linked into, or named in the inspected Windows wheel's native aggregate. Reachability follows its parent runtime component or aggregate."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -5254,6 +8558,172 @@
   "dependencies": [
     {
       "dependsOn": [],
+      "ref": "pkg:cargo/asn1@0.24.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/asn1_derive@0.24.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/base64@0.23.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/bitflags@2.13.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cfg-if@1.0.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-cffi@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-crypto@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-keepalive@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-key-parsing@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-openssl@0.50.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/asn1@0.24.1",
+        "pkg:cargo/asn1_derive@0.24.1",
+        "pkg:cargo/base64@0.23.0",
+        "pkg:cargo/bitflags@2.13.1",
+        "pkg:cargo/cfg-if@1.0.4",
+        "pkg:cargo/cryptography-cffi@0.50.0",
+        "pkg:cargo/cryptography-crypto@0.50.0",
+        "pkg:cargo/cryptography-keepalive@0.50.0",
+        "pkg:cargo/cryptography-key-parsing@0.50.0",
+        "pkg:cargo/cryptography-openssl@0.50.0",
+        "pkg:cargo/cryptography-x509-verification@0.50.0",
+        "pkg:cargo/cryptography-x509@0.50.0",
+        "pkg:cargo/foreign-types-shared@0.1.1",
+        "pkg:cargo/foreign-types@0.3.2",
+        "pkg:cargo/heck@0.5.0",
+        "pkg:cargo/itoa@1.0.18",
+        "pkg:cargo/libc@0.2.189",
+        "pkg:cargo/once_cell@1.21.4",
+        "pkg:cargo/openssl-macros@0.1.1",
+        "pkg:cargo/openssl-sys@0.9.117",
+        "pkg:cargo/openssl@0.10.81",
+        "pkg:cargo/pem@4.0.0",
+        "pkg:cargo/portable-atomic@1.14.0",
+        "pkg:cargo/proc-macro2@1.0.107",
+        "pkg:cargo/pyo3-ffi@0.29.0",
+        "pkg:cargo/pyo3-macros-backend@0.29.0",
+        "pkg:cargo/pyo3-macros@0.29.0",
+        "pkg:cargo/pyo3@0.29.0",
+        "pkg:cargo/quote@1.0.47",
+        "pkg:cargo/self_cell@1.3.0",
+        "pkg:cargo/syn@2.0.119",
+        "pkg:cargo/unicode-ident@1.0.24",
+        "pkg:generic/openssl@4.0.1"
+      ],
+      "ref": "pkg:cargo/cryptography-rust@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-x509-verification@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/cryptography-x509@0.50.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/foreign-types-shared@0.1.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/foreign-types@0.3.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/heck@0.5.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/itoa@1.0.18"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/libc@0.2.189"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/once_cell@1.21.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/openssl-macros@0.1.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/openssl-sys@0.9.117"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/openssl@0.10.81"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/pem@4.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/portable-atomic@1.14.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/proc-macro2@1.0.107"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/pyo3-ffi@0.29.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/pyo3-macros-backend@0.29.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/pyo3-macros@0.29.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/pyo3@0.29.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/quote@1.0.47"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/self_cell@1.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/syn@2.0.119"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:cargo/unicode-ident@1.0.24"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:generic/brotli@1.2.0"
     },
     {
@@ -5306,6 +8776,10 @@
     {
       "dependsOn": [],
       "ref": "pkg:generic/openjpeg@2.5.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:generic/openssl@4.0.1"
     },
     {
       "dependsOn": [
@@ -5376,6 +8850,17 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/pycparser@3.0",
+        "urn:localdocforge:native:cffi:libffi:unversioned"
+      ],
+      "ref": "pkg:pypi/cffi@2.1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/charset-normalizer@3.4.9"
+    },
+    {
+      "dependsOn": [
         "pkg:pypi/colorama@0.4.6"
       ],
       "ref": "pkg:pypi/click@8.4.2"
@@ -5383,6 +8868,13 @@
     {
       "dependsOn": [],
       "ref": "pkg:pypi/colorama@0.4.6"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/cryptography-rust@0.50.0",
+        "pkg:pypi/cffi@2.1.0"
+      ],
+      "ref": "pkg:pypi/cryptography@50.0.0"
     },
     {
       "dependsOn": [
@@ -5404,8 +8896,10 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/cryptography@50.0.0",
         "pkg:pypi/fastapi@0.139.2",
         "pkg:pypi/markdown-it-py@4.2.0",
+        "pkg:pypi/pdfplumber@0.11.10",
         "pkg:pypi/pi-heif@1.4.0",
         "pkg:pypi/pikepdf@10.10.0",
         "pkg:pypi/pillow@12.3.0",
@@ -5439,6 +8933,21 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/charset-normalizer@3.4.9",
+        "pkg:pypi/cryptography@50.0.0"
+      ],
+      "ref": "pkg:pypi/pdfminer-six@20260107"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pdfminer-six@20260107",
+        "pkg:pypi/pillow@12.3.0",
+        "pkg:pypi/pypdfium2@5.12.1"
+      ],
+      "ref": "pkg:pypi/pdfplumber@0.11.10"
+    },
+    {
+      "dependsOn": [
         "pkg:generic/libheif@1.23.0",
         "pkg:pypi/pillow@12.3.0"
       ],
@@ -5459,6 +8968,10 @@
         "pkg:generic/pillow%20codec%20bundle@12.3.0"
       ],
       "ref": "pkg:pypi/pillow@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pycparser@3.0"
     },
     {
       "dependsOn": [
@@ -5548,6 +9061,10 @@
         "pkg:pypi/h11@0.16.0"
       ],
       "ref": "pkg:pypi/uvicorn@0.51.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urn:localdocforge:native:cffi:libffi:unversioned"
     },
     {
       "dependsOn": [],
@@ -5644,7 +9161,7 @@
       },
       {
         "name": "localdocforge:advisoryAmendedDate",
-        "value": "2026-08-09"
+        "value": "2026-08-10"
       },
       {
         "name": "localdocforge:advisoryReport",
@@ -5652,7 +9169,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "4708fc09fbbcaaeed5edf329cb8110ce26ec43f18eb2ce3b299039a217422fd2"
+        "value": "3bacaad72cc5aa5f6ecf5b1464a7a10c0a90cf33a682f04b8033a5e3067c4a26"
       },
       {
         "name": "localdocforge:advisoryReview",
@@ -5664,7 +9181,7 @@
       },
       {
         "name": "localdocforge:nativeComposition",
-        "value": "incomplete: 18 versioned records plus 18 known unversioned children; additional statically linked or platform-specific children may exist"
+        "value": "incomplete: 52 versioned records plus 19 known unversioned children; additional statically linked or platform-specific children may exist"
       },
       {
         "name": "localdocforge:profile",
@@ -5679,7 +9196,7 @@
         "value": "This universal-profile SBOM uses Windows x86-64 / CPython 3.14 evidence for every native component. It does not claim the same native composition on Linux or macOS; every other target wheel requires equivalent re-inventory."
       }
     ],
-    "timestamp": "2026-08-09T00:00:00Z",
+    "timestamp": "2026-08-10T00:00:00Z",
     "tools": {
       "components": [
         {
