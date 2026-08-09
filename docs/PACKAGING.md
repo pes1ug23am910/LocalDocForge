@@ -337,8 +337,13 @@ sdist-to-wheel build, and refreshed only the live manifest below. Retained
 | `localdocforge-0.1.0-py3-none-any.whl` | `5cdc94118b52d2fe5bc14245287044060014aa0beb856f98bc834b1e83fe0d7b` | 140,192 |
 | `localdocforge-0.1.0.tar.gz` | `41a8d07447859e5d7acbcfd5d4904cc3db8190425185171f7ddab99f91a1a5d5` | 126,706 |
 
-The definitive clean-tree verify-mode gate remains pending until the coherent
-remediation commit exists.
+A subsequent 491.6-second clean-tree verify-mode gate at remediation commit
+`f83a2b7d4c20c11aa5d56a3fcedef6a1a31e6863` reproduced this identity, passed
+both 616-outcome suite modes and every source/wheel profile, and recorded
+`release_manifest_verified: true`, `source_install_syntax_tested: true`,
+`full_tests.status: passed`, and `source.working_tree_changes: false`.
+Disposable artifacts/evidence were removed after verification; retained
+artifacts/evidence remained untouched.
 
 ## Clean profile/full-test matrices
 

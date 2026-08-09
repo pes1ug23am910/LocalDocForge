@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-09 (S6 currency-dollar F1 remediation; pre-commit
-616-outcome suite passed, clean-tree release gate pending).
+Last updated: 2026-08-09 (S6 currency-dollar F1 remediation handoff; definitive
+Windows-AMD64 gate passed on the clean 616-outcome remediation tree).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -565,7 +565,11 @@ result applies only to the recorded OS, architecture, and interpreter.
   round-trip, and 200-DPI rendered-page inspection are clean. A disposable
   30.4-second build-only gate refreshed the package identity to source
   `d5d84140…`, wheel `5cdc9411…` (140,192 bytes), and sdist `41a8d074…`
-  (126,706 bytes). The definitive clean-tree verify gate remains pending;
+  (126,706 bytes). The subsequent 491.6-second clean-tree verify gate at
+  `f83a2b7` reproduced that identity, passed both 616-outcome suite modes and
+  every source/wheel profile, and recorded `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, `full_tests.status: passed`, and
+  `source.working_tree_changes: false`. Disposable outputs were removed;
   retained `dist/` and `packaging-evidence/` were not modified.
 
 ## Implemented hardening
