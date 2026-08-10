@@ -146,6 +146,11 @@ Markdown-only `--tables` reconstruction for conservative explicit-line grids.
 The S5 operation probes and definitive evidence are recorded in
 `docs/STATUS.md`; borderless and merged-cell reconstruction remain unavailable.
 
+**2026-08-11 S7 update:** the registry now also implements OCR through locked
+OCRmyPDF, with Tesseract and Ghostscript live gates. OCRmyPDF 17.8.1,
+Tesseract 5.4.0.20240606 (`eng`, `osd`), and Ghostscript 10.07.1 probe
+successfully on this host, so the implemented capability is available here.
+
 ## 3. Engine inventory on this machine
 
 Python engines (in `.venv`, all probed available):
@@ -157,6 +162,7 @@ Python engines (in `.venv`, all probed available):
 | pdfplumber | 0.11.10 | opt-in explicit-line table geometry/cell extraction |
 | Pillow | 12.3.0 | imaging |
 | pypdf | 6.14.2 | optional diagnostic adapter |
+| OCRmyPDF | 17.8.1 | locked OCR orchestration package and venv console entry point |
 
 External executables (availability is still capability-gated; see
 `docs/FEATURE_MATRIX.md` rules):
@@ -165,8 +171,9 @@ External executables (availability is still capability-gated; see
 |---|---|---|
 | Typst 0.15.1 | **installed and wired** for bounded Markdown→PDF | `winget install Typst.Typst` on another machine |
 | qpdf CLI | not installed | `winget install qpdf.qpdf` |
-| Tesseract / OCRmyPDF | not installed | `winget install UB-Mannheim.TesseractOCR` |
-| Ghostscript | not installed | `winget install ArtifexSoftware.GhostScript` |
+| Tesseract 5.4.0.20240606 | **installed and wired** for OCR (`eng`, `osd`) | `winget install UB-Mannheim.TesseractOCR` on another machine |
+| OCRmyPDF 17.8.1 | **installed and wired** for OCR | installed from the locked LocalDocForge profile |
+| Ghostscript 10.07.1 | **installed and wired** through the OCRmyPDF-mediated live gate | install 64-bit Ghostscript from the official Artifex release page |
 | LibreOffice | not installed | `winget install TheDocumentFoundation.LibreOffice` |
 | Pandoc | not installed | `winget install JohnMacFarlane.Pandoc` |
 | veraPDF | not installed | installer from verapdf.org |
@@ -180,10 +187,11 @@ External executables (availability is still capability-gated; see
 | Markdown→PDF for strict-UTF-8 CommonMark-subset files | **Yes on this machine** — Typst 0.15.1 probe passes | §3 and `docs/CLI.md` |
 | Inspect PDFs read-only | **Yes** | §2.2 |
 | Compress PDFs (lossless structural preset) | **Yes** | §7 |
+| OCR image-only/mixed PDFs | **Yes on this machine** — OCRmyPDF, Tesseract/languages, and Ghostscript live probes pass | §3 and `docs/CLI.md` |
 | Localhost API / status page for the same operations | **Yes** | §2.3 |
 | Scripted/automated use (`--json`, exit codes, reports) | **Yes** — contracts verified, including failure codes | §2.2 |
 | Sensitive documents (privileged, regulated, high-consequence) | **No** — project release decision stands | §5 |
-| OCR, Office↔PDF, lossy compression presets, repair, PDF/A, redaction, signatures, editing | **Not available** in this build | `docs/FEATURE_MATRIX.md` |
+| Office↔PDF, lossy compression presets, repair, PDF/A, redaction, signatures, editing | **Not available** in this build | `docs/FEATURE_MATRIX.md` |
 | Linux / macOS / CPython 3.12 | **Unverified** — no executed evidence anywhere yet | `docs/PACKAGING.md` |
 
 ## 5. Why sensitive documents remain blocked (unchanged today)

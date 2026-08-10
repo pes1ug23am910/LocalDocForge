@@ -30,19 +30,22 @@ Profiles describe shipped Python dependencies, not the feature roadmap.
 
 | Install | Shipped behavior | Direct additions over base |
 |---|---|---|
-| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, and Markdown parsing/render orchestration | none; Lite is an explicit base alias |
+| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, OCR orchestration, and Markdown parsing/render orchestration | none; Lite is an explicit base alias |
 | `standard` | Lite plus localhost FastAPI service and status page | FastAPI, Uvicorn, python-multipart |
 | `full` | Standard plus optional pypdf diagnostic adapter | pypdf |
 | `dev` | Full plus test, lint, type, build, and artifact tools | pytest, ReportLab, HTTPX, Ruff, mypy, build, Twine |
 
-“Full” means all shipped Python adapters. It does not add OCR,
+“Full” means all shipped Python adapters. It does not add
 Office/HTML-to-PDF conversion, PDF/A/PDF/UA, editing, signatures, scanner
 support, external executables, or the planned React UI. PDF-to-Markdown text
 extraction and the `markdown-it-py>=4.2` side of Markdown-to-PDF are part of
 every profile. Opt-in PDF-to-Markdown table extraction also ships in every
 profile through `pdfplumber==0.11.10` and its locked parser/cryptography
-closure. Typst ≥0.15.1 is separately installed and never bundled by these
-profiles, so `ldf doctor` remains the live capability authority.
+closure. OCRmyPDF 17.8.1 and its reviewed Python closure likewise ship in every
+profile; the separately installed Tesseract and Ghostscript executables do not.
+Typst ≥0.15.1 is separately installed and never bundled by these profiles, so
+`ldf doctor` remains the live capability authority for external-engine
+availability.
 
 The Windows-primary reproducible Standard install is:
 
@@ -86,7 +89,8 @@ the official PyPI uv artifacts. Resolution uses the official PyPI simple index
 and a 2026-07-19 global cutoff, with one package-scoped exception:
 cryptography uses 2026-08-01 so the locks can select 50.0.0, the first release
 fixing CVE-2026-69247. The exception does not move any other package's cutoff,
-and no insecure/trusted-host bypass is used.
+and no insecure/trusted-host bypass is used. Adding OCRmyPDF 17.8.1 did not move
+the protected cryptography 50.0.0 or pdfminer.six 20260107 resolutions.
 
 ```powershell
 .venv\Scripts\python.exe -m pip install --require-hashes `
@@ -180,7 +184,7 @@ the full gate.)
 
 The non-interactive-password slice and its review remediation intentionally
 changed packaged sources. Every gate used fresh temporary dist, checksum, and
-profile-evidence paths because the multi-model execution plan protects retained
+profile-evidence paths because the release plan protects retained
 evidence from executor writes. Consequently, the live manifest below is the
 authoritative identity for the remediated S1 drift checks, while
 `dist/windows-11-x64/` and
@@ -397,6 +401,30 @@ cannot publish unrelated retained records under its artifact name.
 
 The history rewrite preserves the prior release records as historical facts;
 this table is the current manifest identity for the remediated public source.
+### 2026-08-11 S7 OCR manifest identity
+
+S7 packages the bounded OCRmyPDF pipeline and adds `ocrmypdf>=17.8.1` as an
+audited base dependency; Tesseract and Ghostscript remain separately installed
+engines and are not bundled. The initial build-only gate used disposable
+system-temporary artifacts; a 21.2-second precommit honesty-message delta
+repeated both direct builds and the sdist-to-wheel build and refreshed the live
+manifest below. Retained `dist/` and `packaging-evidence/` records were not
+modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `5359ad0a27ce728f29e25de3862bb545ffd0621768d2cd2a534470627c52a8bf` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `664e4307ffa6b8d458ea5274d339baeacaadb1f4cbe89859ad7896f425c61191` | 162,590 |
+| `localdocforge-0.1.0.tar.gz` | `41fb64892c817f70030f2ab400d4ba683c064996716da45777ef443fcc81c56a` | 148,040 |
+
+The post-delta 520.3-second verify-mode full gate reproduced this identity,
+passed both 787-outcome suite modes and every source/wheel profile, and
+recorded `release_manifest_verified: true`,
+`source_install_syntax_tested: true`, and `full_tests.status: passed`.
+Disposable evidence SHA-256 was
+`b7b4bc51ea6d0d8addee1212540ac25856e105c1efe296b2800419f5ddeddc85`;
+the pre-review run honestly recorded `source.working_tree_changes: true`.
+Temporary output was removed and retained artifacts/evidence stayed untouched.
 
 ## Clean profile/full-test matrices
 
@@ -434,16 +462,18 @@ Profile-specific artifacts are:
 - `docs/SBOM.standard.cdx.json` / `THIRD_PARTY_NOTICES.standard.md`
 - `docs/SBOM.full.cdx.json` / `THIRD_PARTY_NOTICES.full.md`
 
-The 2026-08-10 S5 inventory contains 36 unique runtime Python records, 52
+The 2026-08-10 S7 inventory contains 43 unique runtime Python records, 52
 versioned bundled-native records, and 19 enumerated version-unknown native
-children. Profile component totals are 98 Lite, 106 Standard, and 107 Full.
+children. Profile component totals are 105 Lite, 113 Standard, and 114 Full.
 Cryptography's supplier SBOM boundary retains its aggregate plus all 32
 `scope=required` Cargo children and OpenSSL 4.0.1, while excluding exactly seven
 supplier-marked build dependencies and a duplicate target record. CFFI's
 embedded libffi remains version-unknown. Composition is still explicitly
 `incomplete`: the pre-existing pydantic-core 2.46.4 embedded Cargo inventory is
 disclosed but not flattened, and other static/platform-specific children may
-exist.
+exist. The uharfbuzz 0.55.0 Windows extension reports embedded HarfBuzz 14.2.1,
+so its SBOM dependency edge reuses the existing native HarfBuzz record also
+reached through Pillow rather than adding a duplicate component.
 
 Regenerate/check them offline:
 
@@ -517,3 +547,16 @@ source-license evidence—including pdfminer.six's omitted pyHanko notice and
 MongoDB/PyMongo Apache-2.0 SASLprep attribution/terms, plus CFFI's omitted
 libffi notice—is recorded in the report's 2026-08-10 verification run. Empty
 advisory results remain time-bounded findings, not safety guarantees.
+
+Also on 2026-08-10, S7 added OCRmyPDF 17.8.1 and six newly introduced
+transitive Python distributions to every profile. Exact OSV and GitHub reviewed
+advisory queries returned no records for those seven versions. Exact-tag and
+installed-wheel evidence establishes OCRmyPDF's composite
+`Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib` conclusion, fpdf2's
+LGPL-3.0-only terms, img2pdf's LGPL-3.0-or-later terms, FontTools' composite
+terms, and uharfbuzz's Apache-2.0 terms plus its HarfBuzz 14.2.1 native
+relationship. The generated notices restore OFL, Apache, and Zlib asset terms
+that the OCRmyPDF wheel does not install as separate files. Empty advisory
+results remain time-bounded no-findings, and the repository-wide release
+disposition remains `not-cleared` because the pre-existing native findings are
+unchanged.

@@ -3,8 +3,8 @@
 The CLI and the local API are thin layers over a typed Python library. This
 reference covers that library surface for scripting and embedding. Every code
 original sample set below was executed against this repository on 2026-08-03;
-the S4 extraction and S6 Markdown-rendering samples are backed by 2026-08-09
-integration coverage.
+the S4 extraction, S6 Markdown-rendering, and S7 OCR samples are backed by
+dated integration coverage in `docs/STATUS.md`.
 Import paths are stable within 0.x only in the sense that
 `docs/STATUS.md` records interface decisions; this is an early-alpha project.
 
@@ -21,6 +21,8 @@ checkout — see `docs/PACKAGING.md` for the hash-locked reproducible recipe).
 The API service extras are only needed for `ldf web`. `md_to_pdf` also requires
 a separately installed Typst executable at version 0.15.1 or newer; its live
 engine probe remains the availability authority.
+`ocr_pdf` additionally requires the locked OCRmyPDF runtime plus separately
+installed, live-probed Tesseract and Ghostscript engines.
 
 ## The result object: `ConversionReport`
 
@@ -87,6 +89,26 @@ assert report.details["render_compare"]["identical"] is True
 Only `preset="lossless"` exists; planned lossy presets raise `PipelineError`.
 `compare_page_renders(a, b, page_count)` — the pixel-comparison helper — is
 public and usable on its own.
+
+### OCR (`operations.ocr`)
+
+```python
+from localdocforge.operations.ocr import OcrOptions, ocr_pdf
+
+report = ocr_pdf(
+    scan_pdf,
+    out_dir / "searchable.pdf",
+    options=OcrOptions(language="eng", sidecar=out_dir / "searchable.txt"),
+)
+assert any(warning.code == "ocr-text-approximate"
+           for warning in report.fidelity_warnings)
+```
+
+Default mode refuses any existing text layer. Set `skip_text=True` for a mixed
+PDF or `force_ocr=True` only when rasterizing and re-encoding every page is
+acceptable; those flags are mutually exclusive. The PDF and optional strict-
+UTF-8/LF sidecar validate and publish atomically. `EngineUnavailableError`
+identifies a missing OCRmyPDF/Tesseract/Ghostscript probe or language pack.
 
 ### Images ↔ PDF and image → image (`operations.images`)
 
@@ -259,6 +281,9 @@ Special cases:
   operation (its `hints` carry install commands).
 - `jobs.workspace.OutputCollisionError` — surfaces as the `__cause__` of a
   `PipelineError` when the collision policy is `FAIL`.
+- `operations.ocr.OcrToolFailure` — a safe `PipelineError.__cause__` carrying
+  `returncode` and the mapped `ldf_exit_code`; raw OCR engine diagnostics are
+  intentionally not retained in reports.
 
 ## Configuration without environment variables
 

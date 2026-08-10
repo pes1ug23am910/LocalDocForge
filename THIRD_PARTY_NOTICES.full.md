@@ -15,18 +15,24 @@ License/advisory sources were accessed 2026-07-19; verification sources were ref
 | click | 8.4.2 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pallets/click/8.4.2/LICENSE.txt), [release](https://pypi.org/project/click/8.4.2/), [advisories](https://github.com/pallets/click/security/advisories) |
 | colorama | 0.4.6 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/tartley/colorama/0.4.6/LICENSE.txt), [release](https://pypi.org/project/colorama/0.4.6/), [advisories](https://github.com/tartley/colorama/security/advisories) |
 | cryptography | 50.0.0 | Apache-2.0 OR BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pyca/cryptography/50.0.0/LICENSE), [release](https://pypi.org/project/cryptography/50.0.0/), [advisories](https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5) |
+| defusedxml | 0.7.1 | PSF-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/tiran/defusedxml/v0.7.1/LICENSE), [release](https://pypi.org/project/defusedxml/0.7.1/), [advisories](https://github.com/tiran/defusedxml/security/advisories) |
 | fastapi | 0.139.2 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/fastapi/fastapi/0.139.2/LICENSE), [release](https://pypi.org/project/fastapi/0.139.2/), [advisories](https://github.com/fastapi/fastapi/security/advisories) |
+| fonttools | 4.63.0 | Apache-2.0 AND BSD-3-Clause AND MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/fonttools/fonttools/4.63.0/LICENSE), [release](https://pypi.org/project/fonttools/4.63.0/), [advisories](https://github.com/fonttools/fonttools/security/advisories) |
+| fpdf2 | 2.8.7 | LGPL-3.0-only | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/py-pdf/fpdf2/2.8.7/LICENSE), [release](https://pypi.org/project/fpdf2/2.8.7/), [advisories](https://github.com/py-pdf/fpdf2/security/advisories) |
 | h11 | 0.16.0 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/python-hyper/h11/v0.16.0/LICENSE.txt), [release](https://pypi.org/project/h11/0.16.0/), [advisories](https://github.com/python-hyper/h11/security/advisories) |
 | idna | 3.18 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/kjd/idna/v3.18/LICENSE.md), [release](https://pypi.org/project/idna/3.18/), [advisories](https://github.com/kjd/idna/security/advisories) |
+| img2pdf | 0.6.3 | LGPL-3.0-or-later | no-known-applicable-advisory | [license](https://gitlab.mister-muffin.de/josch/img2pdf/raw/tag/0.6.3/LICENSE), [release](https://pypi.org/project/img2pdf/0.6.3/), [advisories](https://gitlab.mister-muffin.de/josch/img2pdf) |
 | lxml | 6.1.1 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/lxml/lxml/lxml-6.1.1/LICENSE.txt), [release](https://pypi.org/project/lxml/6.1.1/), [advisories](https://github.com/lxml/lxml/security/advisories) |
 | markdown-it-py | 4.2.0 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/executablebooks/markdown-it-py/v4.2.0/LICENSE), [release](https://pypi.org/project/markdown-it-py/4.2.0/), [advisories](https://github.com/executablebooks/markdown-it-py/security/advisories) |
 | mdurl | 0.1.2 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/executablebooks/mdurl/0.1.2/LICENSE), [release](https://pypi.org/project/mdurl/0.1.2/), [advisories](https://github.com/executablebooks/mdurl/security/advisories) |
+| ocrmypdf | 17.8.1 | Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSE), [release](https://pypi.org/project/ocrmypdf/17.8.1/), [advisories](https://github.com/ocrmypdf/OCRmyPDF/security/advisories) |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pypa/packaging/26.2/LICENSE), [release](https://pypi.org/project/packaging/26.2/), [advisories](https://github.com/pypa/packaging/security/advisories) |
 | pdfminer-six | 20260107 | MIT AND Apache-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pdfminer/pdfminer.six/20260107/LICENSE), [release](https://pypi.org/project/pdfminer.six/20260107/), [advisories](https://github.com/pdfminer/pdfminer.six/security/advisories) |
 | pdfplumber | 0.11.10 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/jsvine/pdfplumber/v0.11.10/LICENSE.txt), [release](https://pypi.org/project/pdfplumber/0.11.10/), [advisories](https://github.com/jsvine/pdfplumber/security/advisories) |
 | pi-heif | 1.4.0 | BSD-3-Clause | contains-affected-component | [license](https://raw.githubusercontent.com/bigcat88/pillow_heif/v1.4.0/LICENSE.txt), [release](https://pypi.org/project/pi-heif/1.4.0/), [advisories](https://github.com/bigcat88/pillow_heif/releases) |
 | pikepdf | 10.10.0 | MPL-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pikepdf/pikepdf/v10.10.0/LICENSE.txt), [release](https://pypi.org/project/pikepdf/10.10.0/), [advisories](https://github.com/pikepdf/pikepdf/security/advisories) |
 | pillow | 12.3.0 | MIT-CMU | contains-affected-component | [license](https://raw.githubusercontent.com/python-pillow/Pillow/12.3.0/LICENSE), [release](https://pypi.org/project/pillow/12.3.0/), [advisories](https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html) |
+| pluggy | 1.6.0 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pytest-dev/pluggy/1.6.0/LICENSE), [release](https://pypi.org/project/pluggy/1.6.0/), [advisories](https://github.com/pytest-dev/pluggy/security/advisories) |
 | pycparser | 3.0 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/eliben/pycparser/release_v3.0/LICENSE), [release](https://pypi.org/project/pycparser/3.0/), [advisories](https://github.com/eliben/pycparser/security/advisories) |
 | pydantic | 2.13.4 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/LICENSE), [release](https://pypi.org/project/pydantic/2.13.4/), [advisories](https://github.com/pydantic/pydantic/security/advisories) |
 | pydantic-core | 2.46.4 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pydantic/pydantic/v2.13.4/pydantic-core/LICENSE), [release](https://pypi.org/project/pydantic-core/2.46.4/), [advisories](https://github.com/pydantic/pydantic/security/advisories) |
@@ -42,6 +48,7 @@ License/advisory sources were accessed 2026-07-19; verification sources were ref
 | typer | 0.27.0 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/fastapi/typer/0.27.0/LICENSE), [release](https://pypi.org/project/typer/0.27.0/), [advisories](https://github.com/fastapi/typer/security/advisories) |
 | typing-extensions | 4.16.0 | PSF-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/python/typing_extensions/4.16.0/LICENSE), [release](https://pypi.org/project/typing-extensions/4.16.0/), [advisories](https://github.com/python/typing_extensions/security/advisories) |
 | typing-inspection | 0.4.2 | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/pydantic/typing-inspection/v0.4.2/LICENSE), [release](https://pypi.org/project/typing-inspection/0.4.2/), [advisories](https://github.com/pydantic/typing-inspection/security/advisories) |
+| uharfbuzz | 0.55.0 | Apache-2.0 | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/harfbuzz/uharfbuzz/v0.55.0/LICENSE), [release](https://pypi.org/project/uharfbuzz/0.55.0/), [advisories](https://github.com/harfbuzz/uharfbuzz/security/advisories) |
 | uvicorn | 0.51.0 | BSD-3-Clause | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/Kludex/uvicorn/0.51.0/LICENSE.md), [release](https://pypi.org/project/uvicorn/0.51.0/), [advisories](https://github.com/Kludex/uvicorn/security/advisories) |
 
 ## Versioned native review records from inspected Windows wheels
@@ -65,7 +72,7 @@ License/advisory sources were accessed 2026-07-19; verification sources were ref
 | foreign-types | 0.3.2 | cryptography-rust | MIT OR Apache-2.0 | no-known-applicable-advisory | [license](https://crates.io/crates/foreign-types/0.3.2), [release](https://crates.io/crates/foreign-types/0.3.2), [advisories](https://rustsec.org/advisories/) |
 | foreign-types-shared | 0.1.1 | cryptography-rust | MIT OR Apache-2.0 | no-known-applicable-advisory | [license](https://crates.io/crates/foreign-types-shared/0.1.1), [release](https://crates.io/crates/foreign-types-shared/0.1.1), [advisories](https://rustsec.org/advisories/) |
 | freetype | 2.14.3 | Pillow codec bundle | FTL OR GPL-2.0-or-later | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/LICENSE.TXT), [advisories](https://github.com/freetype/freetype/security/advisories) |
-| harfbuzz | 14.2.1 | Pillow codec bundle | MIT with bundled notice terms | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING), [advisories](https://github.com/harfbuzz/harfbuzz/security/advisories) |
+| harfbuzz | 14.2.1 | Pillow codec bundle and uharfbuzz 0.55.0 | MIT with bundled notice terms | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING), [advisories](https://github.com/harfbuzz/harfbuzz/security/advisories) |
 | heck | 0.5.0 | cryptography-rust | MIT OR Apache-2.0 | no-known-applicable-advisory | [license](https://crates.io/crates/heck/0.5.0), [release](https://crates.io/crates/heck/0.5.0), [advisories](https://rustsec.org/advisories/) |
 | itoa | 1.0.18 | cryptography-rust | MIT OR Apache-2.0 | no-known-applicable-advisory | [license](https://crates.io/crates/itoa/1.0.18), [release](https://crates.io/crates/itoa/1.0.18), [advisories](https://rustsec.org/advisories/) |
 | lcms2 | 2.19.1 | Pillow codec bundle | MIT | no-known-applicable-advisory | [license](https://raw.githubusercontent.com/mm2/Little-CMS/lcms2.19.1/LICENSE), [advisories](https://github.com/mm2/Little-CMS/security/advisories) |
@@ -130,6 +137,350 @@ These children are enumerated because aggregate wheel evidence names or links th
 ## Preserved nested-component license texts
 
 These source-bound attributions and license terms come from exact component or parent-release source evidence associated with the inspected installed version. Canonical text IDs are SHA-256 checked when the report provides a digest. Where an independent child binary/source binding remains unproven, the table and report retain that limitation. These texts are preserved because the inspected wheel omits a required separate notice or license copy.
+
+### OCRmyPDF Noto Sans Regular (Copyright 2015-2021 Google LLC) OFL-1.1 terms
+
+Source evidence: https://openfontlicense.org/documents/OFL.txt; SHA-256 `1d361a8f8e8ce6e68457dcd93fb56e162e6baa3bbb7e7573a290d44399f6b57e`
+
+```text
+Copyright (c) <dates>, <Copyright Holder> (<URL|email>),
+with Reserved Font Name <Reserved Font Name>.
+Copyright (c) <dates>, <additional Copyright Holder> (<URL|email>),
+with Reserved Font Name <additional Reserved Font Name>.
+Copyright (c) <dates>, <additional Copyright Holder> (<URL|email>).
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://openfontlicense.org
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+### OCRmyPDF Occulta.ttf (Copyright (C) 2026 James R. Barlow) Apache-2.0 terms
+
+Source evidence: https://www.apache.org/licenses/LICENSE-2.0.txt; SHA-256 `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
+
+```text
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
+
+### OCRmyPDF sRGB.icc author attribution
+
+Source evidence: https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/REUSE.toml
+
+```text
+Kai-Uwe Behrmann <www.behrmann.name>
+Marti Maria <www.littlecms.com>
+Photogamut <www.photogamut.org>
+Graeme Gill <www.argyllcms.com>
+ColorSolutions <www.basICColor.com>
+SPDX-License-Identifier: Zlib
+```
+
+### Zlib terms for OCRmyPDF sRGB.icc
+
+Source evidence: https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSES/Zlib.txt; SHA-256 `bfb1112d49db5b1daecdfef24bd7e2f3ea0bafb33aa67aa0ab51e2bf8407c03d`
+
+```text
+zlib License
+
+This software is provided 'as-is', without any express or implied warranty.  In no event will the authors be held liable for any damages arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+
+     1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+
+     2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+
+     3. This notice may not be removed or altered from any source distribution.
+```
 
 ### pdfminer.six MongoDB/PyMongo-derived SASLprep attribution
 
@@ -431,4 +782,4 @@ OTHER DEALINGS IN THE SOFTWARE.
 - This notice and its universal-profile SBOM use native evidence from Windows x86-64 / CPython 3.14 wheels only. They do not assert identical native composition on Linux or macOS; re-inventory every target wheel.
 - The CycloneDX composition is explicitly `incomplete`: 52 native records have versions, 19 known children do not, and additional static or platform-specific children may exist.
 - The pre-existing pydantic-core 2.46.4 embedded Cargo SBOM is not flattened into this inventory. Its supplier records remain a disclosed gap; the S5 review does not represent them as absent or cleared.
-- Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by any Python profile and remains outside this report's component inventory. qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles.
+- Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by any Python profile and remains outside this report's component inventory. qpdf CLI, Tesseract, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles. OCRmyPDF is shipped as a Python component; its Tesseract and Ghostscript executables remain external subprocess engines.

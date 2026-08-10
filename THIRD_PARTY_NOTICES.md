@@ -4,9 +4,9 @@ This is the profile index. Use the notice and SBOM matching the installed LocalD
 
 | Profile | Python components | Versioned native records | Known unversioned children | Notice | SBOM |
 |---|---:|---:|---:|---|---|
-| Lite | 27 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.lite.md) | [SBOM](docs/SBOM.lite.cdx.json) |
-| Standard | 35 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.standard.md) | [SBOM](docs/SBOM.standard.cdx.json) |
-| Full | 36 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.full.md) | [SBOM](docs/SBOM.full.cdx.json) |
+| Lite | 34 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.lite.md) | [SBOM](docs/SBOM.lite.cdx.json) |
+| Standard | 42 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.standard.md) | [SBOM](docs/SBOM.standard.cdx.json) |
+| Full | 43 | 52 | 19 | [notices](THIRD_PARTY_NOTICES.full.md) | [SBOM](docs/SBOM.full.cdx.json) |
 
 `docs/SBOM.cdx.json` is a byte-identical compatibility alias of the Full profile SBOM.
 

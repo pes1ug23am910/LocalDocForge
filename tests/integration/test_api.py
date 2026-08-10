@@ -9,10 +9,13 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+import localdocforge.api.app as api_module
 from localdocforge.api.app import create_app
 from localdocforge.cli.main import bind_allowed
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ResourceLimits
+from localdocforge.domain.models import ConversionReport, ReportStatus, ResourceLimits
+from localdocforge.engines.base import EngineUnavailableError
+from localdocforge.engines.registry import default_registry
 
 TOKEN = "test-token-abcdef"
 
@@ -70,7 +73,8 @@ class TestSecurityBaseline:
     def test_index_is_honest_about_pending_features(self, client):
         page = client.get("/").text
         assert "Not available yet" in page
-        assert "OCR" in page  # unimplemented features are listed as such
+        assert "Repair PDF" in page
+        assert "OCR" in page
         assert "interface coverage varies" in page
         assert "Everything below is usable" not in page
 
@@ -91,7 +95,8 @@ class TestHealthAndCapabilities:
         payload = client.get("/api/capabilities", headers=auth()).json()
         capability_map = {c["id"]: c for c in payload["capabilities"]}
         assert capability_map["merge"]["available"] is True
-        assert capability_map["ocr"]["available"] is False
+        live = {item.id: item for item in default_registry().capabilities()}
+        assert capability_map["ocr"]["available"] is live["ocr"].available
 
 
 class TestJobFlow:
@@ -387,6 +392,89 @@ class TestJobFlow:
         assert client.get(f"/api/jobs/{job_id}", headers=auth()).status_code == 404
 
 
+class TestOcrApiContracts:
+    def test_runner_uses_strict_params_and_fixed_output_names(self, tmp_path, monkeypatch):
+        observed: dict[str, object] = {}
+        output_dir = tmp_path / "out"
+        output_dir.mkdir()
+        source = tmp_path / "scan.pdf"
+        source.write_bytes(b"synthetic; runner is mocked before parsing")
+
+        def fake_ocr(input_file, output, *, options):
+            observed.update(input=input_file, output=output, options=options)
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-ocr-api",
+            )
+
+        monkeypatch.setattr(api_module.ocr_ops, "ocr_pdf", fake_ocr)
+        report = api_module._run_ocr(
+            [source],
+            output_dir,
+            {
+                "language": "eng+deu",
+                "sidecar": "true",
+                "skip_text": "true",
+                "force_ocr": "false",
+                "password": "synthetic-password",
+            },
+            Settings(jobs_root=tmp_path / "jobs"),
+        )
+
+        assert report.status is ReportStatus.SUCCESS
+        assert observed["input"] == source
+        assert observed["output"] == output_dir / "document.pdf"
+        options = observed["options"]
+        assert options.language == "eng+deu"
+        assert options.sidecar == output_dir / "document.txt"
+        assert options.skip_text is True
+        assert options.force_ocr is False
+        assert options.password == "synthetic-password"
+
+    @pytest.mark.parametrize(
+        "params",
+        [
+            {"skip_text": "true", "force_ocr": "true"},
+            {"sidecar": "yes"},
+            {"skip_text": "1"},
+            {"force_ocr": "TRUE-ish"},
+            {"language": "eng;unsafe"},
+        ],
+    )
+    def test_http_rejects_invalid_ocr_modes_languages_and_booleans(
+        self, client, fixtures_dir, params
+    ):
+        response = client.post(
+            "/api/jobs/ocr",
+            headers=auth(),
+            files=[upload(fixtures_dir / "ocr-image-only.pdf")],
+            data=params,
+        )
+        assert response.status_code == 422, response.text
+
+    def test_ocr_engine_unavailable_maps_to_api_503(self, tmp_path, monkeypatch):
+        output_dir = tmp_path / "out"
+        output_dir.mkdir()
+        source = tmp_path / "scan.pdf"
+        source.write_bytes(b"synthetic; operation is mocked")
+
+        def unavailable(*_args, **_kwargs):
+            raise EngineUnavailableError("ocr", ["install all OCR requirements"])
+
+        monkeypatch.setattr(api_module.ocr_ops, "ocr_pdf", unavailable)
+        with pytest.raises(api_module._ApiError) as failure:
+            api_module._run_ocr(
+                [source],
+                output_dir,
+                {},
+                Settings(jobs_root=tmp_path / "jobs"),
+            )
+
+        assert failure.value.status == 503
+        assert "install all OCR requirements" in failure.value.message
+
+
 class TestJobErrors:
     def test_unknown_operation(self, client, fixtures_dir):
         response = client.post(
@@ -398,7 +486,7 @@ class TestJobErrors:
 
     def test_unimplemented_operation_not_reachable(self, client, fixtures_dir):
         response = client.post(
-            "/api/jobs/ocr",
+            "/api/jobs/repair",
             headers=auth(),
             files=[upload(fixtures_dir / "simple-3page.pdf")],
         )

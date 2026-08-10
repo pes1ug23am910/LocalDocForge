@@ -32,17 +32,56 @@ confident explicit-line rectangles. PDFium remains the source for ordinary
 regions; within an accepted table region, pdfplumber alone supplies cell text,
 so the two extractors are never interleaved for the same content.
 
-## Other optional executable probes (features gated off; availability varies)
+## Other optional executable probes (capability availability varies)
 
-| Engine | License | Planned role | Install hint (Windows) |
+| Engine | License | Role | Install hint (Windows) |
 |---|---|---|---|
 | qpdf CLI | Apache-2.0 | Repair second-opinion, JSON introspection | `winget install qpdf.qpdf` |
-| Tesseract | Apache-2.0 | OCR | `winget install UB-Mannheim.TesseractOCR` |
-| OCRmyPDF | MPL-2.0 | OCR orchestration, PDF/A-ish output | `pip install ocrmypdf` (+ Tesseract, Ghostscript) |
-| Ghostscript | AGPL-3.0 / commercial | PDF/A conversion, compression fallback | `winget install ArtifexSoftware.GhostScript` — exact upstream terms and the intended distribution/use model require review before enablement or redistribution |
+| Tesseract | Apache-2.0 | Implemented OCR recognition engine; ≥4.1.1 probe and requested language packs required | `winget install UB-Mannheim.TesseractOCR` |
+| OCRmyPDF | MPL-2.0 core; bundled Occulta font Apache-2.0, Noto Sans font OFL-1.1, and sRGB profile Zlib | Locked ≥17.8.1 OCR orchestration executable; ordinary PDF output, one worker, optimization disabled | Shipped in LocalDocForge's locked Python dependency profiles (+ separate Tesseract and Ghostscript) |
+| Ghostscript | AGPL-3.0 / commercial | OCRmyPDF-mediated live OCR gate; it is never a direct LocalDocForge child. Also a possible future PDF/A engine | Install 64-bit Ghostscript from the official Artifex release page; never bundled |
 | LibreOffice | MPL-2.0 | Office↔PDF in isolated headless mode | `winget install TheDocumentFoundation.LibreOffice` |
 | Pandoc | GPL-2.0+ | Markdown/Office conversions (invoked, not linked) | `winget install JohnMacFarlane.Pandoc` |
 | veraPDF | GPL-3.0+ / MPL | Authoritative PDF/A validation | installer from verapdf.org |
+
+## OCRmyPDF / Tesseract / Ghostscript boundary
+
+The implemented `ocr` operation selects locked OCRmyPDF ≥17.8.1 as its primary
+engine and requires live Tesseract ≥4.1.1 (excluding upstream-incompatible exact
+5.4.0) and an OCRmyPDF-mediated Ghostscript compatibility probe as secondary
+gates. On the 2026-08-11 Windows development host, OCRmyPDF 17.8.1,
+Tesseract 5.4.0.20240606 (`eng`, `osd`), and Ghostscript 10.07.1 all pass their
+live probes, so the OCR capability is available there.
+
+LocalDocForge launches only the OCRmyPDF console entry point for conversion and
+for Ghostscript compatibility probing. Its hardened executable allowlist
+deliberately excludes direct Ghostscript execution. The compatibility probe asks
+OCRmyPDF to process a private 64×64 synthetic image PDF with null OCR, the
+Ghostscript rasterizer, lossless PDF/A-2, one job, and optimization disabled.
+Success requires exit 0, a link-free workspace under 16 MiB, and a structurally
+valid one-page output under 4 MiB. OCRmyPDF performs the Ghostscript ≥9.54
+check, rasterization, and PDF/A generation. The probed OCRmyPDF, Tesseract, and
+Ghostscript paths are rebound immediately before launch; the child PATH contains
+only the unambiguous Tesseract/Ghostscript directories. Windows discovery
+requires the native `tesseract.exe` and `gswin64c.exe` names and additionally
+uses `NoDefaultCurrentDirectoryInExePath=1` and child-only `PATHEXT=.EXE`.
+Thus the platform's
+Ghostscript executable (`gswin64c.exe` on Windows) is an OCRmyPDF child, never
+a LocalDocForge child. LocalDocForge never imports, links,
+bundles, redistributes, or directly invokes Ghostscript. Document conversion
+requests ordinary `pdf` output with optimization 0, so it does not request
+OCRmyPDF's PDF/A conversion or optional lossy optimizer paths.
+The live result is cached only within one registry instance; each new CLI
+process reruns the bounded probe so an earlier installation result cannot stale.
+
+OCRmyPDF itself is shipped as a locked MPL-2.0 dependency and is executed out
+of process. Its wheel also contains the Apache-2.0 Occulta font, OFL-1.1 Noto
+Sans font, and Zlib-licensed sRGB profile; those asset grants and notices are
+represented in release artifacts rather than relying on the wheel's
+MPL-only core metadata. Its new closure remains at weak copyleft or lighter.
+The fpdf2 renderer is LGPL-3.0-only, img2pdf is LGPL-3.0-or-later, FontTools
+includes MIT/BSD-3-Clause/Apache-2.0 code, and uharfbuzz's Apache-2.0 wrapper
+uses the already inventoried HarfBuzz 14.2.1 native component.
 
 ## Rules
 - An installed binary alone never lights a feature: `supported_operations()`

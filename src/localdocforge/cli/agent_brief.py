@@ -37,6 +37,10 @@ USAGE_BY_CAPABILITY_ID: Final[Mapping[str, str]] = MappingProxyType(
         "crop": "ldf crop INPUT.pdf --box X0,Y0,X1,Y1 [--pages RANGE] -o OUTPUT.pdf",
         "inspect": "ldf inspect INPUT.pdf",
         "compress": "ldf compress INPUT.pdf -o OUTPUT.pdf",
+        "ocr": (
+            "ldf ocr INPUT.pdf -o OUTPUT.pdf [--language eng] [--sidecar OUTPUT.txt] "
+            "[--skip-text | --force-ocr]"
+        ),
         "images-to-pdf": "ldf images-to-pdf IMAGE... -o OUTPUT.pdf [--page-size A4]",
         "pdf-to-images": (
             "ldf pdf-to-images INPUT.pdf -d OUTPUT_DIR "

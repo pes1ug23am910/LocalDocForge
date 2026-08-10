@@ -3,16 +3,16 @@
 A practical, task-oriented guide to using LocalDocForge on Windows 11. Every
 original command set in this guide was executed and verified on the primary
 workstation on 2026-08-03 (see `docs/MACHINE_READINESS.md` for that evidence
-run); the S4 text-extraction and S6 Markdown-rendering additions are recorded
+run); the S4 text-extraction, S6 Markdown-rendering, and S7 OCR additions are recorded
 in `docs/STATUS.md`. The authoritative reference for flags, grammar, exit
 codes, and the API contract remains `docs/CLI.md`; this guide does not replace
 it.
 
 > **Scope honesty:** LocalDocForge is early alpha. What this guide shows —
 > PDF organization, page editing, lossless compression, PDF text extraction,
-> Markdown→PDF rendering, image↔PDF conversion, inspection, and the localhost
+> Markdown→PDF rendering, engine-gated OCR, image↔PDF conversion, inspection, and the localhost
 > API — is everything that exists. Lossy
-> compression presets, OCR, Office conversion, redaction, signatures, and the
+> compression presets, Office conversion, redaction, signatures, and the
 > rest of the roadmap are **not available** and no command in this build
 > pretends otherwise. The project's
 > own release gate currently marks the tool **not cleared for sensitive
@@ -58,10 +58,10 @@ ldf --json doctor   # machine-readable; same data the status page uses
 
 `doctor` is the live truth. A capability is listed as available only when its
 implementation and an engine probe both pass; nothing is a placeholder. The
-current build has fourteen implemented capability entries: merge, split,
+current build has fifteen implemented capability entries: merge, split,
 remove-pages, extract-pages, organize, rotate, crop, inspect, compress,
-images-to-pdf, pdf-to-images, convert-images, pdf-to-markdown, and
-markdown-to-pdf. Runtime availability still depends on the listed engine
+images-to-pdf, pdf-to-images, convert-images, pdf-to-markdown,
+markdown-to-pdf, and ocr. Runtime availability still depends on the listed engine
 probes.
 
 ## 3. Everyday recipes
@@ -169,11 +169,32 @@ text, RTL scripts, and flattened tables can require review. Stable report codes
 are `no-text-layer`, `headings-inferred`, `reading-order-uncertain`, and
 `tables-flattened`; exact affected pages appear in
 `details.coverage.per_page[].warning_codes`. If a page has no text layer, use
-`ldf pdf-to-images input.pdf -d vision\ --preset llm` for vision input; OCR is
-not implemented.
+`ldf pdf-to-images input.pdf -d vision\ --preset llm` for vision input, or use
+`ldf ocr` when its three engine probes pass.
 
 The full format/separator contract, exact JSONL keys, coverage schema, and
 limitations are in `docs/CLI.md` and `docs/CONVERSION_FIDELITY.md`.
+
+### Add a best-effort OCR text layer
+
+```powershell
+# Image-only scan; optional sidecar is strict UTF-8/LF text
+ldf ocr scan.pdf -o searchable.pdf --sidecar scan.txt
+
+# Mixed PDF: preserve existing text pages and OCR only image-only pages
+ldf ocr mixed.pdf -o searchable.pdf --skip-text
+```
+
+The command is implemented but available only when `ldf doctor` sees locked
+OCRmyPDF ≥17.8.1, Tesseract ≥4.1.1 except exact upstream-incompatible 5.4.0
+with the requested language pack, and a
+compatible separately installed Ghostscript. This workstation currently has
+OCRmyPDF 17.8.1, Tesseract 5.4.0.20240606 (`eng`, `osd`), and Ghostscript
+10.07.1; all three live probes pass and OCR is available.
+Default mode refuses even a whitespace-only existing text layer. `--force-ocr`
+rasterizes/re-encodes every page and carries a critical warning. Every result
+is best effort and every PDF page is reopened, syntax-checked, rendered, and
+checked for extractable OCR text before atomic publication.
 
 ### Render Markdown to a validated PDF
 
@@ -326,20 +347,21 @@ to `None` is disabled — see `ResourceLimits` in
 
 `ldf doctor` on this machine shows the truth; summarized:
 
-| External engine | Installed here? | Needed by (future phase) |
+| External engine | Installed here? | Needed by |
 |---|---|---|
 | Typst 0.15.1 | ✅ (winget) | Markdown→PDF — **wired and available when the ≥0.15.1 probe passes** |
 | qpdf CLI | ❌ `winget install qpdf.qpdf` | repair/compression diagnostics (P2) |
-| Tesseract + OCRmyPDF | ❌ `winget install UB-Mannheim.TesseractOCR` | OCR (P2) |
-| Ghostscript | ❌ `winget install ArtifexSoftware.GhostScript` | PDF/A (P2) |
+| Tesseract 5.4.0.20240606 | ✅ (winget; `eng` + `osd`) | OCR — **wired** |
+| OCRmyPDF 17.8.1 | ✅ (locked Python dependency and venv console script) | OCR — **wired** |
+| Ghostscript 10.07.1 | ✅ (official Artifex x64 installer) | OCR availability gate and future PDF/A work |
 | LibreOffice | ❌ `winget install TheDocumentFoundation.LibreOffice` | Office→PDF (P2) |
 | Pandoc | ❌ `winget install JohnMacFarlane.Pandoc` | possible future document paths; not used by pdf-to-md |
 | veraPDF | ❌ verapdf.org installer | PDF/A validation (P2/P5) |
 
 Installing an executable alone does not unlock a capability: its pipeline,
 registry bit, tests, and compatible live probe must all agree
-(`docs/FEATURE_MATRIX.md` rules). Typst is the one currently wired optional
-executable; the other listed tools remain future inputs.
+(`docs/FEATURE_MATRIX.md` rules). Typst and the OCR engine chain are wired and
+available on this host. The other listed tools remain future inputs.
 
 ## 8. Sensitive documents — read before trusting it with them
 
@@ -371,7 +393,9 @@ documents whose exposure would hurt you, wait for the blockers in
 | DPI/size value rejected | Outside 36–600 (images-to-pdf) / 18–1200 (pdf-to-images), or would exceed §6 limits. |
 | File rejected before conversion | Content sniffing found an extension/content mismatch, or the PDF is syntax-damaged (repair is not implemented — the tool won't silently "fix" your file). |
 | `compress` barely shrinks a file | The input is image-heavy or already optimized; lossless mode never re-encodes images. The report's `compression` details show exact before/after bytes. |
-| `pdf-to-md` reports `no-text-layer` | The page is scanned/image-only. Use `pdf-to-images --preset llm`; OCR is not shipped yet. |
+| `pdf-to-md` reports `no-text-layer` | The page is scanned/image-only. Use `pdf-to-images --preset llm`, or `ocr` when doctor reports its engines available. |
+| `ocr` is unavailable / exits 3 | Run `ldf doctor`; install or repair the named OCRmyPDF, Tesseract/language-pack, or Ghostscript requirement. This host currently passes all three live gates. |
+| `ocr` refuses an existing text layer | Deliberate. Use `--skip-text` for mixed documents or `--force-ocr` only if rasterization/re-encoding is acceptable. |
 | 401 from every API call | Missing/wrong `X-LDF-Token` header — a browser cookie alone never authorizes API calls. |
 | 429/503 from the API | Queue/rate/per-client caps (§5). Honor `Retry-After`. |
 | Password prompt appears | Input is encrypted and stdin is interactive. Type it (hidden), or for a non-interactive invocation use global `--password-stdin` or `LDF_PASSWORD`; it is used to unlock only and never written to output/reports/logs. |

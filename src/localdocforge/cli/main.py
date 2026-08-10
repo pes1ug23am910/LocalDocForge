@@ -24,7 +24,7 @@ import typer
 from localdocforge import __version__
 from localdocforge.cli.agent_brief import AgentBriefError, build_agent_brief, render_markdown
 from localdocforge.config.settings import Settings, get_settings, set_settings
-from localdocforge.domain.models import ConversionReport
+from localdocforge.domain.models import ConversionReport, WarningSeverity
 from localdocforge.domain.pages import PageRange, PageRangeError
 from localdocforge.engines.adapters import OP_INSPECT, OP_PDF_TO_MD
 from localdocforge.engines.base import EngineUnavailableError
@@ -36,6 +36,7 @@ from localdocforge.jobs.workspace import (
 )
 from localdocforge.operations import images as image_ops
 from localdocforge.operations import markdown as markdown_ops
+from localdocforge.operations import ocr as ocr_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.operations import text as text_ops
@@ -253,8 +254,9 @@ def main(
     if report_dir is not None and settings.strict_offline and is_remote_path(report_dir):
         raise typer.BadParameter("strict-offline mode forbids a network report directory")
     set_settings(settings)
-    # agent-brief is contractually read-only; even startup cleanup would make
-    # it mutate the jobs tree. Conversion and serving commands retain the sweep.
+    # agent-brief never sweeps or mutates the jobs tree. A live engine gate may
+    # use bounded, cleaned synthetic files under a validated local temp root.
+    # Conversion and serving commands retain the stale-workspace sweep.
     if ctx.invoked_subcommand != "agent-brief":
         cleanup_stale_workspaces(settings.jobs_root)
 
@@ -292,6 +294,8 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
             _emit_report(exc.report, failed=True)
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
         cause = exc.__cause__
+        if isinstance(cause, ocr_ops.OcrToolFailure):
+            raise typer.Exit(cause.ldf_exit_code) from exc
         if isinstance(cause, OutputCollisionError):
             raise typer.Exit(EXIT_COLLISION) from exc
         if isinstance(cause, FileNotFoundError):
@@ -306,8 +310,15 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
         raise typer.Exit(EXIT_FAILED) from exc
     else:
         _emit_report(report)
-        for warning in report.security_warnings:
-            typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
+        if _state["quiet"] or _state["json"]:
+            for warning in report.security_warnings:
+                typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
+        for warning in report.fidelity_warnings:
+            if (
+                warning.severity == WarningSeverity.CRITICAL
+                and (_state["quiet"] or _state["json"])
+            ):
+                typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
 
 
 def _parse_range(value: str | None, *, what: str = "--pages") -> PageRange | None:
@@ -896,6 +907,61 @@ def compress(
         collision=collision, password=_password_value()
     )
     _run(optimize_ops.compress_pdf, input_file, output, preset=preset, options=options)
+
+
+# --------------------------------------------------------------------------- OCR
+
+
+@app.command("ocr")
+def ocr_cmd(
+    input_file: Annotated[Path, typer.Argument(dir_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    language: Annotated[
+        str,
+        typer.Option(
+            "--language",
+            help="Tesseract language code(s), joined with '+', for example eng+deu.",
+        ),
+    ] = "eng",
+    sidecar: Annotated[
+        Path | None,
+        typer.Option("--sidecar", dir_okay=False, help="Write extracted OCR text here."),
+    ] = None,
+    skip_text: Annotated[
+        bool,
+        typer.Option("--skip-text", help="OCR only pages that do not already contain text."),
+    ] = False,
+    force_ocr: Annotated[
+        bool,
+        typer.Option(
+            "--force-ocr",
+            help="Rasterize and re-OCR every page; this re-encodes page content.",
+        ),
+    ] = False,
+    collision: Collision = CollisionPolicy.FAIL,
+) -> None:
+    """Add a best-effort searchable text layer to a scanned PDF."""
+    if skip_text and force_ocr:
+        typer.secho(
+            "Error: --skip-text and --force-ocr are mutually exclusive.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    try:
+        ocr_ops._language_codes(language)
+    except PipelineError as exc:
+        typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_USAGE) from exc
+    options = ocr_ops.OcrOptions(
+        language=language,
+        sidecar=sidecar,
+        skip_text=skip_text,
+        force_ocr=force_ocr,
+        collision=collision,
+        password=_password_value(),
+    )
+    _run(ocr_ops.ocr_pdf, input_file, output, options=options)
 
 
 # --------------------------------------------------------------------------- images

@@ -100,16 +100,23 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
             "ingestion."
         ),
     ),
-    # ---- Not yet implemented; listed so doctor can say exactly what is missing ----
+    # ---- Optional and planned capabilities ----
     CapabilitySpec("repair", "Repair PDF", "Optimize PDF", None, False, notes="planned: Phase 2"),
     CapabilitySpec(
         "ocr",
         "OCR PDF",
         "Optimize PDF",
-        None,
-        False,
-        notes="planned: Phase 2",
-        install_hint="Requires Tesseract and OCRmyPDF",
+        adapters.OP_OCR,
+        True,
+        extra_engines=("tesseract", "ghostscript"),
+        notes=(
+            "Adds a best-effort OCR text layer through OCRmyPDF and Tesseract; "
+            "default mode refuses any existing text layer."
+        ),
+        install_hint=(
+            "Requires locked OCRmyPDF >=17.8.1, Tesseract >=4.1.1 except exact 5.4.0, "
+            "and separately installed 64-bit Ghostscript"
+        ),
     ),
     CapabilitySpec(
         "office-to-pdf",

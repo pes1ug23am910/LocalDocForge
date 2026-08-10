@@ -102,6 +102,19 @@ def _efbig_in_chain(exc: BaseException | None) -> bool:
     return False
 
 
+def _tool_timeout_in_chain(exc: BaseException | None) -> bool:
+    """Recognize a contained engine timeout without exposing nested diagnostics."""
+    from localdocforge.security.subproc import ToolTimeout
+
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        if isinstance(exc, ToolTimeout):
+            return True
+        exc = exc.__cause__ or exc.__context__
+    return False
+
+
 _TERMINAL_STATES = frozenset(
     {
         WorkerJobStatus.SUCCESS,
@@ -515,6 +528,11 @@ def _public_pipeline_error(message: str) -> str:
         "Output path aliases ",
         "Output path is outside ",
         "strict-offline mode forbids ",
+        "OCR policy refused ",
+        "OCR input has ",
+        "OCR requires ",
+        "OCR temporary files total ",
+        "OCRmyPDF skipped every OCR-eligible page;",
     )
     if message.startswith(safe_prefixes):
         return _bounded_text(message, 1024)
@@ -995,6 +1013,7 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
         # process and avoids importing the operation table until containment is
         # active and the parent has opened the start gate.
         from localdocforge.api import app as api_module
+        from localdocforge.operations.ocr import OcrToolFailure, OcrToolTimeout
         from localdocforge.pipelines.runner import PipelineError
 
         runner = api_module._OPERATIONS.get(request.operation)
@@ -1048,12 +1067,26 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                     },
                 )
                 return
-            public_error = _public_pipeline_error(str(exc))
+            ocr_failure = exc.__cause__
+            timed_out = request.operation == "ocr" and (
+                isinstance(ocr_failure, OcrToolTimeout) or _tool_timeout_in_chain(exc)
+            )
+            if timed_out:
+                public_error = "OCR engine exceeded its bounded time limit"
+                http_status = 408
+            elif isinstance(ocr_failure, OcrToolFailure):
+                public_error = str(ocr_failure)
+                http_status = 503 if ocr_failure.ldf_exit_code == 3 else 422
+            else:
+                public_error = _public_pipeline_error(str(exc))
+                http_status = 422
             payload: dict[str, Any] = {
                 "kind": "failure",
                 "error": _sanitize_value(public_error, replacements),
-                "http_status": 422,
+                "http_status": http_status,
             }
+            if timed_out:
+                payload["timed_out"] = True
             if exc.report is not None:
                 report_payload = _sanitized_report(
                     exc.report,
@@ -1343,6 +1376,13 @@ class WorkerProcess:
                 return WorkerOutcome(
                     status=WorkerJobStatus.LIMIT_EXCEEDED,
                     error=_bounded_text(payload.get("error", _FSIZE_LIMIT_ERROR)),
+                    http_status=status,
+                    containment=containment,
+                )
+            if payload.get("timed_out") is True:
+                return WorkerOutcome(
+                    status=WorkerJobStatus.TIMED_OUT,
+                    error=_bounded_text(payload.get("error", "OCR engine timed out")),
                     http_status=status,
                     containment=containment,
                 )

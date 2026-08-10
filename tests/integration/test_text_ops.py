@@ -275,6 +275,8 @@ def test_missing_and_whitespace_only_text_layers_are_distinguished(
     )
     assert no_text_warning.page is None
     assert "pdf-to-images --preset llm" in no_text_warning.message
+    assert "ldf ocr" in no_text_warning.message
+    assert "OCR is not implemented" not in no_text_warning.message
 
     whitespace_output = out_dir / "whitespace.md"
     whitespace_report = pdf_to_md(

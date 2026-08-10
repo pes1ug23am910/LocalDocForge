@@ -38,8 +38,17 @@ from localdocforge.api.worker import (
     WorkerRequest,
 )
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ConversionReport, ReportStatus, ResourceLimits
+from localdocforge.domain.models import (
+    ConversionReport,
+    JobCancelled,
+    ReportStatus,
+    ResourceLimits,
+    ValidationCheck,
+    ValidationResult,
+)
 from localdocforge.jobs.workspace import make_private_dir
+from localdocforge.operations.ocr import OcrToolFailure
+from localdocforge.pipelines.runner import PipelineError
 from localdocforge.security import subproc as subproc_module
 from localdocforge.security.paths import PathSecurityError
 from localdocforge.security.subproc import ToolTimeout
@@ -178,6 +187,185 @@ def _limits(**updates) -> ResourceLimits:
     }
     values.update(updates)
     return ResourceLimits(**values)
+
+
+def test_all_skipped_ocr_policy_error_is_safe_for_api_clients() -> None:
+    message = "OCRmyPDF skipped every OCR-eligible page; no searchable text was produced"
+
+    assert worker_module._public_pipeline_error(message) == message
+    assert (
+        worker_module._public_pipeline_error(message.replace(";", " from PRIVATE-PATH;", 1))
+        == "Document processing failed"
+    )
+
+
+@pytest.mark.parametrize(("ldf_code", "http_status"), [(3, 503), (1, 422), (4, 422)])
+def test_worker_maps_typed_ocr_failure_to_safe_message_and_status(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    ldf_code: int,
+    http_status: int,
+) -> None:
+    job_id = uuid.uuid4().hex
+    job_root = tmp_path / job_id
+    for name in ("in", "out"):
+        (job_root / name).mkdir(parents=True, exist_ok=name != "in")
+    settings = Settings(
+        jobs_root=tmp_path / "parent-jobs",
+        limits=_limits(max_output_bytes=None),
+    )
+    request = WorkerRequest(
+        job_id=job_id,
+        operation="ocr",
+        job_root=str(job_root),
+        input_names=(),
+        params={"password": "WORKER-OCR-PASSWORD-SECRET"},
+        settings_json=settings.model_dump_json(),
+    )
+    private_diagnostic = f"PRIVATE-OCR-DIAGNOSTIC-{job_root}"
+    public_message = "OCR engine failed safely; run ldf doctor"
+
+    def fail_ocr(*_args, **_kwargs):
+        report = ConversionReport(
+            operation="ocr",
+            status=ReportStatus.FAILED,
+            job_id="private-worker-id",
+            errors=[private_diagnostic],
+            validation=ValidationResult(
+                passed=False,
+                checks=[
+                    ValidationCheck(
+                        name="private-check",
+                        passed=False,
+                        detail=private_diagnostic,
+                    )
+                ],
+            ),
+        )
+        typed = OcrToolFailure(3, ldf_code, public_message)
+        raise PipelineError(private_diagnostic, report) from typed
+
+    monkeypatch.setitem(api_module._OPERATIONS, "ocr", fail_ocr)
+    monkeypatch.setattr(worker_module, "_prepare_posix", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_base_containment", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_scrub_worker_environment", lambda *_args: None)
+    monkeypatch.setattr(worker_module, "_silence_worker_output", lambda: None)
+
+    class StartGate:
+        @staticmethod
+        def wait(_timeout: float) -> bool:
+            return True
+
+    class CapturingConnection:
+        def __init__(self) -> None:
+            self.messages: list[dict[str, object]] = []
+            self.closed = False
+
+        def send_bytes(self, encoded: bytes) -> None:
+            self.messages.append(json.loads(encoded))
+
+        def close(self) -> None:
+            self.closed = True
+
+    connection = CapturingConnection()
+    worker_module._worker_process_entry(request, StartGate(), connection)
+
+    assert connection.closed
+    failure = next(item for item in connection.messages if item["kind"] == "failure")
+    assert failure["http_status"] == http_status
+    assert failure["error"] == public_message
+    serialized = json.dumps(failure)
+    assert private_diagnostic not in serialized
+    assert "WORKER-OCR-PASSWORD-SECRET" not in serialized
+    assert failure["report"]["errors"] == [public_message]
+    assert failure["report"]["validation"]["checks"][0]["detail"] == "failed"
+
+
+def test_nested_tool_timeout_maps_worker_and_sync_api_to_timed_out_408(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = uuid.uuid4().hex
+    job_root = tmp_path / job_id
+    for name in ("in", "out"):
+        (job_root / name).mkdir(parents=True, exist_ok=name != "in")
+    settings = Settings(
+        jobs_root=tmp_path / "parent-jobs",
+        limits=_limits(max_output_bytes=None),
+    )
+    request = WorkerRequest(
+        job_id=job_id,
+        operation="ocr",
+        job_root=str(job_root),
+        input_names=(),
+        params={},
+        settings_json=settings.model_dump_json(),
+    )
+    private_diagnostic = f"PRIVATE-TIMEOUT-DIAGNOSTIC-{job_root}"
+
+    def time_out_ocr(*_args, **_kwargs):
+        report = ConversionReport(
+            operation="ocr",
+            status=ReportStatus.CANCELLED,
+            job_id=job_id,
+            errors=[private_diagnostic],
+        )
+        try:
+            raise ToolTimeout(private_diagnostic)
+        except ToolTimeout as timeout:
+            try:
+                raise JobCancelled("OCR engine exceeded its time limit") from timeout
+            except JobCancelled as cancelled:
+                raise PipelineError("OCR engine exceeded its time limit", report) from cancelled
+
+    monkeypatch.setitem(api_module._OPERATIONS, "ocr", time_out_ocr)
+    monkeypatch.setattr(worker_module, "_prepare_posix", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_base_containment", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_scrub_worker_environment", lambda *_args: None)
+    monkeypatch.setattr(worker_module, "_silence_worker_output", lambda: None)
+
+    class StartGate:
+        @staticmethod
+        def wait(_timeout: float) -> bool:
+            return True
+
+    class CapturingConnection:
+        def __init__(self) -> None:
+            self.messages: list[dict[str, object]] = []
+
+        def send_bytes(self, encoded: bytes) -> None:
+            self.messages.append(json.loads(encoded))
+
+        @staticmethod
+        def close() -> None:
+            return None
+
+    connection = CapturingConnection()
+    worker_module._worker_process_entry(request, StartGate(), connection)
+
+    failure = next(item for item in connection.messages if item["kind"] == "failure")
+    assert failure["http_status"] == 408
+    assert failure["timed_out"] is True
+    assert private_diagnostic not in json.dumps(failure)
+
+    outcome = WorkerProcess(request)._terminal_message(failure, {})
+    assert outcome is not None
+    assert outcome.status is WorkerJobStatus.TIMED_OUT
+    assert outcome.http_status == 408
+
+    job = WorkerJob(
+        request=request,
+        client_key="client-timeout",
+        output_dir=job_root / "out",
+        max_events=8,
+        status=outcome.status,
+        report=outcome.report,
+        error=outcome.error,
+        error_status=outcome.http_status,
+    )
+    response = api_module._sync_job_response(job, (job_root,))
+    assert response.status_code == 408
+    assert json.loads(response.body)["detail"] == outcome.error
 
 
 def _run_api_parent_with_hung_tree(jobs_root: str, evidence_connection) -> None:

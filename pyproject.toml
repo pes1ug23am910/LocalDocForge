@@ -35,6 +35,9 @@ dependencies = [
     "markdown-it-py>=4.2",
     "pikepdf>=9.0",
     "pypdfium2>=4.30",
+    # MPL-2.0 OCR orchestrator. LocalDocForge invokes its console entry point
+    # through the hardened subprocess runner; Ghostscript remains out-of-process.
+    "ocrmypdf>=17.8.1",
     # 0.11.10 pins pdfminer.six 20260107, after the custom-CMap RCE fix and
     # with the follow-up xref-size validation used on hostile PDF inputs.
     "pdfplumber>=0.11.10",

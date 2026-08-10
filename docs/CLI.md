@@ -29,8 +29,8 @@ ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] 
   firewall; ordinary-looking POSIX network mounts cannot be distinguished.
 - `--report-dir DIR` — for conversion commands, additionally write
   `<operation>-<job-id>.report.json` and `.txt`. In strict mode this must be a
-  recognized local path. Read-only metadata commands such as `agent-brief` do
-  not create report files.
+  recognized local path. Metadata commands such as `agent-brief` do not create
+  report files.
 
 ## Exit codes
 
@@ -87,6 +87,7 @@ ldf rotate input.pdf --degrees 90 --pages "1,3-5" -o out.pdf
 ldf crop input.pdf --box "50,50,400,500" -o out.pdf
 
 ldf compress input.pdf -o smaller.pdf              # lossless structural preset
+ldf ocr scan.pdf -o searchable.pdf --sidecar scan.txt
 
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4 --fit fit
 ldf images-to-pdf photo.png -o photo.pdf --page-size image
@@ -180,7 +181,8 @@ Absence of a table warning is not proof that no table exists; it means only that
 those heuristics found no evidence. The five stable fidelity codes are:
 
 - `no-text-layer` — a page has no PDF text objects; use
-  `pdf-to-images --preset llm` for vision input (OCR remains unavailable).
+  `pdf-to-images --preset llm` for vision input or the separately engine-gated
+  `ocr` command to create a best-effort text layer.
 - `headings-inferred` — Markdown headings were inferred from font-size
   clustering.
 - `reading-order-uncertain` — geometry suggests columns, rotated/angled text,
@@ -239,6 +241,71 @@ above 4,096 cumulative cells per page. Normalized table-cell UTF-8 is capped at
 `max_memory_bytes // 64`. Crossing any table-specific limit falls back to
 flowed text rather than running unbounded analysis or publishing a partial
 table.
+
+### OCR PDF
+
+```text
+ldf ocr INPUT.pdf -o OUTPUT.pdf
+    [--language eng] [--sidecar OUTPUT.txt]
+    [--skip-text | --force-ocr]
+    [--collision fail|rename|overwrite]
+```
+
+OCR is available only when locked OCRmyPDF 17.8.1 or newer, Tesseract 4.1.1
+or newer except upstream-incompatible exact release 5.4.0, and a compatible
+separately installed Ghostscript all pass live probes. The vendor build
+5.4.0.20240606 is distinct from that exact rejected release. OCRmyPDF is the
+only executable LocalDocForge launches for conversion. The Ghostscript live
+gate sends a tiny private one-page image PDF through OCRmyPDF's null OCR,
+Ghostscript-rasterizer, PDF/A-2 path and accepts only a bounded valid output;
+LocalDocForge cannot launch Ghostscript directly. Run `ldf doctor` for the
+actionable missing requirement. A requested language is
+one to sixteen Tesseract pack codes joined by `+` (for example `eng+deu`);
+missing packs fail with exit 3 and an installation hint before document work.
+
+Default mode refuses the entire input if PDFium finds a text object on any
+page, including a whitespace-only layer. `--skip-text` instead asks OCRmyPDF to
+OCR only image-only pages in a mixed document. `--force-ocr` rasterizes and
+re-OCRs every page; every such report carries critical
+`ocr-force-rasterized` because page content is re-encoded. The two mode flags
+are mutually exclusive and a CLI combination exits 2. Critical fidelity
+warnings remain visible on stderr even under global `--quiet`.
+
+Every successful OCR report carries `ocr-text-approximate`: recognition,
+reading order, spelling, and layout are best effort. `--sidecar` adds one
+strict-UTF-8, LF-normalized text artifact to the same atomic publication set as
+the PDF. With `--skip-text`, OCRmyPDF does not copy pre-existing text from
+skipped pages into that sidecar, so LocalDocForge adds
+`ocr-sidecar-omits-existing-text`. Engine messages that indicate a timed-out or
+oversized skipped page become critical `ocr-engine-page-skipped`; raw engine
+diagnostics are withheld because they may repeat document text or private
+paths. If every OCR-eligible page is reported as skipped, the operation fails
+without publishing; partial skips remain a critical-warning success so callers
+can inspect the affected pages. A genuinely blank scan with no skip marker is
+still valid.
+
+The operation uses one OCRmyPDF worker, PDF output (not PDF/A), optimization
+level 0, private neutral filenames and HOME/USERPROFILE/TEMP directories, the configured
+image-pixel/temporary/output/page ceilings, and the remaining job wall
+time with a 900-second absolute safety cap. The spawned API worker enforces the
+configured process ceiling; standalone CLI runs still use one OCRmyPDF job and
+process-tree termination, but not an OS child-count sandbox. A successful engine exit is not
+enough: every output page must pass the standard pikepdf/PDFium validation, and
+the semantic text pass enforces the configured cumulative decompressed-text and
+per-page extraction-memory ceilings before sampling OCR sidecar tokens from the
+PDF text layer. Before PDFium renders, finite page geometry must also fit the
+stricter of the configured pixel ceiling and a conservative memory-derived
+pixel ceiling. OCR refuses `max_image_pixels=0` because OCRmyPDF defines zero as
+disabling its own image safety guard. Blank
+scan pages remain legitimate. Existing signatures are invalidated, and an
+encrypted input produces an unencrypted output; both conditions carry the
+existing critical security warnings.
+
+OCRmyPDF exit 3 maps to LocalDocForge exit 3 (engine unavailable); exits 4 and
+10 map to exit 4 (invalid output); Ctrl-C/130 maps to 130. All other OCRmyPDF
+failures map to exit 1 rather than colliding with LocalDocForge's reserved exit
+5 for output collisions. In the API worker, an internal OCR tool timeout is
+reported consistently as HTTP 408 / `timed_out`, matching the outer watchdog.
 
 ### Markdown to PDF
 
@@ -344,11 +411,18 @@ exits 1 before writing stdout instead of inventing a feedback path. Run
 environment is supported); the checkout may still be discovered after changing
 to another working directory.
 
-`agent-brief` is read-only and stdout-only on success. It opens no document,
-creates no job/report/output directory, does not consume `--password-stdin`,
-and bypasses stale-workspace cleanup. Its only engine interaction is the same
-normal live capability-probe path used by `doctor`; it performs no conversion
-and has no local API job endpoint.
+`agent-brief` opens no user document, creates no job/report/output directory,
+does not consume `--password-stdin`, and bypasses stale-workspace cleanup. Its
+user-visible output is stdout only and successful probe cleanup leaves no
+persistent artifact. Its
+normal live capability-probe path is the same one used by `doctor`: when
+Ghostscript is installed, that gate creates a bounded synthetic one-page PDF
+under a validated local temporary root, asks OCRmyPDF to perform the live
+Ghostscript smoke conversion, and attempts to clean the scratch directory. An
+unsafe or nonlocal temp root makes the gate unavailable before any scratch
+write; an OS cleanup failure also fails the gate closed but may leave locked
+scratch residue.
+`agent-brief` has no local API job endpoint.
 
 Notes:
 
@@ -462,7 +536,7 @@ poll-based; this release does not claim a streaming/SSE channel.
 
 `operation` is one of `merge`, `split`, `remove-pages`, `extract-pages`,
 `organize`, `rotate`, `crop`, `compress`, `images-to-pdf`, `pdf-to-images`,
-`pdf-to-md`, `md-to-pdf`, or `convert-images`.
+`pdf-to-md`, `md-to-pdf`, `ocr`, or `convert-images`.
 Upload each
 source under multipart field `files`. The server, not the request, chooses all
 output paths. Supported string form fields are:
@@ -476,6 +550,7 @@ output paths. Supported string form fields are:
 | rotate | required integer `degrees`, optional `pages` and `password` |
 | crop | required finite `box=x0,y0,x1,y1`, optional `pages` and `password` |
 | compress | optional `preset` (only `lossless` exists), optional `password` |
+| ocr | optional `language` (Tesseract codes joined by `+`), strict booleans `sidecar`, `skip_text`, and `force_ocr`, plus optional `password`; the two OCR modes are mutually exclusive |
 | images-to-pdf | optional `page_size`, `fit`, non-negative finite `margin`, `background`, `dpi` (36–600), and `quality` (1–100) |
 | pdf-to-images | optional `format`, `dpi` (18–1200), `pages`, `quality` (1–100), `preset` (`llm`), and `password` |
 | pdf-to-md | optional `pages`, `format` (`md`, `txt`, or `jsonl`; default `md`), strict boolean `page_anchors` (`true`/`false`; default `true`), strict boolean `tables` (`true`/`false`; default `false`, valid only with `md`), and `password` |
@@ -540,9 +615,15 @@ mapped back to distinct sanitized basenames so a Markdown image such as
 references and unreferenced extra uploads are refused; the API never interprets
 a client path as a server-side filesystem path.
 
+For `ocr`, upload exactly one PDF. The API selects `document.pdf` and, when
+`sidecar=true`, `document.txt`; clients never supply server paths. Engine or
+language-pack unavailability returns 503. Mode-policy and validation failures
+remain ordinary failed conversion responses with no partially published PDF or
+sidecar.
+
 ## Planned (commands and job endpoints do not exist)
 
-`repair`, `ocr`, `office-to-pdf`, `html-to-pdf`, `pdf-to-pdfa`,
+`repair`, `office-to-pdf`, `html-to-pdf`, `pdf-to-pdfa`,
 `pdf-to-docx/pptx/xlsx`, `watermark`,
 `page-numbers`, `forms`, `protect`, `unlock`, `redact`, `sanitize`, `metadata`,
 `attachments`, `sign`, `verify-signatures`, `compare`, `validate`, `batch`,

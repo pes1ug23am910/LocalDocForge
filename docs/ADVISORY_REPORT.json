@@ -20,18 +20,18 @@
       "standard": "requirements/locks/standard.txt",
       "full": "requirements/locks/full.txt"
     },
-    "runtimePythonComponents": 36,
+    "runtimePythonComponents": 43,
     "runtimePythonComponentsByProfile": {
-      "lite": 27,
-      "standard": 35,
-      "full": 36
+      "lite": 34,
+      "standard": 42,
+      "full": 43
     },
     "versionedBundledNativeComponents": 52,
     "unversionedNestedNativeComponents": 19,
-    "versionedReviewRecordCount": 88,
+    "versionedReviewRecordCount": 95,
     "optionalEngines": {
       "reviewed": false,
-      "reason": "Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by these Python profiles and remains outside their component inventory. qpdf CLI, Tesseract, OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are not shipped by these profiles."
+      "reason": "Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by these Python profiles and remains outside their component inventory. OCRmyPDF 17.8.1 is shipped as a Python component; Tesseract and Ghostscript remain separately installed subprocess engines outside this component inventory. qpdf CLI, LibreOffice, Pandoc, and veraPDF are likewise not shipped by these profiles."
     }
   },
   "summary": {
@@ -39,7 +39,7 @@
       "affected": 2,
       "contains-affected-component": 3,
       "contains-unknown-component": 2,
-      "no-known-applicable-advisory": 80,
+      "no-known-applicable-advisory": 87,
       "unknown": 1
     },
     "uniqueApplicableAdvisories": 3,
@@ -218,6 +218,81 @@
       ],
       "releaseDisposition": "not-cleared",
       "releaseRationale": "The S5 dependency closure is fully versioned and reviewed at the Python layer, cryptography is constrained to the fixed 50.0.0 release, and the supplier-declared runtime Cargo/OpenSSL boundary is represented. Existing affected OpenJPEG/libheif and advisory-unknown PDFium findings remain, libffi lacks an exact binary/source binding, and the pre-existing pydantic-core Cargo inventory is still unflattened."
+    },
+    {
+      "accessDate": "2026-08-10",
+      "scope": "OCR activation: exact-version closure, bundled-asset license, native HarfBuzz relationship, and advisory review for OCRmyPDF 17.8.1 and its seven newly locked Python records",
+      "dataBoundary": "Only public component names, exact public versions, release-license URLs, and published asset identifiers were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "OCRmyPDF 17.8.1, fpdf2 2.8.7, img2pdf 0.6.3, FontTools 4.63.0, defusedxml 0.7.1, pluggy 1.6.0, and uharfbuzz 0.55.0 (PyPI)",
+          "conclusion": "The official OSV batch API returned seven empty result objects and no matching vulnerability record for the seven exact PyPI name/version queries.",
+          "disposition": "The exact versions receive time-bounded no-findings, not safety guarantees."
+        },
+        {
+          "url": "https://api.github.com/advisories",
+          "exactVersions": "The same seven exact pip package/version queries",
+          "conclusion": "GitHub reviewed global advisories returned an empty result array for every exact package/version query.",
+          "disposition": "The empty results corroborate the OSV queries but do not prove the OCR pipeline or its parsers safe."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSE",
+          "exactVersions": "OCRmyPDF 17.8.1 installed wheel and exact source tag",
+          "conclusion": "The wheel metadata and installed LICENSE (SHA-256 1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5) identify MPL-2.0 for the core distribution.",
+          "disposition": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/REUSE.toml",
+          "exactVersions": "OCRmyPDF 17.8.1 bundled NotoSans-Regular.ttf, Occulta.ttf, and sRGB.icc assets",
+          "conclusion": "The exact-tag REUSE manifest identifies Occulta.ttf as Apache-2.0 and sRGB.icc as Zlib. The installed Noto Sans 2.007 font name table identifies Copyright 2015-2021 Google LLC and OFL-1.1; exact installed asset SHA-256 values are recorded on the component.",
+          "disposition": "OCRmyPDF license conclusion expanded to Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib; omitted asset terms are restored in generated notices"
+        },
+        {
+          "url": "https://openfontlicense.org/documents/OFL.txt",
+          "exactVersions": "SIL Open Font License 1.1 terms required by OCRmyPDF's installed Noto Sans 2.007 font",
+          "conclusion": "The official plaintext OFL 1.1 terms are embedded deterministically in the offline generator and SHA-256 bound to 1d361a8f8e8ce6e68457dcd93fb56e162e6baa3bbb7e7573a290d44399f6b57e.",
+          "disposition": "full OFL-1.1 terms preserved in every generated profile notice"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/py-pdf/fpdf2/2.8.7/LICENSE",
+          "exactVersions": "fpdf2 2.8.7",
+          "conclusion": "Exact-tag and installed wheel metadata identify LGPL-3.0-only; installed license SHA-256 is f97bc4bb9b7ae8a653941073678b5c7775e8de44a01c3bcc21e7cdc148b90e61.",
+          "disposition": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "url": "https://gitlab.mister-muffin.de/josch/img2pdf/raw/tag/0.6.3/LICENSE",
+          "exactVersions": "img2pdf 0.6.3",
+          "conclusion": "The exact-tag source header grants LGPL version 3 or, at the recipient's option, any later version; installed license SHA-256 is e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118.",
+          "disposition": "verified LGPL-3.0-or-later from exact source and installed wheel"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/fonttools/fonttools/4.63.0/LICENSE.external",
+          "exactVersions": "FontTools 4.63.0",
+          "conclusion": "The installed wheel's MIT LICENSE and LICENSE.external preserve Adobe AGL/AGLFN BSD-3-Clause, cu2qu Apache-2.0, and PyFilesystem-derived MIT notices; the wheel contains no licensed test-font payload. Installed SHA-256 values are 22bef80697ecfaa17f97e62b9a26dfa12820be05583e8dd12ad169b241274c99 and b082a5f86775b2641f01bccb8b9c82908481de5f502bb254b1e13bfc2a9f303d.",
+          "disposition": "verified composite conclusion Apache-2.0 AND BSD-3-Clause AND MIT"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/tiran/defusedxml/v0.7.1/LICENSE",
+          "exactVersions": "defusedxml 0.7.1",
+          "conclusion": "Exact-tag and installed license evidence identify PSF-2.0; installed license SHA-256 is b80ce9da8c42a1f91079627fbbe2bf27210ae108a0ffe5f077d5b08e076c24c8.",
+          "disposition": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/pytest-dev/pluggy/1.6.0/LICENSE",
+          "exactVersions": "pluggy 1.6.0",
+          "conclusion": "Exact-tag and installed license evidence identify MIT; installed license SHA-256 is d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606.",
+          "disposition": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/harfbuzz/uharfbuzz/v0.55.0/LICENSE",
+          "exactVersions": "uharfbuzz 0.55.0 Windows x86-64 / CPython 3.14 wheel and embedded HarfBuzz 14.2.1",
+          "conclusion": "The exact-tag and installed uharfbuzz license identify Apache-2.0. The installed _harfbuzz.pyd SHA-256 is 58e72b8958e586a9dbad690d6c5ce732063a3f48834ee44e95dc4698a505478c, and its runtime version probe reports embedded HarfBuzz 14.2.1.",
+          "disposition": "uharfbuzz is linked to the existing HarfBuzz 14.2.1 native record rather than duplicating that component"
+        }
+      ],
+      "releaseDisposition": "not-cleared",
+      "releaseRationale": "The seven new Python records and OCRmyPDF's bundled asset license obligations are reviewed and represented, and the protected cryptography 50.0.0 and pdfminer.six 20260107 pins did not move. Existing affected OpenJPEG/libheif and advisory-unknown PDFium findings remain, so the repository-wide disposition is unchanged."
     }
   ],
   "method": {
@@ -1524,24 +1599,25 @@
       "name": "harfbuzz",
       "version": "14.2.1",
       "kind": "bundled-native",
+      "reviewDate": "2026-08-10",
       "profiles": ["lite", "standard", "full"],
-      "bundledBy": "Pillow codec bundle",
-      "role": "Native text-shaping library bundled by Pillow; current conversions do not accept external fonts.",
+      "bundledBy": "Pillow codec bundle and uharfbuzz 0.55.0",
+      "role": "Native text-shaping library bundled by Pillow and embedded by uharfbuzz; OCR-derived text reaches it through uharfbuzz with trusted bundled fonts.",
       "license": {
         "concluded": "MIT with bundled notice terms",
         "status": "verified-upstream-multiple-notices",
         "upstreamText": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/14.2.1/COPYING",
-        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1"
+        "localVersionEvidence": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1; installed uharfbuzz 0.55.0 _harfbuzz.pyd SHA256=58e72b8958e586a9dbad690d6c5ce732063a3f48834ee44e95dc4698a505478c and uharfbuzz.version_string() reports 14.2.1"
       },
       "security": {
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact"],
+        "sourceRefs": ["osv-oss-fuzz-exact", "github-reviewed-other-exact", "uharfbuzz-runtime-native-version-2026-08-10"],
         "upstream": "https://github.com/harfbuzz/harfbuzz/security/advisories",
-        "applicability": "No attacker-supplied font/shaping path is enabled in current operations.",
-        "remediation": "Keep the Pillow wheel current and repeat review before adding text/font rendering.",
-        "residualRisk": "Published historical HarfBuzz advisories demonstrate a native font attack surface if reachability changes."
+        "applicability": "OCR-derived attacker-controlled text reaches HarfBuzz through uharfbuzz with trusted bundled fonts; no supported operation accepts attacker-supplied font files.",
+        "remediation": "Keep the Pillow and uharfbuzz wheels jointly current, retain trusted-font selection and worker limits, and repeat exact native review on either wheel upgrade.",
+        "residualRisk": "Published historical HarfBuzz advisories demonstrate a native shaping attack surface; trusted fonts narrow but do not eliminate risk from hostile text sequences."
       }
     },
     {
@@ -2044,7 +2120,7 @@
       "kind": "runtime-python",
       "reviewDate": "2026-08-10",
       "profiles": ["lite", "standard", "full"],
-      "role": "Transitive parser behind pdfplumber for table characters, lines, and coordinates in opt-in table mode.",
+      "role": "PDF parser used by OCRmyPDF for PDF analysis and by pdfplumber for table characters, lines, and coordinates in opt-in table mode.",
       "license": {
         "concluded": "MIT AND Apache-2.0",
         "status": "verified-exact-source-and-installed-wheel-with-missing-wheel-notices-restored",
@@ -2076,8 +2152,8 @@
         "affectedVersionRanges": [],
         "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
         "upstream": "https://github.com/pdfminer/pdfminer.six/security/advisories",
-        "applicability": "Untrusted PDF structure reaches pdfminer.six only in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API.",
-        "remediation": "Keep pdfminer.six exactly paired with pdfplumber's pin, contain parsing, and repeat exact-version review on either upgrade.",
+        "applicability": "Untrusted PDF structure reaches pdfminer.six through the OCR pipeline and in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API.",
+        "remediation": "Keep pdfminer.six exactly pinned without moving the S5-reviewed cryptography floor, contain parsing, and repeat exact-version review on OCRmyPDF, pdfplumber, or pdfminer.six upgrades.",
         "residualRisk": "Parser complexity, decompression, font, and layout processing remain hostile-input surfaces despite the empty exact-version query."
       }
     },
@@ -2088,7 +2164,7 @@
       "kind": "runtime-python",
       "reviewDate": "2026-08-10",
       "profiles": ["lite", "standard", "full"],
-      "role": "Transitive text-encoding detector used by pdfminer.six.",
+      "role": "Transitive text-encoding detector used by pdfminer.six in OCR and table-extraction paths.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream-and-installed-wheel",
@@ -2102,7 +2178,7 @@
         "affectedVersionRanges": [],
         "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
         "upstream": "https://github.com/jawah/charset_normalizer/security/advisories",
-        "applicability": "May inspect attacker-controlled byte strings reached through pdfminer.six's PDF parsing path.",
+        "applicability": "May inspect attacker-controlled byte strings reached through pdfminer.six's OCR and table-extraction PDF parsing paths.",
         "remediation": "Keep the hash lock current and repeat review when pdfminer.six changes its encoding dependency.",
         "residualRisk": "Pathological encoding detection can consume resources even without a published advisory."
       }
@@ -2114,7 +2190,7 @@
       "kind": "runtime-python",
       "reviewDate": "2026-08-10",
       "profiles": ["lite", "standard", "full"],
-      "role": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5.",
+      "role": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support in OCR and table-extraction paths; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5.",
       "license": {
         "concluded": "Apache-2.0 OR BSD-3-Clause",
         "status": "verified-upstream-and-installed-wheel",
@@ -2128,7 +2204,7 @@
         "affectedVersionRanges": [">=44.0.0,<50.0.0: GHSA-g6cj-pr64-35w5; exact installed 50.0.0 is fixed"],
         "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10", "cryptography-embedded-sbom-2026-08-10"],
         "upstream": "https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5",
-        "applicability": "pdfminer.six uses cryptography for PDF RC4/AES decryption. Its path does not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component.",
+        "applicability": "pdfminer.six uses cryptography for PDF RC4/AES decryption in OCR and table-extraction paths. Those paths do not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component.",
         "remediation": "Keep cryptography>=50.0.0 as direct wheel metadata, retain the package-specific 2026-08-01 resolution cutoff, and re-review both Python and embedded native/Cargo inventories on upgrade.",
         "residualRisk": "The exact fixed release can have unpublished defects; cryptographic parser/decryption code remains reachable for encrypted PDFs."
       }
@@ -2183,6 +2259,213 @@
         "applicability": "No supported operation accepts attacker-supplied C source; the package is present through CFFI's dependency declaration.",
         "remediation": "Keep aligned with CFFI and remove if future CFFI metadata no longer requires it.",
         "residualRisk": "Future dynamic FFI compilation would materially expand reachability and require a new review."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/ocrmypdf@17.8.1",
+      "name": "ocrmypdf",
+      "version": "17.8.1",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "OCR pipeline orchestrator for attacker-controlled PDFs. It runs inside the bounded job worker and coordinates separately installed Tesseract and Ghostscript subprocess engines.",
+      "license": {
+        "concluded": "Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib",
+        "status": "verified-exact-source-and-installed-wheel-with-bundled-asset-notices-restored",
+        "upstreamText": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/ocrmypdf/17.8.1/",
+        "localVersionEvidence": "Installed OCRmyPDF 17.8.1 metadata declares MPL-2.0 and preserves LICENSE SHA256=1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5. The installed wheel also contains NotoSans-Regular.ttf (556216 bytes, SHA256=2ec33f84606cbaa0a1a944488e14f97faf2f6a25ecdd8354f5358f06da13c7d9; name table Version 2.007, Copyright 2015-2021 Google LLC, OFL-1.1), Occulta.ttf (12512 bytes, SHA256=a1abee200c4d1b3d51295e0d9618b90883e67e3224c50cb31949f46933171903; exact-tag REUSE Copyright (C) 2026 James R. Barlow, Apache-2.0), and sRGB.icc (6922 bytes, SHA256=2a92d4bae450b76d8b0aa42193df974d75f62738ecebf74f01c5e75b12a95796; exact-tag REUSE names Kai-Uwe Behrmann, Marti Maria, Photogamut, Graeme Gill, and ColorSolutions under Zlib). The wheel omits separate OFL/Apache/Zlib asset-license files, so generated notices restore the source-bound terms.",
+        "preservedNotices": [
+          {
+            "name": "OCRmyPDF Noto Sans Regular (Copyright 2015-2021 Google LLC) OFL-1.1 terms",
+            "source": "https://openfontlicense.org/documents/OFL.txt",
+            "textId": "OFL-1.1",
+            "sourceSha256": "1d361a8f8e8ce6e68457dcd93fb56e162e6baa3bbb7e7573a290d44399f6b57e"
+          },
+          {
+            "name": "OCRmyPDF Occulta.ttf (Copyright (C) 2026 James R. Barlow) Apache-2.0 terms",
+            "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+            "textId": "Apache-2.0",
+            "sourceSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "name": "OCRmyPDF sRGB.icc author attribution",
+            "source": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/REUSE.toml",
+            "text": "Kai-Uwe Behrmann <www.behrmann.name>\nMarti Maria <www.littlecms.com>\nPhotogamut <www.photogamut.org>\nGraeme Gill <www.argyllcms.com>\nColorSolutions <www.basICColor.com>\nSPDX-License-Identifier: Zlib"
+          },
+          {
+            "name": "Zlib terms for OCRmyPDF sRGB.icc",
+            "source": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSES/Zlib.txt",
+            "textId": "Zlib",
+            "sourceSha256": "bfb1112d49db5b1daecdfef24bd7e2f3ea0bafb33aa67aa0ab51e2bf8407c03d"
+          }
+        ]
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/ocrmypdf/OCRmyPDF/security/advisories",
+        "applicability": "Attacker-controlled PDF structure and page content reach OCRmyPDF inside a resource-bounded worker; OCRmyPDF then coordinates external Tesseract and Ghostscript subprocesses through the product's bounded subprocess boundary.",
+        "remediation": "Keep OCRmyPDF and its exact closure hash-locked, preserve text-layer refusal defaults and worker/subprocess limits, and repeat license, native, and advisory review on upgrade.",
+        "residualRisk": "Complex PDFs and rasterized pages may trigger unpublished parser, orchestration, or denial-of-service defects across OCRmyPDF and the separately installed engines; empty advisory results are not a safety guarantee."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/fpdf2@2.8.7",
+      "name": "fpdf2",
+      "version": "2.8.7",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "PDF-generation dependency used by OCRmyPDF when composing searchable text layers from OCR-derived text.",
+      "license": {
+        "concluded": "LGPL-3.0-only",
+        "status": "verified-exact-source-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/py-pdf/fpdf2/2.8.7/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/fpdf2/2.8.7/",
+        "localVersionEvidence": "Installed fpdf2 2.8.7 metadata declares License-Expression: LGPL-3.0-only; installed licenses/LICENSE SHA256=f97bc4bb9b7ae8a653941073678b5c7775e8de44a01c3bcc21e7cdc148b90e61."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/py-pdf/fpdf2/security/advisories",
+        "applicability": "OCR-derived text and page geometry reach fpdf2 through OCRmyPDF; trusted bundled fonts are used by the supported pipeline.",
+        "remediation": "Keep the exact hash lock and LGPL-3.0-only terms, retain bounded OCR execution, and re-review before enabling arbitrary fonts or additional fpdf2 surfaces.",
+        "residualRisk": "Pathological text, layout, font-subsetting, or PDF serialization states may consume excessive resources or produce malformed output despite downstream validation."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/img2pdf@0.6.3",
+      "name": "img2pdf",
+      "version": "0.6.3",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Image-to-PDF serialization dependency used by OCRmyPDF for raster page reconstruction.",
+      "license": {
+        "concluded": "LGPL-3.0-or-later",
+        "status": "verified-exact-source-and-installed-wheel",
+        "upstreamText": "https://gitlab.mister-muffin.de/josch/img2pdf/raw/tag/0.6.3/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/img2pdf/0.6.3/",
+        "localVersionEvidence": "The img2pdf 0.6.3 source header grants LGPL version 3 or, at the recipient's option, any later version; installed licenses/LICENSE SHA256=e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://gitlab.mister-muffin.de/josch/img2pdf",
+        "applicability": "OCRmyPDF passes raster page data derived from attacker-controlled PDFs to img2pdf inside the bounded conversion worker.",
+        "remediation": "Keep img2pdf, Pillow, and pikepdf jointly hash-locked; bound page dimensions and total decoded pixels; validate every emitted PDF.",
+        "residualRisk": "Crafted dimensions, metadata, or codec interactions may cause memory pressure, denial of service, or fidelity defects without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/fonttools@4.63.0",
+      "name": "fonttools",
+      "version": "4.63.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Font parsing and subsetting dependency of fpdf2 for OCR-generated searchable text layers.",
+      "license": {
+        "concluded": "Apache-2.0 AND BSD-3-Clause AND MIT",
+        "status": "verified-exact-source-and-installed-wheel-composite",
+        "upstreamText": "https://raw.githubusercontent.com/fonttools/fonttools/4.63.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/fonttools/4.63.0/",
+        "localVersionEvidence": "Installed FontTools 4.63.0 licenses/LICENSE SHA256=22bef80697ecfaa17f97e62b9a26dfa12820be05583e8dd12ad169b241274c99 provides the primary MIT terms. Installed licenses/LICENSE.external SHA256=b082a5f86775b2641f01bccb8b9c82908481de5f502bb254b1e13bfc2a9f303d preserves Adobe AGL/AGLFN BSD-3-Clause, cu2qu Apache-2.0, and PyFilesystem-derived MIT notices. Licensed test fonts named by that aggregate file are absent from the installed wheel payload."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/fonttools/fonttools/security/advisories",
+        "applicability": "OCR-derived text can drive glyph selection and subsetting through fpdf2, while the supported OCR pipeline selects trusted packaged fonts rather than attacker-supplied font files.",
+        "remediation": "Keep FontTools and fpdf2 jointly hash-locked, retain trusted-font selection and resource limits, and re-review before accepting external fonts.",
+        "residualRisk": "Native extensions and complex font tables can contain unpublished parser or resource-exhaustion defects even when the supported font inputs are trusted."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/defusedxml@0.7.1",
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Hardened XML helper pulled by fpdf2 in OCRmyPDF's searchable-text-layer closure.",
+      "license": {
+        "concluded": "PSF-2.0",
+        "status": "verified-exact-source-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/tiran/defusedxml/v0.7.1/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/defusedxml/0.7.1/",
+        "localVersionEvidence": "Installed defusedxml 0.7.1 metadata reports PSFL and installed LICENSE SHA256=b80ce9da8c42a1f91079627fbbe2bf27210ae108a0ffe5f077d5b08e076c24c8."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/tiran/defusedxml/security/advisories",
+        "applicability": "The package is present through fpdf2; any XML it parses in the OCR closure is generated or derived within the bounded OCR pipeline rather than exposed as a standalone user XML input.",
+        "remediation": "Keep defusedxml and fpdf2 jointly hash-locked and do not replace hardened XML parsing with permissive standard-library parsers.",
+        "residualRisk": "Resource exhaustion and application-level misuse remain possible despite entity-expansion defenses and empty exact-version advisory results."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pluggy@1.6.0",
+      "name": "pluggy",
+      "version": "1.6.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Plugin dispatch framework used internally by OCRmyPDF's engine and pipeline hooks.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-exact-source-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/pytest-dev/pluggy/1.6.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/pluggy/1.6.0/",
+        "localVersionEvidence": "Installed pluggy 1.6.0 metadata declares MIT and installed licenses/LICENSE SHA256=d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10"],
+        "upstream": "https://github.com/pytest-dev/pluggy/security/advisories",
+        "applicability": "OCRmyPDF invokes pluggy hooks, but LocalDocForge does not expose arbitrary plugin loading from document input or command arguments.",
+        "remediation": "Keep the exact lock and restrict OCRmyPDF plugins to trusted installed code; re-review before exposing user-selectable plugin paths.",
+        "residualRisk": "A compromised or unexpectedly discovered local plugin executes with worker privileges; advisory databases cannot assess local plugin trust."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/uharfbuzz@0.55.0",
+      "name": "uharfbuzz",
+      "version": "0.55.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Python binding used by OCRmyPDF for native HarfBuzz text shaping in searchable OCR layers.",
+      "license": {
+        "concluded": "Apache-2.0",
+        "status": "verified-exact-source-installed-wheel-and-runtime-native-version",
+        "upstreamText": "https://raw.githubusercontent.com/harfbuzz/uharfbuzz/v0.55.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/uharfbuzz/0.55.0/",
+        "localVersionEvidence": "Installed uharfbuzz 0.55.0 licenses/LICENSE SHA256=1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6. Windows CPython 3.14 _harfbuzz.pyd is 3000320 bytes with SHA256=58e72b8958e586a9dbad690d6c5ce732063a3f48834ee44e95dc4698a505478c; uharfbuzz.version_string() reports embedded HarfBuzz 14.2.1."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-2026-08-10", "github-reviewed-pip-exact-2026-08-10", "uharfbuzz-runtime-native-version-2026-08-10"],
+        "upstream": "https://github.com/harfbuzz/uharfbuzz/security/advisories",
+        "applicability": "OCR-derived attacker-controlled text reaches uharfbuzz with trusted bundled fonts during searchable-text-layer construction; the binding's native extension embeds HarfBuzz 14.2.1.",
+        "remediation": "Keep uharfbuzz and embedded HarfBuzz jointly current, hash-lock the exact wheel, retain trusted-font selection and worker limits, and re-inventory the native version on every wheel upgrade.",
+        "residualRisk": "Native shaping code may contain unpublished memory-safety or complexity defects; trusted fonts narrow but do not eliminate risk from hostile text sequences."
       }
     },
     {

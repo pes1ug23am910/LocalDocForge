@@ -14,7 +14,9 @@ import contextlib
 import os
 import signal
 import subprocess
+import sys
 import threading
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,13 +26,25 @@ from localdocforge.security.paths import is_remote_path
 # engine means adding it here; nothing else may reach subprocess.
 EXECUTABLE_ALLOWLIST: dict[str, tuple[str, ...]] = {
     "qpdf": ("qpdf",),
-    "tesseract": ("tesseract",),
+    "tesseract": ("tesseract.exe",) if os.name == "nt" else ("tesseract",),
     "ocrmypdf": ("ocrmypdf",),
-    "ghostscript": ("gswin64c", "gswin32c", "gs"),
     "libreoffice": ("soffice",),
     "pandoc": ("pandoc",),
     "typst": ("typst",),
     "verapdf": ("verapdf", "verapdf.bat"),
+}
+# Ghostscript is AGPL and may only run as an OCRmyPDF child. LocalDocForge may
+# discover it for capability gating, but ``run_tool("ghostscript", ...)`` is
+# intentionally impossible.
+DISCOVERY_ONLY_EXECUTABLES: dict[str, tuple[str, ...]] = {
+    # OCRmyPDF 17.x supports only the 64-bit console executable on Windows.
+    "ghostscript": ("gswin64c.exe",) if os.name == "nt" else ("gs",),
+}
+_TRUSTED_CHILD_EXECUTABLES: dict[str, frozenset[str]] = {
+    # OCRmyPDF is the only executable that may launch these descendants. The
+    # resolved directories exclusively form its child PATH so selection is
+    # identical to LocalDocForge's probes and optional tools stay unreachable.
+    "ocrmypdf": frozenset({"tesseract", "ghostscript"}),
 }
 
 _SAFE_ENV_KEYS = (
@@ -45,8 +59,12 @@ _SAFE_ENV_KEYS = (
     "LANG",
     "LC_ALL",
 )
-_PATHLIKE_ENV_KEYS = frozenset({"HOME", "TEMP", "TMP", "TMPDIR", "SYSTEMROOT", "WINDIR"})
-_SAFE_EXTRA_ENV_KEYS = frozenset({"HOME", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"})
+_PATHLIKE_ENV_KEYS = frozenset(
+    {"HOME", "USERPROFILE", "TEMP", "TMP", "TMPDIR", "SYSTEMROOT", "WINDIR"}
+)
+_SAFE_EXTRA_ENV_KEYS = frozenset(
+    {"HOME", "USERPROFILE", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"}
+)
 _WORKER_PROCESS_GROUP_ENV = "LDF_WORKER_PROCESS_GROUP"
 
 
@@ -71,6 +89,138 @@ def _safe_search_directories() -> list[Path]:
             continue
         directory = Path(os.path.expandvars(raw_directory.strip('"'))).expanduser()
         if directory.is_absolute() and not is_remote_path(directory):
+            directories.append(directory)
+    return directories
+
+
+def _local_directory(path: Path) -> Path | None:
+    try:
+        resolved = path.resolve(strict=True)
+    except (OSError, RuntimeError):
+        return None
+    if not resolved.is_dir() or is_remote_path(resolved):
+        return None
+    return resolved
+
+
+def _windows_vendor_directories(tool: str) -> list[Path]:
+    """Return narrow machine-level vendor install locations without scanning.
+
+    The approved Windows installers register these locations but do not
+    reliably update the current process PATH. HKLM is used deliberately; a
+    same-user document must not be able to steer engine discovery through a
+    user-writable registry key.
+    """
+    if os.name != "nt" or tool not in {"tesseract", "ghostscript"}:
+        return []
+    try:
+        import winreg
+    except ImportError:  # pragma: no cover - Windows-only module
+        return []
+
+    access = winreg.KEY_READ | getattr(winreg, "KEY_WOW64_64KEY", 0)
+    raw_directories: list[Path] = []
+    versioned_ghostscript_directories: list[tuple[tuple[int, ...], Path]] = []
+    try:
+        if tool == "tesseract":
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Tesseract-OCR",
+                0,
+                access,
+            ) as key:
+                install_dir, _ = winreg.QueryValueEx(key, "InstallDir")
+                if isinstance(install_dir, str):
+                    raw_directories.append(Path(install_dir))
+        else:
+            roots = (
+                r"SOFTWARE\Artifex\GPL Ghostscript",
+                r"SOFTWARE\GPL Ghostscript",
+            )
+
+            def version_key(value: str) -> tuple[int, ...]:
+                try:
+                    return tuple(int(part) for part in value.split("."))
+                except ValueError:
+                    return (0,)
+
+            for root_name in roots:
+                try:
+                    with winreg.OpenKey(
+                        winreg.HKEY_LOCAL_MACHINE,
+                        root_name,
+                        0,
+                        access,
+                    ) as root:
+                        versions: list[str] = []
+                        index = 0
+                        while True:
+                            try:
+                                versions.append(winreg.EnumKey(root, index))
+                            except OSError:
+                                break
+                            index += 1
+                    for version in versions:
+                        with winreg.OpenKey(
+                            winreg.HKEY_LOCAL_MACHINE,
+                            f"{root_name}\\{version}",
+                            0,
+                            access,
+                        ) as key:
+                            value_index = 0
+                            while True:
+                                try:
+                                    _, raw_path, _ = winreg.EnumValue(key, value_index)
+                                except OSError:
+                                    break
+                                value_index += 1
+                                if not isinstance(raw_path, str):
+                                    continue
+                                path = Path(raw_path)
+                                versioned_ghostscript_directories.append(
+                                    (
+                                        version_key(version),
+                                        path.parent
+                                        if path.suffix.casefold() == ".dll"
+                                        else path / "bin",
+                                    )
+                                )
+                except OSError:
+                    continue
+    except OSError:
+        return []
+
+    raw_directories.extend(
+        path
+        for _, path in sorted(
+            versioned_ghostscript_directories,
+            key=lambda item: item[0],
+            reverse=True,
+        )
+    )
+    directories: list[Path] = []
+    for raw in raw_directories:
+        directory = _local_directory(raw)
+        if directory is not None and directory not in directories:
+            directories.append(directory)
+    return directories
+
+
+def _trusted_search_directories(tool: str) -> list[Path]:
+    directories: list[Path] = []
+    if tool == "ocrmypdf":
+        # Console entry points installed with LocalDocForge live beside the
+        # active venv Python even when ldf.exe is invoked by absolute path and
+        # that Scripts/bin directory is absent from PATH.
+        for raw in (
+            Path(sys.executable).parent,
+            Path(sys.prefix) / ("Scripts" if os.name == "nt" else "bin"),
+        ):
+            directory = _local_directory(raw)
+            if directory is not None and directory not in directories:
+                directories.append(directory)
+    for directory in _windows_vendor_directories(tool):
+        if directory not in directories:
             directories.append(directory)
     return directories
 
@@ -103,14 +253,53 @@ def minimal_env(extra: dict[str, str] | None = None) -> dict[str, str]:
     return env
 
 
-def find_executable(tool: str) -> str | None:
-    """Resolve an allowlisted tool from absolute PATH entries only.
+def _tool_environment(
+    tool: str,
+    extra: dict[str, str] | None,
+    child_path_tools: tuple[str, ...],
+    expected_child_executables: Mapping[str, str] | None,
+) -> dict[str, str]:
+    env = minimal_env(extra)
+    if not child_path_tools:
+        if expected_child_executables:
+            raise ToolError("Expected child executables require child PATH tools")
+        return env
+    allowed = _TRUSTED_CHILD_EXECUTABLES.get(tool, frozenset())
+    if any(child not in allowed for child in child_path_tools):
+        raise ToolError(f"Executable {tool!r} may not receive the requested child PATH entries")
+    expected_children = dict(expected_child_executables or {})
+    if expected_child_executables is None or set(expected_children) != set(child_path_tools):
+        raise ToolError("Expected child executable paths must match requested PATH tools")
+    directories: list[Path] = []
+    bound_children: dict[str, Path] = {}
+    for child in child_path_tools:
+        executable = _resolve_bound_executable_path(child, expected_children[child])
+        bound_children[child] = Path(executable)
+        directory = _local_directory(Path(executable).parent)
+        if directory is None:
+            raise ToolError(f"{child} required by {tool} has no trusted local directory")
+        if directory not in directories:
+            directories.append(directory)
+    for child, expected_path in bound_children.items():
+        matches = _executable_matches(child, directories)
+        if len(matches) != 1 or not _same_local_path(matches[0], expected_path):
+            raise ToolError(f"{child} child PATH does not uniquely select its probed executable")
+    # OCRmyPDF's descendant surface is intentionally closed to these exact
+    # directories. Optional tools and inherited PATH entries are not needed
+    # for LocalDocForge's optimize=0 paths.
+    env["PATH"] = os.pathsep.join(str(path) for path in directories)
+    if os.name == "nt":
+        # Python's Windows executable lookup may otherwise prepend the child
+        # working directory even when it is absent from PATH. OCRmyPDF uses
+        # extensionless shutil.which() calls for these descendants, so bind it
+        # to the closed PATH and the required native .exe spelling.
+        env["NoDefaultCurrentDirectoryInExePath"] = "1"
+        env["PATHEXT"] = ".EXE"
+    return env
 
-    ``shutil.which`` may search the current directory on Windows even when it
-    is absent from PATH. Document directories are valid working directories,
-    so that behavior would allow a planted ``qpdf.exe`` to hijack a probe.
-    """
-    candidates = EXECUTABLE_ALLOWLIST.get(tool)
+
+def _executable_matches(tool: str, directories: list[Path]) -> list[Path]:
+    candidates = EXECUTABLE_ALLOWLIST.get(tool) or DISCOVERY_ONLY_EXECUTABLES.get(tool)
     if candidates is None:
         raise ToolError(f"Executable {tool!r} is not on the allowlist")
     if os.name == "nt":
@@ -121,17 +310,66 @@ def find_executable(tool: str) -> str | None:
         ]
     else:
         path_extensions = [""]
-    for directory in _safe_search_directories():
+    seen: set[Path] = set()
+    matches: list[Path] = []
+    for directory in directories:
+        resolved_directory = _local_directory(directory)
+        if resolved_directory is None or resolved_directory in seen:
+            continue
+        seen.add(resolved_directory)
         for candidate in candidates:
             suffixes = [""] if Path(candidate).suffix else path_extensions
             for suffix in suffixes:
-                executable = directory / f"{candidate}{suffix}"
+                executable = resolved_directory / f"{candidate}{suffix}"
                 if executable.is_file() and os.access(executable, os.X_OK):
                     with contextlib.suppress(OSError, RuntimeError):
                         resolved = executable.resolve(strict=True)
-                        if not is_remote_path(resolved):
-                            return str(resolved)
-    return None
+                        if not is_remote_path(resolved) and resolved not in matches:
+                            matches.append(resolved)
+    return matches
+
+
+def find_executable(tool: str) -> str | None:
+    """Resolve an allowlisted tool from trusted local directories.
+
+    The active environment and narrow machine-vendor registry locations are
+    checked where applicable, then absolute PATH entries. ``shutil.which`` is
+    not used because it may search the current directory on Windows even when
+    it is absent from PATH; document directories are valid working directories.
+    """
+    directories = [*_trusted_search_directories(tool), *_safe_search_directories()]
+    matches = _executable_matches(tool, directories)
+    return str(matches[0]) if matches else None
+
+
+def _same_local_path(left: Path, right: Path) -> bool:
+    return os.path.normcase(str(left)) == os.path.normcase(str(right))
+
+
+def _resolve_bound_executable_path(tool: str, expected: str | None = None) -> str:
+    """Resolve ``tool`` and optionally require the exact path seen by a probe."""
+    discovered = find_executable(tool)
+    if discovered is None:
+        raise ToolError(f"{tool} is not installed")
+    if expected is None:
+        return discovered
+    expected_path = Path(expected)
+    if not expected_path.is_absolute() or is_remote_path(expected_path):
+        raise ToolError(f"Expected {tool} executable is not a trusted local path")
+    try:
+        expected_resolved = expected_path.resolve(strict=True)
+        discovered_resolved = Path(discovered).resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise ToolError(f"Expected {tool} executable is no longer available") from exc
+    if (
+        not expected_resolved.is_file()
+        or not os.access(expected_resolved, os.X_OK)
+        or is_remote_path(expected_resolved)
+    ):
+        raise ToolError(f"Expected {tool} executable is not a trusted local file")
+    if not _same_local_path(expected_resolved, discovered_resolved):
+        raise ToolError(f"{tool} executable path changed after its runtime probe")
+    return str(expected_resolved)
 
 
 def _validated_worker_process_group() -> int | None:
@@ -207,13 +445,18 @@ def run_tool(
     cwd: Path | None = None,
     max_output_bytes: int = 1_000_000,
     env_extra: dict[str, str] | None = None,
+    child_path_tools: tuple[str, ...] = (),
+    expected_executable: str | None = None,
+    expected_child_executables: Mapping[str, str] | None = None,
 ) -> ToolResult:
     """Run an allowlisted external tool with hard bounds. Raises ToolError/ToolTimeout."""
     if max_output_bytes < 0:
         raise ValueError("max_output_bytes cannot be negative")
-    executable = find_executable(tool)
-    if executable is None:
-        raise ToolError(f"{tool} is not installed")
+    if tool not in EXECUTABLE_ALLOWLIST:
+        if tool in DISCOVERY_ONLY_EXECUTABLES:
+            raise ToolError(f"{tool} is discovery-only and cannot be launched directly")
+        raise ToolError(f"Executable {tool!r} is not on the allowlist")
+    executable = _resolve_bound_executable_path(tool, expected_executable)
     argv = [executable, *args]
     if cwd is not None:
         if not cwd.is_absolute():
@@ -239,15 +482,26 @@ def run_tool(
         # instead stay in the validated worker group so the worker supervisor owns
         # their complete descendant tree.
         popen_kwargs["start_new_session"] = worker_process_group is None
-    process = subprocess.Popen(  # noqa: S603 - allowlisted executable, argv list, no shell
-        argv,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        cwd=str(child_cwd),
-        env=minimal_env(env_extra),
-        **popen_kwargs,  # type: ignore[arg-type]
+    child_env = _tool_environment(
+        tool,
+        env_extra,
+        child_path_tools,
+        expected_child_executables,
     )
+    try:
+        process = subprocess.Popen(  # noqa: S603 - allowlisted path, argv list, no shell
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            cwd=str(child_cwd),
+            env=child_env,
+            **popen_kwargs,  # type: ignore[arg-type]
+        )
+    except OSError as exc:
+        # Executables can disappear or become inaccessible after resolution.
+        # Keep probes and operations on the typed, path-redacting error surface.
+        raise ToolError(f"{tool} could not be launched safely") from exc
     assert process.stdout is not None
     output = bytearray()
     reader = threading.Thread(

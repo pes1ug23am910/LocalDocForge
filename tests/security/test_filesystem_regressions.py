@@ -92,6 +92,410 @@ def test_current_directory_executable_is_not_discovered(tmp_path: Path, monkeypa
     assert find_executable("qpdf") is None
 
 
+@pytest.mark.parametrize(
+    ("tool", "binary"),
+    [
+        ("ocrmypdf", "ocrmypdf.exe" if os.name == "nt" else "ocrmypdf"),
+        ("ghostscript", "gswin64c.exe" if os.name == "nt" else "gs"),
+    ],
+)
+def test_ocr_executables_in_document_cwd_are_not_discovered(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tool: str,
+    binary: str,
+) -> None:
+    planted = tmp_path / binary
+    planted.write_bytes(b"synthetic marker: never execute")
+    if os.name != "nt":
+        planted.chmod(0o700)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PATH", "")
+    monkeypatch.setattr(subproc_module, "_trusted_search_directories", lambda _tool: [])
+
+    assert find_executable(tool) is None
+
+
+def test_ocrmypdf_is_discovered_beside_active_venv_python_without_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts = tmp_path / ("Scripts" if os.name == "nt" else "bin")
+    scripts.mkdir()
+    python = scripts / ("python.exe" if os.name == "nt" else "python")
+    python.write_bytes(b"synthetic python marker")
+    executable = scripts / ("ocrmypdf.exe" if os.name == "nt" else "ocrmypdf")
+    executable.write_bytes(b"synthetic OCRmyPDF marker")
+    if os.name != "nt":
+        python.chmod(0o700)
+        executable.chmod(0o700)
+    monkeypatch.setattr(subproc_module.sys, "executable", str(python))
+    monkeypatch.setattr(subproc_module.sys, "prefix", str(tmp_path))
+    monkeypatch.setenv("PATH", "")
+    if os.name == "nt":
+        monkeypatch.setenv("PATHEXT", ".EXE;.BAT;.CMD")
+
+    assert find_executable("ocrmypdf") == str(executable.resolve())
+
+
+def test_ghostscript_is_discoverable_but_cannot_be_launched_directly() -> None:
+    with pytest.raises(ToolError, match="discovery-only"):
+        run_tool("ghostscript", ["--version"])
+
+
+def test_popen_oserror_becomes_safe_tool_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_error = "PRIVATE-PROCESS-START-PATH-C:/Users/name/document.pdf"
+    monkeypatch.setattr(subproc_module, "find_executable", lambda _tool: sys.executable)
+
+    def fail_start(*_args, **_kwargs):
+        raise OSError(private_error)
+
+    monkeypatch.setattr(subproc_module.subprocess, "Popen", fail_start)
+    with pytest.raises(ToolError) as failure:
+        run_tool("qpdf", ["--version"])
+
+    assert "qpdf" in str(failure.value)
+    assert private_error not in str(failure.value)
+    assert isinstance(failure.value.__cause__, OSError)
+
+
+def test_ocrmypdf_child_path_uses_only_resolved_tesseract_and_ghostscript_dirs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable_names = {
+        "ocrmypdf": "ocrmypdf.exe" if os.name == "nt" else "ocrmypdf",
+        "tesseract": "tesseract.exe" if os.name == "nt" else "tesseract",
+        "ghostscript": "gswin64c.exe" if os.name == "nt" else "gs",
+    }
+    tool_paths: dict[str, Path] = {}
+    for tool, name in executable_names.items():
+        directory = tmp_path / tool
+        directory.mkdir()
+        executable = directory / name
+        executable.write_bytes(b"synthetic executable marker")
+        if os.name != "nt":
+            executable.chmod(0o700)
+        tool_paths[tool] = executable.resolve()
+    ordinary_path = tmp_path / "ordinary-path"
+    ordinary_path.mkdir()
+    if os.name == "nt":
+        (tool_paths["ghostscript"].parent / "gswin64c.com").write_bytes(
+            b"same-directory wrapper must remain unreachable"
+        )
+    resolved_tools: list[str] = []
+
+    def resolve(tool: str) -> str | None:
+        resolved_tools.append(tool)
+        path = tool_paths.get(tool)
+        return str(path) if path is not None else None
+
+    captured: dict[str, object] = {}
+
+    class CompletedProcess:
+        stdout = io.BytesIO(b"")
+        pid = 424243
+        returncode = 0
+
+        @staticmethod
+        def wait(timeout=None):
+            return 0
+
+        @staticmethod
+        def poll():
+            return 0
+
+    def capture_popen(*args, **kwargs):
+        captured.update(args=args, kwargs=kwargs)
+        return CompletedProcess()
+
+    monkeypatch.setattr(subproc_module, "find_executable", resolve)
+    monkeypatch.setattr(subproc_module, "_safe_search_directories", lambda: [ordinary_path])
+    monkeypatch.setattr(subproc_module.subprocess, "Popen", capture_popen)
+
+    result = run_tool(
+        "ocrmypdf",
+        ["--version"],
+        child_path_tools=("tesseract", "ghostscript"),
+        expected_executable=str(tool_paths["ocrmypdf"]),
+        expected_child_executables={
+            "tesseract": str(tool_paths["tesseract"]),
+            "ghostscript": str(tool_paths["ghostscript"]),
+        },
+    )
+
+    assert result.returncode == 0
+    assert resolved_tools == ["ocrmypdf", "tesseract", "ghostscript"]
+    kwargs = captured["kwargs"]
+    assert isinstance(kwargs, dict)
+    child_path = kwargs["env"]["PATH"].split(os.pathsep)
+    assert child_path == [
+        str(tool_paths["tesseract"].parent),
+        str(tool_paths["ghostscript"].parent),
+    ]
+    if os.name == "nt":
+        assert kwargs["env"]["NoDefaultCurrentDirectoryInExePath"] == "1"
+        assert kwargs["env"]["PATHEXT"] == ".EXE"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows executable-search semantics")
+def test_ocrmypdf_child_env_disables_windows_cwd_executable_search(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = {
+        "ocrmypdf": "ocrmypdf.exe",
+        "tesseract": "tesseract.exe",
+        "ghostscript": "gswin64c.exe",
+    }
+    paths: dict[str, Path] = {}
+    for tool, name in names.items():
+        directory = tmp_path / tool
+        directory.mkdir()
+        paths[tool] = directory / name
+        paths[tool].write_bytes(b"trusted synthetic executable")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "tesseract.exe").write_bytes(b"cwd shadow")
+    (workspace / "gswin64c.exe").write_bytes(b"cwd shadow")
+    captured: dict[str, object] = {}
+
+    class CompletedProcess:
+        stdout = io.BytesIO(b"")
+        pid = 424244
+        returncode = 0
+
+        @staticmethod
+        def wait(timeout=None):
+            return 0
+
+        @staticmethod
+        def poll():
+            return 0
+
+    def capture_popen(*args, **kwargs):
+        captured.update(args=args, kwargs=kwargs)
+        return CompletedProcess()
+
+    monkeypatch.setattr(subproc_module, "find_executable", lambda tool: str(paths[tool]))
+    monkeypatch.setattr(subproc_module.subprocess, "Popen", capture_popen)
+
+    run_tool(
+        "ocrmypdf",
+        ["--version"],
+        cwd=workspace,
+        child_path_tools=("tesseract", "ghostscript"),
+        expected_executable=str(paths["ocrmypdf"]),
+        expected_child_executables={
+            "tesseract": str(paths["tesseract"]),
+            "ghostscript": str(paths["ghostscript"]),
+        },
+    )
+
+    kwargs = captured["kwargs"]
+    assert isinstance(kwargs, dict)
+    assert kwargs["cwd"] == str(workspace.resolve())
+    assert kwargs["env"]["NoDefaultCurrentDirectoryInExePath"] == "1"
+    assert kwargs["env"]["PATHEXT"] == ".EXE"
+    assert kwargs["env"]["PATH"].split(os.pathsep) == [
+        str(paths["tesseract"].parent),
+        str(paths["ghostscript"].parent),
+    ]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows Ghostscript executable spelling")
+def test_windows_ghostscript_discovery_rejects_wrappers_and_unsupported_names(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "gswin64c.com",
+        "gswin64c.bat",
+        "gswin64c.cmd",
+        "gswin32c.exe",
+        "gs.exe",
+    ):
+        (tmp_path / name).write_bytes(b"unsupported Ghostscript launcher")
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+    monkeypatch.setattr(subproc_module, "_trusted_search_directories", lambda _tool: [])
+
+    assert find_executable("ghostscript") is None
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows Tesseract executable spelling")
+def test_windows_tesseract_discovery_rejects_wrappers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in ("tesseract.com", "tesseract.bat", "tesseract.cmd"):
+        (tmp_path / name).write_bytes(b"unsupported Tesseract launcher")
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+    monkeypatch.setattr(subproc_module, "_trusted_search_directories", lambda _tool: [])
+
+    assert find_executable("tesseract") is None
+
+
+def test_ocr_child_path_rejects_cross_shadowing_between_engine_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = {
+        "ocrmypdf": "ocrmypdf.exe" if os.name == "nt" else "ocrmypdf",
+        "tesseract": "tesseract.exe" if os.name == "nt" else "tesseract",
+        "ghostscript": "gswin64c.exe" if os.name == "nt" else "gs",
+    }
+    paths: dict[str, Path] = {}
+    for tool, name in names.items():
+        directory = tmp_path / tool
+        directory.mkdir()
+        paths[tool] = directory / name
+        paths[tool].write_bytes(b"synthetic executable marker")
+        if os.name != "nt":
+            paths[tool].chmod(0o700)
+    planted = paths["tesseract"].parent / names["ghostscript"]
+    planted.write_bytes(b"cross-shadow marker")
+    if os.name != "nt":
+        planted.chmod(0o700)
+    monkeypatch.setattr(
+        subproc_module,
+        "find_executable",
+        lambda tool: str(paths[tool]),
+    )
+    monkeypatch.setattr(
+        subproc_module.subprocess,
+        "Popen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("ambiguous child PATH reached Popen")
+        ),
+    )
+
+    with pytest.raises(ToolError, match="does not uniquely select"):
+        run_tool(
+            "ocrmypdf",
+            ["--version"],
+            child_path_tools=("tesseract", "ghostscript"),
+            expected_executable=str(paths["ocrmypdf"]),
+            expected_child_executables={
+                "tesseract": str(paths["tesseract"]),
+                "ghostscript": str(paths["ghostscript"]),
+            },
+        )
+
+
+def test_ocr_child_path_requires_complete_expected_path_map(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(subproc_module, "find_executable", lambda _tool: sys.executable)
+
+    with pytest.raises(ToolError, match="Expected child executable paths"):
+        run_tool(
+            "ocrmypdf",
+            ["--version"],
+            child_path_tools=("tesseract", "ghostscript"),
+        )
+
+
+def test_changed_primary_executable_path_is_rejected_before_popen(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = tmp_path / ("expected-qpdf.exe" if os.name == "nt" else "expected-qpdf")
+    discovered = tmp_path / ("discovered-qpdf.exe" if os.name == "nt" else "discovered-qpdf")
+    for executable in (expected, discovered):
+        executable.write_bytes(b"synthetic executable marker")
+        if os.name != "nt":
+            executable.chmod(0o700)
+    monkeypatch.setattr(subproc_module, "find_executable", lambda _tool: str(discovered))
+    monkeypatch.setattr(
+        subproc_module.subprocess,
+        "Popen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("changed executable path reached Popen")
+        ),
+    )
+
+    with pytest.raises(ToolError, match="path changed after its runtime probe"):
+        run_tool("qpdf", ["--version"], expected_executable=str(expected))
+
+
+def test_changed_ocr_child_path_is_rejected_before_popen(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = {
+        "ocrmypdf": "ocrmypdf.exe" if os.name == "nt" else "ocrmypdf",
+        "tesseract": "tesseract.exe" if os.name == "nt" else "tesseract",
+        "ghostscript": "gswin64c.exe" if os.name == "nt" else "gs",
+    }
+    discovered: dict[str, Path] = {}
+    expected: dict[str, Path] = {}
+    for tool, name in names.items():
+        tool_dir = tmp_path / tool
+        expected_dir = tmp_path / f"expected-{tool}"
+        tool_dir.mkdir()
+        expected_dir.mkdir()
+        discovered[tool] = tool_dir / name
+        expected[tool] = expected_dir / name
+        for executable in (discovered[tool], expected[tool]):
+            executable.write_bytes(b"synthetic executable marker")
+            if os.name != "nt":
+                executable.chmod(0o700)
+    monkeypatch.setattr(
+        subproc_module,
+        "find_executable",
+        lambda tool: str(discovered[tool]),
+    )
+    monkeypatch.setattr(
+        subproc_module.subprocess,
+        "Popen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("changed child executable path reached Popen")
+        ),
+    )
+
+    with pytest.raises(ToolError, match="path changed after its runtime probe"):
+        run_tool(
+            "ocrmypdf",
+            ["--version"],
+            child_path_tools=("tesseract", "ghostscript"),
+            expected_executable=str(discovered["ocrmypdf"]),
+            expected_child_executables={
+                "tesseract": str(expected["tesseract"]),
+                "ghostscript": str(discovered["ghostscript"]),
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    ("tool", "child_tools"),
+    [
+        ("qpdf", ("tesseract",)),
+        ("ocrmypdf", ("qpdf",)),
+        ("ocrmypdf", ("curl",)),
+    ],
+)
+def test_unauthorized_child_path_tools_are_rejected_before_popen(
+    monkeypatch: pytest.MonkeyPatch,
+    tool: str,
+    child_tools: tuple[str, ...],
+) -> None:
+    monkeypatch.setattr(subproc_module, "find_executable", lambda _tool: sys.executable)
+    monkeypatch.setattr(
+        subproc_module.subprocess,
+        "Popen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("unauthorized child PATH request reached Popen")
+        ),
+    )
+
+    with pytest.raises(ToolError, match="child PATH|child-path|not allowed|forbidden"):
+        run_tool(tool, ["--version"], child_path_tools=child_tools)
+
+
 def test_child_path_override_and_relative_cwd_are_refused(monkeypatch) -> None:
     for extra in ({"PATH": "."}, {"Path": "."}):
         with pytest.raises(ToolError, match="PATH overrides"):
@@ -100,10 +504,28 @@ def test_child_path_override_and_relative_cwd_are_refused(monkeypatch) -> None:
         minimal_env({"PYTHONPATH": "."})
     with pytest.raises(ToolError, match="non-local"):
         minimal_env({"TEMP": "relative"})
+    with pytest.raises(ToolError, match="non-local"):
+        minimal_env({"USERPROFILE": "relative"})
 
     monkeypatch.setattr(subproc_module, "find_executable", lambda _tool: sys.executable)
     with pytest.raises(ToolError, match="must be absolute"):
         run_tool("qpdf", ["-c", "pass"], cwd=Path("relative"))
+
+
+def test_workspace_userprofile_is_explicit_but_host_profile_is_not_inherited(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    host_profile = tmp_path / "host-profile"
+    workspace_profile = tmp_path / "workspace-profile"
+    host_profile.mkdir()
+    workspace_profile.mkdir()
+    monkeypatch.setenv("USERPROFILE", str(host_profile))
+
+    assert "USERPROFILE" not in minimal_env()
+    assert minimal_env({"USERPROFILE": str(workspace_profile)})["USERPROFILE"] == str(
+        workspace_profile
+    )
 
 
 def test_subprocess_output_is_bounded_while_pipe_is_drained(monkeypatch) -> None:

@@ -15,9 +15,9 @@ profile exports and the curated machine-readable review:
 
 | Profile | Python | Versioned native | Unversioned children | Notices | CycloneDX 1.6 SBOM |
 |---|---:|---:|---:|---|---|
-| Lite | 27 | 52 | 19 | `THIRD_PARTY_NOTICES.lite.md` | `docs/SBOM.lite.cdx.json` |
-| Standard | 35 | 52 | 19 | `THIRD_PARTY_NOTICES.standard.md` | `docs/SBOM.standard.cdx.json` |
-| Full | 36 | 52 | 19 | `THIRD_PARTY_NOTICES.full.md` | `docs/SBOM.full.cdx.json` |
+| Lite | 34 | 52 | 19 | `THIRD_PARTY_NOTICES.lite.md` | `docs/SBOM.lite.cdx.json` |
+| Standard | 42 | 52 | 19 | `THIRD_PARTY_NOTICES.standard.md` | `docs/SBOM.standard.cdx.json` |
+| Full | 43 | 52 | 19 | `THIRD_PARTY_NOTICES.full.md` | `docs/SBOM.full.cdx.json` |
 
 The profile exports are universal Python locks, but every native record in these SBOMs
 comes from inspected Windows x86-64 / CPython 3.14 wheels. They do not claim identical
@@ -46,12 +46,12 @@ A single profile can be generated or checked with `--profile lite`, `--profile
 standard`, or `--profile full`. Generation makes no network requests. It fails if a
 profile lock disagrees with the reviewed component/version/profile mapping or if a pin
 lacks SHA-256 artifact hashes. Root direct and transitive Python dependency edges are
-derived from `uv.lock`; the application root depends only on the ten base declarations
+derived from `uv.lock`; the application root depends only on the eleven base declarations
 plus the selected Standard/Full direct extras.
 
 ## Authoritative review record
 
-`docs/ADVISORY_REPORT.json` is the source-attributed, machine-readable review for 36
+`docs/ADVISORY_REPORT.json` is the source-attributed, machine-readable review for 43
 exact runtime Python distributions and 52 versioned nested native records. It separately
 enumerates 19 known version-unknown children rather than representing the versioned set
 as exhaustive. Sources were first accessed **2026-07-19**; dependency-specific
@@ -84,7 +84,10 @@ versions: all then-current 29 exact PyPI queries returned no matches, while the 
 versioned bundled-native queries returned one match, OpenJPEG 2.5.4 /
 `OSV-2025-219`. Later runs cover the HEIF, Markdown, and S5 table-parser closures.
 The 2026-08-10 run records cryptography's fixed 50.0.0 floor, its supplier-required
-Cargo/OpenSSL inventory, and the advisory-unknown libffi child. Exact endpoints,
+Cargo/OpenSSL inventory, and the advisory-unknown libffi child. The later S7 run covers
+OCRmyPDF 17.8.1 and six newly introduced transitive Python distributions, binds
+uharfbuzz's compiled extension to the existing HarfBuzz 14.2.1 native record, and
+records the unchanged cryptography 50.0.0 and pdfminer.six 20260107 pins. Exact endpoints,
 versions, conclusions, and dispositions are retained under `verificationRuns` in the
 machine-readable report; empty results are never a safety guarantee.
 
@@ -151,6 +154,16 @@ expressions, and nested notice terms. In particular:
 - Pillow is MIT-CMU, while its codec bundle includes distinct Brotli, FreeType,
   HarfBuzz, Little CMS, libavif, libjpeg-turbo, libpng, libwebp, OpenJPEG, libtiff, xz,
   and zlib-ng terms;
+- OCRmyPDF 17.8.1 combines MPL-2.0 core code with a Noto Sans 2.007 OFL-1.1 font,
+  an Apache-2.0 Occulta font, and a Zlib-licensed sRGB profile. The published wheel
+  omits separate asset-license files, so every generated profile notice restores the
+  exact source-bound OFL, Apache, and Zlib terms. Its closure also includes fpdf2
+  2.8.7 under LGPL-3.0-only, img2pdf 0.6.3 under LGPL-3.0-or-later, FontTools 4.63.0
+  under a reviewed `Apache-2.0 AND BSD-3-Clause AND MIT` composite conclusion, and
+  uharfbuzz 0.55.0 under Apache-2.0;
+- uharfbuzz's inspected Windows CPython 3.14 extension reports embedded HarfBuzz
+  14.2.1. The SBOM therefore links uharfbuzz to the existing HarfBuzz native component
+  also reached through Pillow instead of duplicating that versioned record;
 - packaging is Apache-2.0 or BSD-2-Clause; FreeType is FTL or GPL-2.0-or-later; and xz
   contains multiple terms whose complete upstream `COPYING` governs.
 
@@ -163,9 +176,14 @@ bundle or installer rather than assuming the Python environment inventory is com
 No optional external executable is distributed by the reviewed Python profiles.
 Typst 0.15.1 is separately installed on the reviewed machine and is enabled for
 Markdown-to-PDF when its minimum-version probe passes; its executable is Apache-2.0 and
-is invoked, never linked or bundled. It therefore remains outside the profiles' 88
-versioned review records and 19-child unversioned inventory. qpdf CLI, Tesseract,
-OCRmyPDF, Ghostscript, LibreOffice, Pandoc, and veraPDF are neither enabled nor shipped.
+is invoked, never linked or bundled. It therefore remains outside the profiles' 95
+versioned review records and 19-child unversioned inventory. OCRmyPDF 17.8.1 itself is
+shipped as a reviewed Python component. Tesseract and AGPL-licensed Ghostscript remain
+separately installed executables. LocalDocForge invokes Tesseract directly only for a
+bounded language-pack inventory; OCRmyPDF launches it for recognition. Ghostscript is
+discovery-only to LocalDocForge and, if used, may be launched only as OCRmyPDF's child;
+LocalDocForge does not link or bundle it. qpdf CLI, LibreOffice, Pandoc, and veraPDF are
+likewise not distributed by these profiles.
 
 If an engine is enabled or redistributed later, repeat exact-version license,
 provenance, and advisory review. Copyleft, dual-license, commercial, plugin, and bundled

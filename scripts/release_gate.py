@@ -56,6 +56,7 @@ EXPECTED_BASE_DEPENDENCIES = frozenset(
         "pydantic-settings",
         "typer",
         "markdown-it-py",
+        "ocrmypdf",
         "pikepdf",
         "pypdfium2",
         "pdfplumber",

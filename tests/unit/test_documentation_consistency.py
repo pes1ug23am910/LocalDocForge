@@ -4,15 +4,86 @@ import json
 from pathlib import Path
 
 from localdocforge.cli.agent_brief import USAGE_BY_CAPABILITY_ID
-from localdocforge.engines.adapters import OP_MD_TO_PDF, OP_PDF_TO_MD
+from localdocforge.engines.adapters import OP_MD_TO_PDF, OP_OCR, OP_PDF_TO_MD
 from localdocforge.engines.registry import CAPABILITY_SPECS
 from localdocforge.operations.markdown import (
     MARKDOWN_CONSTRUCT_DROPPED,
     SYSTEM_FONT_DEPENDENT,
 )
+from localdocforge.operations.ocr import (
+    OCR_ENGINE_PAGE_SKIPPED,
+    OCR_FORCE_RASTERIZED,
+    OCR_SIDECAR_OMITS_EXISTING_TEXT,
+    OCR_TEXT_APPROXIMATE,
+)
 from localdocforge.operations.text import WARNING_CODE_ORDER
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_ocr_slice_is_documented_consistently() -> None:
+    spec = next(item for item in CAPABILITY_SPECS if item.id == "ocr")
+    assert spec.implemented is True
+    assert spec.operation == OP_OCR
+    assert spec.extra_engines == ("tesseract", "ghostscript")
+    usage = USAGE_BY_CAPABILITY_ID["ocr"]
+    for fragment in ("--language", "--sidecar", "--skip-text", "--force-ocr"):
+        assert fragment in usage
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "ldf ocr scan.pdf -o searchable.pdf" in readme
+    assert OCR_TEXT_APPROXIMATE in readme
+    assert OCR_FORCE_RASTERIZED in readme
+
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    assert "ldf ocr INPUT.pdf -o OUTPUT.pdf" in cli
+    assert "strict booleans `sidecar`, `skip_text`, and `force_ocr`" in cli
+    for code in (
+        OCR_TEXT_APPROXIMATE,
+        OCR_FORCE_RASTERIZED,
+        OCR_SIDECAR_OMITS_EXISTING_TEXT,
+        OCR_ENGINE_PAGE_SKIPPED,
+    ):
+        assert code in cli
+
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    row = next(line for line in feature.splitlines() if line.startswith("| OCR PDF"))
+    assert "✅ when OCRmyPDF" in row
+    assert "Lib, CLI, API" in row
+    assert OCR_TEXT_APPROXIMATE in row
+    assert "never directly invokes or bundles AGPL Ghostscript" in row
+
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(encoding="utf-8")
+    section = fidelity[fidelity.index("## OCR (`ocr`)") : fidelity.index("## convert-images")]
+    for code in (
+        OCR_TEXT_APPROXIMATE,
+        OCR_FORCE_RASTERIZED,
+        OCR_SIDECAR_OMITS_EXISTING_TEXT,
+        OCR_ENGINE_PAGE_SKIPPED,
+        "signature-invalidated",
+        "input-encryption-removed",
+    ):
+        assert code in section
+    assert "sampled tokens" in section
+    assert "extractable from the candidate text layer" in section
+
+    decisions = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
+    assert "OCRmyPDF / Tesseract / Ghostscript boundary" in decisions
+    assert (
+        "never imports, links, bundles, redistributes, or directly invokes Ghostscript"
+        in " ".join(decisions.split())
+    )
+    assert "64×64 synthetic image PDF" in decisions
+    assert "lossless PDF/A-2" in decisions
+
+    threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text(encoding="utf-8")
+    assert "OCRmyPDF—not LocalDocForge—starts" in threat
+    assert "canonical-path and child-selection binding" in threat
+    assert "Raw OCRmyPDF" in threat and "paths are withheld" in threat
+
+    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    assert "repair, OCR" not in status
+    assert "S7" in status and "OCR" in status
 
 
 def test_implementation_plan_records_shipped_api_and_pending_react_ui() -> None:
@@ -28,7 +99,7 @@ def test_engine_decisions_record_typst_as_wired_but_separately_installed() -> No
 
     assert "Probed but absent on this machine" not in decisions
     assert "Selected, installed, probed, and in use" in decisions
-    assert "Other optional executable probes (features gated off; availability varies)" in decisions
+    assert "Other optional executable probes (capability availability varies)" in decisions
     assert "| Typst | 0.15.1 | Apache-2.0 |" in decisions
     assert "Typst probes available while Markdown→PDF stays unavailable" not in decisions
     assert "AGPL obligations do not attach" not in decisions
@@ -240,7 +311,7 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
         "fidelity_warnings[]",
         "verify` -> `fallback` -> `review",
         "docs/AGENT_FEEDBACK.md",
-        "stdout-only",
+        "user-visible output is stdout only",
         "no local API job endpoint",
         "standalone wheel or direct VCS install",
     ):
@@ -260,8 +331,9 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
     fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
         encoding="utf-8"
     )
-    assert "agent-brief (read-only diagnostics)" in fidelity
+    assert "agent-brief (metadata diagnostics)" in fidelity
     assert "opens and converts no document" in fidelity
+    assert "validated local temporary root" in fidelity
     assert "introduces no fidelity warning code" in fidelity
 
 

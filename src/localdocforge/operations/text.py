@@ -1469,7 +1469,8 @@ def _aggregate_warnings(
     messages = {
         NO_TEXT_LAYER: (
             "selected page occurrence(s) have no extractable text layer. Use "
-            "`ldf pdf-to-images --preset llm` for a visual fallback; OCR is not implemented."
+            "`ldf pdf-to-images --preset llm` for a visual fallback, or `ldf ocr` when "
+            "its OCRmyPDF, Tesseract, and Ghostscript probes are available."
         ),
         HEADINGS_INFERRED: (
             "selected page occurrence(s) used a font-size heuristic to infer Markdown heading "

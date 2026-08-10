@@ -283,7 +283,7 @@ result applies only to the recorded OS, architecture, and interpreter.
   the definitive complete-gate rerun passed end to end in 341.1 seconds on
   Windows-AMD64 CPython 3.14.4, including the fresh Dev full-suite and
   `release_manifest_verified: true`.
-- Per the multi-model plan's protected-evidence rule, S1's gates used fresh
+- Per the release plan's protected-evidence rule, S1's gates used fresh
   temporary dist and profile-evidence paths. Existing `packaging-evidence/`
   and `dist/windows-11-x64/` records were neither overwritten nor relabelled;
   the new S1 comparison identity is recorded in
@@ -352,11 +352,12 @@ result applies only to the recorded OS, architecture, and interpreter.
   `docs/AGENT_FEEDBACK.md` path plus its append-only, required-outcome,
   write-scope, and privacy rules. JSON fields mirror the live registry, while
   Markdown renders that same typed snapshot.
-- The command performs no conversion or engine execution beyond that normal
-  live probe path, opens no document, writes only stdout on success, creates no
-  report/output/job directory, does not consume `--password-stdin`, and
-  bypasses the inherited stale-workspace sweep so its read-only claim is
-  literal.
+- At the S3 checkpoint, before S7 added a functional Ghostscript live probe,
+  the command performed no conversion or engine execution beyond the then-
+  normal probe path, opened no document, wrote only stdout on success, created
+  no report/output/job directory, did not consume `--password-stdin`, and
+  bypassed the inherited stale-workspace sweep. The S7 note below supersedes
+  only that historical literal-read-only scope.
 - Thirty-four focused unit/CLI/documentation outcomes passed, including
   missing/stale templates, duplicate/missing/extra registry ids, hostile
   metadata and false-implementation state, implemented-but-unavailable state,
@@ -630,6 +631,76 @@ result applies only to the recorded OS, architecture, and interpreter.
   `9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
   its temporary directory was removed and retained evidence stayed untouched.
 
+## Executed evidence — 2026-08-10 (OCR via OCRmyPDF/Tesseract, S7)
+
+- S7 implements the stable `ocr` library/CLI/spawned-worker API operation and
+  `ocr` registry capability. Availability requires locked OCRmyPDF ≥17.8.1,
+  Tesseract ≥4.1.1 except exact upstream-incompatible 5.4.0 with every requested
+  language pack, and separately installed
+  Ghostscript. On this host OCRmyPDF 17.8.1, vendor Tesseract
+  5.4.0.20240606 (`eng`, `osd`), and Ghostscript 10.07.1 pass their live
+  probes, so live doctor reports the implemented capability available.
+- Default mode inventories PDFium text objects and refuses the entire input if
+  any page already has a text layer, including whitespace-only text.
+  `--skip-text` permits mixed documents and `--force-ocr` rasterizes/re-encodes
+  every page with critical `ocr-force-rasterized`. Every successful output has
+  `ocr-text-approximate`; sidecars are strict UTF-8/LF and mixed-document
+  sidecars warn that pre-existing skipped-page text is omitted.
+- OCRmyPDF is launched with one job, ordinary PDF output, optimization 0,
+  neutral private paths/HOME/USERPROFILE/TEMP, bounded diagnostics, configured page/pixel/
+  temporary/output limits, a remaining-job timeout, and an elapsed 900-second
+  absolute ceiling. Timeout/oversize page-skip diagnostics become the stable
+  critical `ocr-engine-page-skipped` warning without retaining raw engine text.
+- Probed Tesseract/Ghostscript directories exclusively form OCRmyPDF's child
+  PATH and are rejected on cross-shadow ambiguity; launch races map to typed safe errors, and
+  signed inputs receive OCRmyPDF's explicit digital-signature invalidation flag.
+  Semantic validation enforces decompressed-text and extraction-memory limits
+  across every output page; the raw/normalized sidecar duplication peak is
+  measured before cleanup. Critical fidelity warnings remain visible under the
+  CLI's `--quiet` mode.
+- The final adversarial resource pass additionally rejects zero image-pixel
+  limits before launch, checks page geometry against pixel/memory render bounds
+  before PDFium bitmap allocation, and rechecks cancellation/deadlines between
+  validation pages. An all-eligible-page `[skipped page]` result is a hard
+  failure; partial skips retain the critical warning. Internal engine timeouts
+  map consistently to API HTTP 408 / `timed_out`.
+  Engine exits map to LocalDocForge's `0/1/3/4/130` contract; engine code 5 can
+  never masquerade as LocalDocForge's output-collision code 5.
+- Exit 0 is only a candidate: the standard validator reopens the PDF, rejects
+  syntax damage, checks page count, and renders every page. A second PDFium
+  check requires up to sixteen sampled normalized sidecar tokens to be
+  extractable from the text layer; a legitimately blank scan is accepted.
+  The PDF and requested sidecar validate and publish atomically. Reports carry
+  no recognized text or raw diagnostics, and signed/encrypted rewrites emit the
+  existing critical signature/encryption warnings.
+- OCRmyPDF is the only conversion executable LocalDocForge launches.
+  Ghostscript is mechanically absent from the execution allowlist; its live
+  gate uses a bounded synthetic PDF under a validated local temp root and may
+  run it only as OCRmyPDF's separately installed AGPL child. This supersedes
+  S3's broader historical `agent-brief` read-only wording: the command opens no
+  user document, but live probing may create and attempt to clean that
+  synthetic scratch tree; cleanup failure marks the gate unavailable and may
+  leave OS-locked residue. Active-environment sibling discovery
+  finds the locked OCRmyPDF console
+  script even when Scripts is absent from PATH. Narrow HKLM vendor discovery
+  finds Tesseract/Ghostscript without trusting the document working directory.
+- The dependency ritual adds OCRmyPDF 17.8.1 plus six new transitive Python
+  distributions to all profiles while leaving protected cryptography 50.0.0
+  and pdfminer.six 20260107 unchanged. The audited wheel closure includes
+  OCRmyPDF's MPL/OFL/Apache/Zlib assets, fpdf2 LGPL-3.0-only, img2pdf
+  LGPL-3.0-or-later, composite FontTools, and uharfbuzz's edge to the already
+  inventoried HarfBuzz 14.2.1. The resulting inventory is 34/42/43 Python
+  records for Lite/Standard/Full, 52 versioned native records, and 19
+  version-unknown children: 95 versioned records at the Full ceiling, with
+  profile totals 105/113/114. Advisory disposition remains not-cleared for the
+  pre-existing native findings.
+- The complete 90-test OCR module passes, including the installed-engine
+  PDFium marker check and byte-deterministic two-run sidecar integration. The
+  final repository-wide suite collected 787 outcomes (783 passed, four expected
+  platform skips, zero failed), and the 520.3-second post-delta full release gate passed
+  the same suite under ordinary and blocked-network modes, all profiles, and
+  reproducible-build verification with `release_manifest_verified: true`.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -691,10 +762,10 @@ result applies only to the recorded OS, architecture, and interpreter.
   517 backend is `setuptools==83.0.0`, authenticated against official PyPI
   hashes, downloaded into a one-use wheelhouse, and installed by isolated builds
   with the wheelhouse forced offline; build isolation was not weakened.
-- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 36 unique
-  runtime Python components (27 Lite / 35 Standard / 36 Full), 52 versioned
+- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 43 unique
+  runtime Python components (34 Lite / 42 Standard / 43 Full), 52 versioned
   bundled-native components, and 19 separately enumerated version-unknown
-  children. Profile totals are 98 / 106 / 107 components.
+  children. Profile totals are 105 / 113 / 114 components.
 - The base advisory/license review date is 2026-07-19. A 2026-07-20 OSV refresh
   returned no matches for 29 exact PyPI queries and one match among 16 versioned
   native queries: OpenJPEG 2.5.4 / `OSV-2025-219`. Empty results are not safety
@@ -738,8 +809,9 @@ and privacy-default GPS/EXIF stripping. Phase 3's core PDF text-extraction path
 now ships as `pdf-to-md`, including opt-in conservative explicit-line GFM table
 reconstruction through pdfplumber. Its bounded Markdown rendering path ships as
 `md-to-pdf` when Typst ≥0.15.1 is available; borderless/merged-cell and broader
-semantic reconstruction remain future work.
-Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
+semantic reconstruction remain future work. OCR now ships as `ocr` when its
+OCRmyPDF/Tesseract/Ghostscript probe set passes.
+Lossy compression presets, repair, Office-to-PDF, HTML-to-PDF,
 PDF/A/PDF/UA, editing/forms,
 protection, secure redaction, signatures, compare, scanner/camera
 acquisition, and the React UI remain unavailable.
@@ -762,3 +834,6 @@ acquisition, and the React UI remain unavailable.
   `--- ldf:page N ---` or form-feed separators when anchors are disabled; JSONL
   has one exact-schema record per selected occurrence. Reports carry coverage
   statistics and warning codes, never the extracted text itself.
+- `ocr` refuses existing text layers by default; skip and force behavior is
+  explicit, every output is marked approximate, optional sidecars are UTF-8/LF,
+  and full PDF plus extracted-token validation precedes atomic publication.

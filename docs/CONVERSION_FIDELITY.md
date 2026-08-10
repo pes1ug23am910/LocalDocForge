@@ -182,7 +182,8 @@ proof that no table exists; it means only that the heuristics found no evidence.
 Stable codes (at most one aggregate `fidelity_warnings` entry per code):
 
 - `no-text-layer` — one or more selected pages have no PDF text objects. Use
-  `pdf-to-images --preset llm` for vision input; OCR is not implemented.
+  `pdf-to-images --preset llm` for vision input, or the separately engine-gated
+  `ocr` command to create a best-effort searchable layer.
 - `headings-inferred` — Markdown headings were produced through font-size
   clustering rather than document semantics.
 - `reading-order-uncertain` — columns, rotation, angled text, or RTL content
@@ -255,6 +256,60 @@ exactly one record per occurrence, the exact schema above, and counts that agree
 with the report. Validation failure blocks atomic publication. Unlike generated
 PDF validation, this proves encoding, framing, provenance cardinality, and
 report consistency — not linguistic correctness or visual equivalence.
+
+## OCR (`ocr`)
+
+OCR produces a best-effort machine-recognized text layer; it does not recover
+the source document's semantic structure, fonts, reading order, or guaranteed
+spelling. Every successful output therefore carries
+`ocr-text-approximate`, even when the sampled extracted tokens match. The
+operation writes ordinary PDF output, not PDF/A, with OCRmyPDF optimization
+disabled. It does not claim byte identity or pixel identity with the input.
+
+Mode fidelity is deliberately explicit:
+
+- Default mode refuses the whole input when PDFium finds any page text object,
+  including a whitespace-only layer. This avoids silently duplicating or
+  replacing text in a document that may already be searchable.
+- `--skip-text` OCRs only image-only pages. Existing page content is retained,
+  but an optional sidecar contains only newly recognized OCR text; it does not
+  copy text from skipped pages. That case carries
+  `ocr-sidecar-omits-existing-text`.
+- `--force-ocr` rasterizes and re-OCRs every page. Vector graphics, selectable
+  text, annotations as rendered, and image compression can be flattened or
+  re-encoded. Every force result carries critical `ocr-force-rasterized`.
+
+Sidecars are normalized in a streaming pass to strict UTF-8 with LF newlines
+and join the PDF in one validate-before-publish transaction. Engine diagnostics
+are bounded and not copied verbatim into reports because they may contain
+document text or private paths. A diagnostic indicating that an oversized or
+timed-out page was skipped becomes critical `ocr-engine-page-skipped`; callers
+must visually inspect that page. If skip markers cover every OCR-eligible page,
+the operation fails rather than misreporting an image-only result as searchable;
+partial skips may publish only with that critical warning. A truly blank scan
+without a skip marker remains valid. Missing language packs and engine failures
+are hard errors, not fidelity warnings.
+
+An OCRmyPDF zero exit is only a candidate. LocalDocForge reopens the PDF,
+rejects syntax damage, checks the expected page count, renders every page with
+PDFium, samples up to sixteen distinct normalized sidecar tokens, and requires
+all sampled tokens to be extractable from the candidate text layer. That
+all-page text pass first enforces the configured cumulative decompressed-text
+and per-page extraction-memory ceilings; finding the expected tokens early does
+not bypass later-page limits. Finite page geometry is checked against the
+stricter of the image-pixel ceiling and a conservative memory-derived render
+ceiling before standard all-page PDFium rendering allocates bitmaps. An
+empty/whitespace-only sidecar is valid because a genuinely blank scan page has
+no expected words. Non-marker sidecar content that yields no bounded token
+(for example, punctuation alone or one overlong token) fails closed instead of
+using that blank-scan exception.
+Real-engine fixtures additionally require known rendered marker strings to be
+extractable. No PDF or sidecar is published unless every validation passes.
+
+OCR rewrites the document and invalidates existing cryptographic signatures;
+the critical `signature-invalidated` security warning is emitted when a
+signature field is found. Passwords only unlock input. Output is unencrypted
+and carries critical `input-encryption-removed` when applicable.
 
 ## convert-images
 
@@ -361,12 +416,16 @@ not PDF/A, PDF/UA, typography equivalence, accessibility, or semantic identity.
   Single-document rotate/crop can retain active objects, while page-moving
   operations warn when document-level active content is dropped.
 
-## agent-brief (read-only diagnostics)
+## agent-brief (metadata diagnostics)
 
 `ldf agent-brief` opens and converts no document, publishes no output, and
 therefore introduces no fidelity warning code. It takes one normal live
 capability-probe snapshot and reports which registry-defined operations are
-implemented and whether their engines are currently available. Its guidance to
+implemented and whether their engines are currently available. The
+Ghostscript gate may convert a private synthetic one-page probe under a
+validated local temporary root, then attempts to remove that scratch tree; it
+never opens a user document or publishes the probe as an output. Cleanup
+failure makes the gate unavailable but may leave OS-locked scratch residue. Its guidance to
 inspect `warnings[]` uses that term as shorthand for the real conversion-report
 arrays, `security_warnings[]` and `fidelity_warnings[]`, whose entries carry
 stable `code` values.

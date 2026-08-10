@@ -80,6 +80,60 @@ def make_simple(directory: Path) -> None:
     )
 
 
+def _rasterized_pdf_page(source: Path, page_index: int, destination: Path) -> None:
+    """Render one source page and rebuild it as a PDF containing only an image."""
+    import pypdfium2 as pdfium
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+
+    document = pdfium.PdfDocument(str(source))
+    try:
+        page = document[page_index]
+        try:
+            width, height = page.get_size()
+            bitmap = page.render(scale=3)
+            try:
+                image = bitmap.to_pil().convert("RGB")
+            finally:
+                bitmap.close()
+        finally:
+            page.close()
+    finally:
+        document.close()
+
+    encoded = BytesIO()
+    image.save(encoded, format="PNG", optimize=False)
+    encoded.seek(0)
+    output = canvas.Canvas(
+        str(destination),
+        pagesize=(width, height),
+        pageCompression=1,
+        invariant=1,
+    )
+    output.drawImage(ImageReader(encoded), 0, 0, width=width, height=height)
+    output.showPage()
+    output.save()
+
+
+def make_ocr(directory: Path) -> None:
+    """Scanned and mixed PDFs with synthetic text visible only in page pixels."""
+    import pikepdf
+
+    source = directory / "simple-3page.pdf"
+    image_only = directory / "ocr-image-only.pdf"
+    rasterized_second = directory / "ocr-rasterized-page-2.pdf"
+    _rasterized_pdf_page(source, 0, image_only)
+    _rasterized_pdf_page(source, 1, rasterized_second)
+
+    with pikepdf.open(source) as born_digital, pikepdf.open(rasterized_second) as scan:
+        with pikepdf.new() as mixed:
+            mixed.pages.append(born_digital.pages[0])
+            mixed.pages.append(scan.pages[0])
+            mixed.save(directory / "ocr-mixed.pdf")
+
+    rasterized_second.unlink()
+
+
 def make_outline(directory: Path) -> None:
     _make_text_pdf(
         directory / "outline-6page.pdf",
@@ -526,7 +580,7 @@ def make_text_extraction(directory: Path) -> None:
     many.save()
 
 
-FIXTURES_VERSION = "fixtures generated v10 (pdf-to-md table extraction corpus)\n"
+FIXTURES_VERSION = "fixtures generated v11 (OCR image-only and mixed corpus)\n"
 
 
 def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
@@ -536,6 +590,7 @@ def ensure_fixtures(directory: Path = FIXTURES_DIR) -> Path:
         return directory
     directory.mkdir(parents=True, exist_ok=True)
     make_simple(directory)
+    make_ocr(directory)
     make_outline(directory)
     make_mixed_sizes(directory)
     make_fractional_size(directory)

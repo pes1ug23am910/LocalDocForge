@@ -51,7 +51,7 @@ source before anything was published.*
 |---|---|
 | Organize | merge (whole files or per-input page ranges) · split (ranges / every-N / single pages) · remove pages · extract pages · reorder/duplicate/reverse |
 | Edit | rotate · crop (with an explicit **crop is not redaction** warning) |
-| Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden |
+| Optimize | compress — lossless structural preset (stream recompression, object streams, unused-resource pruning). Image data is never re-encoded; sampled pages must render pixel-identical to the source or nothing is published; "didn't shrink" is reported, never hidden · OCR — best-effort text layers and optional UTF-8 sidecars through locked OCRmyPDF + separately installed Tesseract/Ghostscript; mixed/text PDFs are refused by default and force mode warns critically about rasterization |
 | Convert | PDF → UTF-8 Markdown/plain text/JSONL via PDFium (`pdf-to-md`, page anchors, per-page coverage, honest layout warnings, and opt-in conservative ruled tables through pdfplumber) · Markdown → validated PDF through Typst ≥0.15.1 (`md-to-pdf`, bounded CommonMark + GFM tables, local raster images, honest dropped-construct warnings) · images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
 | Inspect | page count, encryption, page sizes, per-page extracted character counts, annotations, outlines, forms, attachments, JavaScript presence |
 | Agent integration | deterministic `ldf agent-brief` Markdown/JSON generated from implemented `CAPABILITY_SPECS` plus one live capability probe, including usage, exit codes, gotchas, workflow, and feedback rules |
@@ -59,7 +59,7 @@ source before anything was published.*
 
 Everything above is covered by the repository's test suite and full release
 gate; dated counts and platform-scoped evidence are recorded in
-[`docs/STATUS.md`](docs/STATUS.md). OCR, Office conversion, lossy compression presets,
+[`docs/STATUS.md`](docs/STATUS.md). Office conversion, lossy compression presets,
 redaction, signatures, and the rest of the roadmap are **not implemented
 yet** and are honestly reported as unavailable by `ldf doctor` — see
 [`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md).
@@ -111,6 +111,13 @@ version 0.15.1 or newer. The Python package does not bundle Typst; when the
 probe is missing or too old, the capability remains visible but unavailable
 and the CLI exits 3 with the install hint from `ldf doctor`.
 
+`ocr` ships its locked OCRmyPDF Python orchestration dependency, but requires
+separately installed Tesseract and Ghostscript executables. All three live
+probes must pass before `ldf doctor` advertises OCR as available. LocalDocForge
+launches OCRmyPDF for conversion and uses Tesseract only for bounded engine and
+language-pack probes; Ghostscript is never bundled, imported, or directly
+executed by LocalDocForge.
+
 ## Everyday commands
 
 ```powershell
@@ -123,6 +130,7 @@ ldf organize input.pdf --order "3,1,2,4-end" -o out.pdf
 ldf rotate input.pdf --degrees 90 --pages odd -o out.pdf
 ldf crop input.pdf --box "50,50,400,500" -o out.pdf    # warns: NOT redaction
 ldf compress input.pdf -o smaller.pdf                  # lossless; images untouched
+ldf ocr scan.pdf -o searchable.pdf --sidecar scan.txt  # best-effort searchable layer
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
@@ -166,7 +174,16 @@ The report summarizes selected-page coverage and attributes the stable
 document text into the report. Absence of a table warning is not proof that a
 page has no table; it means only that the bounded heuristics found no caveat.
 For a page with no usable text layer, render it with
-`pdf-to-images --preset llm`.
+`pdf-to-images --preset llm`, or use `ocr` when its three engine probes pass.
+
+`ocr` refuses any input text layer by default. Use `--skip-text` for mixed
+documents to OCR only image-only pages, or `--force-ocr` to rasterize and
+re-OCR every page; force mode carries the critical `ocr-force-rasterized`
+warning because it re-encodes page content. Every successful result carries
+`ocr-text-approximate`. Requested sidecars are strict UTF-8/LF; under
+`--skip-text` they contain newly recognized text only, not text copied from
+skipped pages. All PDF pages are reopened and rendered, and sampled sidecar
+tokens must also be extractable through PDFium before either output publishes.
 
 `md-to-pdf` accepts strict UTF-8 `.md`/`.markdown` files and renders a bounded
 CommonMark subset plus GFM tables. Relative local raster images are validated,
@@ -224,11 +241,11 @@ recognizable network filesystem paths and non-loopback serving. It is
 application policy, not an OS firewall; a host firewall or offline VM
 remains the stronger guarantee.
 
-**Can it OCR / convert Office files / shrink scanned PDFs?** Not yet.
-Those are roadmap phases, and `ldf doctor` will keep saying so until each
-pipeline lands with tests. Lossless compression won't shrink scan-heavy
-PDFs much (their bytes are already JPEG data) — and the report tells you
-exactly that instead of pretending.
+**Can it OCR / convert Office files / shrink scanned PDFs?** OCR is implemented
+when the locked OCRmyPDF, Tesseract, and Ghostscript probes all pass; `ldf
+doctor` reports the live answer. Office conversion and lossy scan compression
+are still roadmap work. Lossless compression will not shrink scan-heavy PDFs
+much (their bytes are already JPEG data), and the report says so explicitly.
 
 **Why does `remove-pages` sometimes refuse?** Your document has structures
 (outlines, forms, internal links, tagged content) that this build cannot
@@ -265,7 +282,7 @@ reality. Start at [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Roadmap
 
-Lossy compression presets, repair, OCR, Office↔PDF, PDF/A, and
+Lossy compression presets, repair, Office↔PDF, PDF/A, and
 advanced PDF→Markdown borderless/merged-cell table and semantic reconstruction,
 editor, forms, encryption, redaction, signatures, compare, scanner
 acquisition, full browser UI — phased plan in

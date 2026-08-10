@@ -67,6 +67,7 @@ from localdocforge.jobs.workspace import (
 )
 from localdocforge.operations import images as image_ops
 from localdocforge.operations import markdown as markdown_ops
+from localdocforge.operations import ocr as ocr_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.operations import text as text_ops
@@ -1200,6 +1201,34 @@ def _run_compress(paths, output_dir, params, settings, progress=None):
     )
 
 
+def _run_ocr(paths, output_dir, params, settings, progress=None):
+    source = _one_input(paths, "ocr")
+    skip_text = _strict_bool_param(params, "skip_text", default=False)
+    force_ocr = _strict_bool_param(params, "force_ocr", default=False)
+    write_sidecar = _strict_bool_param(params, "sidecar", default=False)
+    if skip_text and force_ocr:
+        raise _ApiError(422, "'skip_text' and 'force_ocr' are mutually exclusive")
+    language = params.get("language", "eng")
+    try:
+        ocr_ops._language_codes(language)
+    except PipelineError as exc:
+        raise _ApiError(422, str(exc)) from exc
+    options = ocr_ops.OcrOptions(
+        language=language,
+        sidecar=output_dir / "document.txt" if write_sidecar else None,
+        skip_text=skip_text,
+        force_ocr=force_ocr,
+        collision=CollisionPolicy.RENAME,
+        settings=settings,
+        progress=progress,
+        password=params.get("password") or None,
+    )
+    try:
+        return ocr_ops.ocr_pdf(source, output_dir / "document.pdf", options=options)
+    except EngineUnavailableError as exc:
+        raise _ApiError(503, str(exc)) from exc
+
+
 def _run_images_to_pdf(paths, output_dir, params, settings, progress=None):
     margin = _float_param(params, "margin", default=24.0, minimum=0)
     dpi = _int_param(params, "dpi", default=200, minimum=36, maximum=600)
@@ -1360,6 +1389,7 @@ _OPERATIONS = {
     "rotate": _run_rotate,
     "crop": _run_crop,
     "compress": _run_compress,
+    "ocr": _run_ocr,
     "images-to-pdf": _run_images_to_pdf,
     "pdf-to-images": _run_pdf_to_images,
     "pdf-to-md": _run_pdf_to_md,
@@ -1376,6 +1406,7 @@ _OPERATION_PARAMS: dict[str, frozenset[str]] = {
     "rotate": frozenset({"degrees", "pages", "password"}),
     "crop": frozenset({"box", "pages", "password"}),
     "compress": frozenset({"preset", "password"}),
+    "ocr": frozenset({"language", "sidecar", "skip_text", "force_ocr", "password"}),
     "images-to-pdf": frozenset({"page_size", "fit", "margin", "background", "dpi", "quality"}),
     "pdf-to-images": frozenset(
         {"format", "dpi", "pages", "quality", "preset", "password"}

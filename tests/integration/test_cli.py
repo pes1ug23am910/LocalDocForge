@@ -22,7 +22,16 @@ from localdocforge.cli.main import (
     EXIT_USAGE,
     app,
 )
+from localdocforge.domain.models import (
+    ConversionReport,
+    FidelityWarning,
+    ReportStatus,
+    SecurityWarning,
+    WarningSeverity,
+)
 from localdocforge.engines.registry import CAPABILITY_SPECS, default_registry
+from localdocforge.operations.ocr import OcrToolFailure
+from localdocforge.pipelines.runner import PipelineError
 
 runner = CliRunner()
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,7 +69,8 @@ class TestDoctor:
         assert engines["pillow"]["available"] is True
         capabilities = {c["id"]: c for c in payload["capabilities"]}
         assert capabilities["merge"]["available"] is True
-        assert capabilities["ocr"]["available"] is False
+        live = {c.id: c for c in default_registry().capabilities()}
+        assert capabilities["ocr"]["available"] is live["ocr"].available
         assert capabilities["office-to-pdf"]["available"] is False
 
     def test_doctor_reports_strict_offline_state(self):
@@ -127,7 +137,7 @@ class TestAgentBrief:
             "review",
         ]
 
-    def test_global_options_preserve_stdout_only_read_only_behavior(
+    def test_global_options_preserve_metadata_command_boundaries(
         self, tmp_path, monkeypatch
     ):
         def forbidden_call(*_args, **_kwargs):
@@ -188,6 +198,7 @@ class TestVersionAndHelp:
             "merge",
             "split",
             "rotate",
+            "ocr",
             "pdf-to-md",
             "md-to-pdf",
             "doctor",
@@ -1185,6 +1196,258 @@ class TestCompressCommand:
         args = ["compress", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out)]
         assert runner.invoke(app, args).exit_code == 0
         assert runner.invoke(app, args).exit_code == EXIT_COLLISION
+
+
+class TestOcrCommand:
+    def test_cli_forwards_modes_language_sidecar_and_output(
+        self, fixtures_dir, out_dir, monkeypatch
+    ):
+        observed: dict[str, object] = {}
+
+        def fake_ocr(input_file, output, *, options):
+            observed.update(input=input_file, output=output, options=options)
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-ocr-cli",
+                engine="ocrmypdf",
+            )
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fake_ocr)
+        source = fixtures_dir / "ocr-mixed.pdf"
+        output = out_dir / "searchable.pdf"
+        sidecar = out_dir / "searchable.txt"
+        result = runner.invoke(
+            app,
+            [
+                "ocr",
+                str(source),
+                "-o",
+                str(output),
+                "--language",
+                "eng+deu",
+                "--sidecar",
+                str(sidecar),
+                "--skip-text",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        assert observed["input"] == source
+        assert observed["output"] == output
+        options = observed["options"]
+        assert options.language == "eng+deu"
+        assert options.sidecar == sidecar
+        assert options.skip_text is True
+        assert options.force_ocr is False
+
+    @pytest.mark.parametrize(
+        "extra",
+        [
+            ["--skip-text", "--force-ocr"],
+            ["--language", "eng;unsafe"],
+            ["--language", "eng++deu"],
+        ],
+    )
+    def test_invalid_modes_and_languages_are_usage_errors_before_operation(
+        self, fixtures_dir, out_dir, monkeypatch, extra
+    ):
+        monkeypatch.setattr(
+            cli_main.ocr_ops,
+            "ocr_pdf",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("invalid OCR CLI input must not reach the operation")
+            ),
+        )
+        result = runner.invoke(
+            app,
+            [
+                "ocr",
+                str(fixtures_dir / "ocr-image-only.pdf"),
+                "-o",
+                str(out_dir / "never.pdf"),
+                *extra,
+            ],
+        )
+        assert result.exit_code == EXIT_USAGE
+
+    @pytest.mark.parametrize("ldf_code", [EXIT_FAILED, EXIT_NO_ENGINE, 4])
+    def test_typed_ocr_failure_maps_to_its_ldf_exit_code_without_diagnostic_leak(
+        self, fixtures_dir, out_dir, monkeypatch, ldf_code
+    ):
+        secret = "PRIVATE-OCR-DIAGNOSTIC-2F8A"
+
+        def fail_ocr(*_args, **_kwargs):
+            failure = OcrToolFailure(10, ldf_code, "OCR failed safely")
+            error = PipelineError(str(failure))
+            error.add_note(secret)
+            raise error from failure
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fail_ocr)
+        result = runner.invoke(
+            app,
+            [
+                "ocr",
+                str(fixtures_dir / "ocr-image-only.pdf"),
+                "-o",
+                str(out_dir / "never.pdf"),
+            ],
+        )
+
+        assert result.exit_code == ldf_code
+        assert "OCR failed safely" in combined_output(result)
+        assert secret not in combined_output(result)
+
+    def test_quiet_force_ocr_still_emits_critical_fidelity_warning(
+        self, fixtures_dir, out_dir, monkeypatch
+    ):
+        critical_message = "Force OCR rasterized and re-encoded every page."
+        approximate_message = "OCR text remains approximate."
+
+        def fake_ocr(*_args, **_kwargs):
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-quiet-force-ocr",
+                fidelity_warnings=[
+                    FidelityWarning(
+                        code="ocr-text-approximate",
+                        message=approximate_message,
+                        severity=WarningSeverity.WARNING,
+                    ),
+                    FidelityWarning(
+                        code="ocr-force-rasterized",
+                        message=critical_message,
+                        severity=WarningSeverity.CRITICAL,
+                    ),
+                ],
+            )
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fake_ocr)
+        result = runner.invoke(
+            app,
+            [
+                "--quiet",
+                "ocr",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "forced.pdf"),
+                "--force-ocr",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        assert result.stderr.count(critical_message) == 1
+        assert approximate_message not in combined_output(result)
+
+    def test_human_report_does_not_duplicate_critical_fidelity_warning(
+        self, fixtures_dir, out_dir, monkeypatch
+    ):
+        critical_message = "Force OCR rasterized and re-encoded every page."
+
+        def fake_ocr(*_args, **_kwargs):
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-human-force-ocr",
+                fidelity_warnings=[
+                    FidelityWarning(
+                        code="ocr-force-rasterized",
+                        message=critical_message,
+                        severity=WarningSeverity.CRITICAL,
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fake_ocr)
+        result = runner.invoke(
+            app,
+            [
+                "ocr",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "forced-human.pdf"),
+                "--force-ocr",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        assert result.stdout.count(critical_message) == 1
+        assert critical_message not in result.stderr
+
+    def test_human_report_does_not_duplicate_security_warning(
+        self, fixtures_dir, out_dir, monkeypatch
+    ):
+        security_message = "OCR invalidated an existing signature."
+
+        def fake_ocr(*_args, **_kwargs):
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-human-signed-ocr",
+                security_warnings=[
+                    SecurityWarning(
+                        code="signature-invalidated",
+                        message=security_message,
+                        severity=WarningSeverity.CRITICAL,
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fake_ocr)
+        result = runner.invoke(
+            app,
+            [
+                "ocr",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "signed-human.pdf"),
+                "--force-ocr",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        assert result.stdout.count(security_message) == 1
+        assert security_message not in result.stderr
+
+    def test_json_report_retains_one_critical_warning_on_stderr(
+        self, fixtures_dir, out_dir, monkeypatch
+    ):
+        critical_message = "Force OCR rasterized and re-encoded every page."
+
+        def fake_ocr(*_args, **_kwargs):
+            return ConversionReport(
+                operation="ocr",
+                status=ReportStatus.SUCCESS,
+                job_id="synthetic-json-force-ocr",
+                fidelity_warnings=[
+                    FidelityWarning(
+                        code="ocr-force-rasterized",
+                        message=critical_message,
+                        severity=WarningSeverity.CRITICAL,
+                    )
+                ],
+            )
+
+        monkeypatch.setattr(cli_main.ocr_ops, "ocr_pdf", fake_ocr)
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "ocr",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "forced-json.pdf"),
+                "--force-ocr",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        payload = json.loads(result.stdout)
+        assert [item["message"] for item in payload["fidelity_warnings"]] == [
+            critical_message
+        ]
+        assert result.stderr.count(critical_message) == 1
 
 
 class TestInspectCommand:

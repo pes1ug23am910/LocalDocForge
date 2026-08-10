@@ -9,8 +9,8 @@ inherit these controls automatically.
 
 1. User documents and their filenames, metadata, annotations, attachments, and
    form values.
-2. Derived data: converted documents, rendered pages, extracted text, future
-   OCR data, reports, and temporary files.
+2. Derived data: converted documents, rendered pages, extracted/OCR text,
+   reports, and temporary files.
 3. Secrets: PDF passwords and future certificate passphrases/private keys.
 4. The user's filesystem, processes, and machine integrity.
 
@@ -216,6 +216,59 @@ inherit these controls automatically.
   Typst also has no native offline flag. These controls reduce command
   injection, executable hijacking, leakage, and orphaning; they do not make a
   user-installed binary trustworthy or deny its OS authority/network access.
+- `ocr` runs locked OCRmyPDF with an argv list, a private absolute working
+  directory, neutral input/output/sidecar names, workspace-local
+  HOME/USERPROFILE/TEMP,
+  one job, bounded diagnostics, configured image/temporary/page/output
+  ceilings, the remaining job timeout, and a 900-second absolute safety cap.
+  The API's outer worker enforces the configured process count; a standalone
+  CLI run narrows concurrency with `--jobs 1` and owns tree termination but has
+  no OS-enforced child-count limit.
+  The active environment's OCRmyPDF console script and narrow machine-vendor
+  registry locations for Tesseract/Ghostscript are checked before ordinary
+  absolute PATH entries; the current directory is never searched. The exact
+  resolved OCRmyPDF executable is bound to document launches, while the exact
+  Tesseract/Ghostscript directories are the only entries in its child PATH and
+  are rejected if either directory can cross-shadow the other engine. On
+  Windows, `NoDefaultCurrentDirectoryInExePath=1` also prevents OCRmyPDF's
+  descendant lookup from prepending its private working directory, and a
+  child-only `PATHEXT=.EXE` prevents same-directory `.com`/script wrappers
+  from outranking the probed native executables. This
+  prevents an earlier stale PATH copy from differing from the paths
+  LocalDocForge probed. Launch-time `OSError` races become a typed,
+  path-redacting tool failure rather than escaping the probe contract.
+  This is canonical-path and child-selection binding, not a content hash or
+  held executable lease; concurrent same-user replacement of an installed
+  engine at the same path remains outside the threat model.
+- Ghostscript is an explicit no-direct-launch exception: it is absent from the
+  executable allowlist and LocalDocForge cannot call `run_tool("ghostscript")`.
+  Its live gate runs a tiny private one-page image PDF through OCRmyPDF's null
+  OCR engine, Ghostscript rasterizer, and PDF/A-2 path; success requires a
+  bounded, structurally valid one-page output. OCRmyPDF—not LocalDocForge—starts
+  the separately installed AGPL program as a child. Tesseract is called
+  directly only for bounded engine/language-pack probes; OCR conversion itself
+  is launched through OCRmyPDF. The probe's 20-second/64 KiB process bounds are
+  enforced during execution; its 16 MiB/256-entry workspace ceilings are
+  post-run checks, not an OS disk quota. Before writing its synthetic input,
+  the probe requires an existing validated local, non-reparse temp root; a
+  recognized remote or unsafe configured temp location makes Ghostscript
+  unavailable. As elsewhere in strict-offline enforcement, an ordinary POSIX
+  network mount cannot be distinguished from a local mount.
+- OCRmyPDF, Tesseract, Ghostscript, PDFium, and their native parsers remain
+  trusted-code risks with same-user OS authority. Process-group/job-object
+  containment, time/resource bounds, neutral paths, link rejection, and
+  validate-before-publish reduce impact; they are not an OS sandbox.
+- OCR output validation counts PDFium text before extraction, applies the
+  configured per-page memory preflight and cumulative decompressed-text limit
+  across every page, and measures the raw-plus-normalized sidecar duplication
+  peak before cleanup. Before each validation render, finite page geometry must
+  fit the stricter configured-pixel or conservative memory-derived pixel cap;
+  cancellation and the remaining OCR deadline are rechecked between pages.
+  A zero image-pixel limit is refused instead of forwarding OCRmyPDF's
+  counterintuitive “disable the limit” value. The API outer worker additionally monitors transient
+  job-tree disk use while the engine runs; standalone CLI checks occur before
+  and after the synchronous engine call and therefore are not a continuous
+  disk-usage sandbox.
 
 ### T5. Sensitive-data leakage
 
@@ -253,6 +306,12 @@ inherit these controls automatically.
   text, link destinations, asset source paths from operation details, generated
   Typst, and raw tool diagnostics. The ordinary CLI artifact list still names
   user-selected inputs/outputs as documented; API reports basename-scrub them.
+- `ocr` reports only language/mode, text-layer page counts, aggregate coverage,
+  bounded warning codes, validation checks, and engine/version. Raw OCRmyPDF
+  diagnostics, recognized document text, sidecar tokens, and private workspace
+  paths are withheld. Outside the cleaned private workspace, recognized text
+  persists only in the requested PDF/sidecar artifacts; API report/path
+  scrubbing and worker IPC bounds apply unchanged.
 - Admission precedes multipart parsing. API transport uses a random contained
   `.transport-*` directory beneath the private session and is aggregate-bounded
   by the upload, enabled input, and enabled temporary-byte ceilings. Handles and
@@ -349,7 +408,7 @@ inherit these controls automatically.
 
 ### T8. Unavailable security-sensitive capabilities
 
-Lossy compression presets, repair, OCR, Office-to-PDF, HTML-to-PDF,
+Lossy compression presets, repair, Office-to-PDF, HTML-to-PDF,
 PDF/A or PDF/UA validation/conversion, form editing, encryption/protection
 tools, secure redaction, signatures, compare, scanner/camera acquisition, and
 a full browser job UI are unavailable. UI capability lists and `ldf doctor`

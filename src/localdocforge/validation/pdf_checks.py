@@ -8,13 +8,14 @@ render failures are hard failures.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from localdocforge.domain.models import ValidationCheck, ValidationResult
 from localdocforge.security.sniff import detect_media_type
 
 _BLANK_THRESHOLD = 250  # grayscale floor above which a rendered page counts as blank
-_RENDER_SCALE = 0.5  # ~36 dpi — enough to detect blank/corrupt pages cheaply
+PDF_VALIDATION_RENDER_SCALE = 0.5  # ~36 dpi — detect blank/corrupt pages cheaply
 
 
 def count_pdf_pages(path: Path, password: str | None = None) -> int:
@@ -65,11 +66,13 @@ def validate_pdf(
     render_sample_limit: int | None = None,
     forbid_all_blank: bool = False,
     password: str | None = None,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> ValidationResult:
-    """Validate a generated PDF. Never raises; failures land in the result.
+    """Validate a generated PDF; ordinary failures land in the result.
 
     ``render_sample_limit`` caps how many pages are rendered (evenly sampled);
     high-risk operations pass ``None`` to render every page.
+    Exceptions from an explicit cancellation callback propagate immediately.
     """
     checks: list[ValidationCheck] = []
 
@@ -159,8 +162,15 @@ def validate_pdf(
         blank_pages: list[int] = []
         render_failures: list[int] = []
         for index in indices:
+            if check_cancelled is not None:
+                check_cancelled()
             try:
-                image = render_pdf_page(path, index, scale=_RENDER_SCALE, password=password)
+                image = render_pdf_page(
+                    path,
+                    index,
+                    scale=PDF_VALIDATION_RENDER_SCALE,
+                    password=password,
+                )
                 try:
                     if _page_is_blank(image):
                         blank_pages.append(index + 1)
@@ -168,6 +178,8 @@ def validate_pdf(
                     image.close()
             except Exception:
                 render_failures.append(index + 1)
+            if check_cancelled is not None:
+                check_cancelled()
         checks.append(
             ValidationCheck(
                 name="render",

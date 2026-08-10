@@ -291,7 +291,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "May inspect attacker-controlled byte strings reached through pdfminer.six's PDF parsing path."
+          "value": "May inspect attacker-controlled byte strings reached through pdfminer.six's OCR and table-extraction PDF parsing paths."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -347,7 +347,7 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "Transitive text-encoding detector used by pdfminer.six."
+          "value": "Transitive text-encoding detector used by pdfminer.six in OCR and table-extraction paths."
         }
       ],
       "purl": "pkg:pypi/charset-normalizer@3.4.9",
@@ -465,7 +465,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "pdfminer.six uses cryptography for PDF RC4/AES decryption. Its path does not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component."
+          "value": "pdfminer.six uses cryptography for PDF RC4/AES decryption in OCR and table-extraction paths. Those paths do not call the PKCS#7 EnvelopedData decryption API affected by GHSA-g6cj-pr64-35w5, but the fixed floor avoids shipping a known-affected component."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -521,12 +521,370 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5."
+          "value": "Directly constrained transitive dependency used by pdfminer.six for encrypted-PDF RC4/AES support in OCR and table-extraction paths; 50.0.0 is the fixed floor for GHSA-g6cj-pr64-35w5."
         }
       ],
       "purl": "pkg:pypi/cryptography@50.0.0",
       "type": "library",
       "version": "50.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/defusedxml@0.7.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/tiran/defusedxml/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/defusedxml/0.7.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/tiran/defusedxml/v0.7.1/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "PSF-2.0"
+          }
+        }
+      ],
+      "name": "defusedxml",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The package is present through fpdf2; any XML it parses in the OCR closure is generated or derived within the bounded OCR pipeline rather than exposed as a standalone user XML input."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep defusedxml and fpdf2 jointly hash-locked and do not replace hardened XML parsing with permissive standard-library parsers."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "PSF-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed defusedxml 0.7.1 metadata reports PSFL and installed LICENSE SHA256=b80ce9da8c42a1f91079627fbbe2bf27210ae108a0ffe5f077d5b08e076c24c8."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69,sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Resource exhaustion and application-level misuse remain possible despite entity-expansion defenses and empty exact-version advisory results."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Hardened XML helper pulled by fpdf2 in OCRmyPDF's searchable-text-layer closure."
+        }
+      ],
+      "purl": "pkg:pypi/defusedxml@0.7.1",
+      "type": "library",
+      "version": "0.7.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/fonttools@4.63.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/fonttools/fonttools/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/fonttools/4.63.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/fonttools/fonttools/4.63.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND BSD-3-Clause AND MIT"
+        }
+      ],
+      "name": "fonttools",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "OCR-derived text can drive glyph selection and subsetting through fpdf2, while the supported OCR pipeline selects trusted packaged fonts rather than attacker-supplied font files."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep FontTools and fpdf2 jointly hash-locked, retain trusted-font selection and resource limits, and re-review before accepting external fonts."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 AND BSD-3-Clause AND MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed FontTools 4.63.0 licenses/LICENSE SHA256=22bef80697ecfaa17f97e62b9a26dfa12820be05583e8dd12ad169b241274c99 provides the primary MIT terms. Installed licenses/LICENSE.external SHA256=b082a5f86775b2641f01bccb8b9c82908481de5f502bb254b1e13bfc2a9f303d preserves Adobe AGL/AGLFN BSD-3-Clause, cu2qu Apache-2.0, and PyFilesystem-derived MIT notices. Licensed test fonts named by that aggregate file are absent from the installed wheel payload."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel-composite"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "34"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0eac00b9118c3c2f87d272e45341871c5b3066baa3c86897fa634a7c3fb59096,sha256:1e874792a8212b44583ea02189d9e693906b2f78b261f372f95d6c563210ac1d,sha256:22135da48a348785c5e2d5d2d9d6bec5ed44adacbaeb9db12d9493bf6c6bfa68,sha256:22693918177bd9ceabec4736d338045f357769416fc6b0b2508eefef75b08616,sha256:27fdc65af8da6f88b9c6121c47a464cbe359fcfff7ff6fc2d37a1f395d755b78,sha256:308f957cdeaf8abe4e5f2f124902ef405448af92c90f80e302a3b771c2e6116b,sha256:37dd23e621e3b0aef1baa70a303b80aaf38449632cfc8fd2a55fb285bbccfc02,sha256:445af2eab030a16b9171ea8bdda7ebf7d96bda2df88ee182a464252f6e05e20d,sha256:51394295f1a51de8b5f30bdb1e1b9a4231536c7064ef5c6e211eec19fa36036f,sha256:58dc6bb86a78d782f00f9190ca02c119cf5bbe2807536e361e18d42019f877d8,sha256:59ac449f8cca9b4ffa08d2e7bbadad87ce710d69d1eda5c3c1ce579baa987272,sha256:6b2248c5decb223562f7902ff6325077a073f608ee8e33e88ad88db734eb9f49,sha256:6d4741eb179121cab9eea4cb2393d24492373a260d7945006358c08cfbf45419,sha256:6db5140a60a5d731d21ec076745b40a310607731b0a565b50776393188649001,sha256:6e528da43bc3791085f8cb6141b1d13e459226790240340fcbb4625649238b03,sha256:796f27556dbe094c4824f75ca85267e4df776c79036c8441469a4df37038c196,sha256:7d76edbff9014094dbf03bd2d074709dfa6ec7aba13d838c937a2b33d2d6a86e,sha256:7d782fac32985914c351556f68ac0855391572bcd87de50e05970d3cd4c96fc5,sha256:85be818f5506e8a7753153def2c9550178f0ecae6a47b5e0e8dbb23f7cc90380,sha256:948428a275741f0b64b113c955425a953314f4b9ab9997f73a72c83e68e569c8,sha256:9ced0bd02ac751dd6319b0da88aaef24414e3b0dbc32bb4f24944821a3741a27,sha256:9e12f105d2b6342c559c298afb674006bb2893afc7102dcf8a1b55b0486b4e40,sha256:a9faff9e0c1f76f9fd55899d2ce785832efebab37eb8ae13995853aef178bef0,sha256:af2fd1664d00a397d75f806985ddb36282091c2131a73a6485c23b4a34722263,sha256:ba04cb5891d4c0c21b6da95eda8d7b090021508a294fff33464fc7d241e0856b,sha256:bf00f21eb5fb721dbaf73d1e9da6d02a1af7768f2ebcf9798be98beab8ba90f6,sha256:c1aaa4b9c75798400ac043ce04d74e7830376c85095a5a6ed7cba2f17a266bf4,sha256:c2a2a42198b696a6f48fad91709afb55176e66a5e566131219dba372fb7f8c59,sha256:caeb583deeb5168e694b65cda8b4ee62abedfa66cf88488734466f2366b9c4e0,sha256:ccf41f2efdf56994d22d73bef4ced1052161958169428d06ba9724ea9e9a64be,sha256:cd7e9857e5e63738b9d9fd707bc1f59c8b09e5177726d23664db393c59bb08bd,sha256:ee08ebfa58f6e1aeff5697ab9582105bb620008c1caafb681e4c557e7483027b,sha256:ef3048ef05dbb552b89817713d9cac912e00d0fde4a3105c00d29e52e10c89af,sha256:fd1e3094f42d806d3d7c79162fc59e5910fcbe3a7360c385b8da969bc4493745"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native extensions and complex font tables can contain unpublished parser or resource-exhaustion defects even when the supported font inputs are trusted."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Font parsing and subsetting dependency of fpdf2 for OCR-generated searchable text layers."
+        }
+      ],
+      "purl": "pkg:pypi/fonttools@4.63.0",
+      "type": "library",
+      "version": "4.63.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/fpdf2@2.8.7",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/py-pdf/fpdf2/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/fpdf2/2.8.7/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/py-pdf/fpdf2/2.8.7/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-only"
+          }
+        }
+      ],
+      "name": "fpdf2",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "OCR-derived text and page geometry reach fpdf2 through OCRmyPDF; trusted bundled fonts are used by the supported pipeline."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact hash lock and LGPL-3.0-only terms, retain bounded OCR execution, and re-review before enabling arbitrary fonts or additional fpdf2 surfaces."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "LGPL-3.0-only"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed fpdf2 2.8.7 metadata declares License-Expression: LGPL-3.0-only; installed licenses/LICENSE SHA256=f97bc4bb9b7ae8a653941073678b5c7775e8de44a01c3bcc21e7cdc148b90e61."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:7060ccee5a9c7ab0a271fb765a36a23639f83ef8996c34e3d46af0a17ede57f9,sha256:d391fc508a3ce02fc43a577c830cda4fe6f37646f2d143d489839940932fbc19"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Pathological text, layout, font-subsetting, or PDF serialization states may consume excessive resources or produce malformed output despite downstream validation."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "PDF-generation dependency used by OCRmyPDF when composing searchable text layers from OCR-derived text."
+        }
+      ],
+      "purl": "pkg:pypi/fpdf2@2.8.7",
+      "type": "library",
+      "version": "2.8.7"
+    },
+    {
+      "bom-ref": "pkg:pypi/img2pdf@0.6.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://gitlab.mister-muffin.de/josch/img2pdf"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/img2pdf/0.6.3/"
+        },
+        {
+          "type": "license",
+          "url": "https://gitlab.mister-muffin.de/josch/img2pdf/raw/tag/0.6.3/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "img2pdf",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "OCRmyPDF passes raster page data derived from attacker-controlled PDFs to img2pdf inside the bounded conversion worker."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep img2pdf, Pillow, and pikepdf jointly hash-locked; bound page dimensions and total decoded pixels; validate every emitted PDF."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "LGPL-3.0-or-later"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "The img2pdf 0.6.3 source header grants LGPL version 3 or, at the recipient's option, any later version; installed licenses/LICENSE SHA256=e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:219518020f5bd242bdc46493941ea3f756f664c2e86f2454721e74353f58cd95,sha256:44d12d235752edd17c43c04ff39952cdc5dd4c6aba90569c4902bd445085266b"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Crafted dimensions, metadata, or codec interactions may cause memory pressure, denial of service, or fidelity defects without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Image-to-PDF serialization dependency used by OCRmyPDF for raster page reconstruction."
+        }
+      ],
+      "purl": "pkg:pypi/img2pdf@0.6.3",
+      "type": "library",
+      "version": "0.6.3"
     },
     {
       "bom-ref": "pkg:pypi/lxml@6.1.1",
@@ -795,6 +1153,94 @@
       "version": "0.1.2"
     },
     {
+      "bom-ref": "pkg:pypi/ocrmypdf@17.8.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/ocrmypdf/OCRmyPDF/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/ocrmypdf/17.8.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/v17.8.1/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib"
+        }
+      ],
+      "name": "ocrmypdf",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled PDF structure and page content reach OCRmyPDF inside a resource-bounded worker; OCRmyPDF then coordinates external Tesseract and Ghostscript subprocesses through the product's bounded subprocess boundary."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep OCRmyPDF and its exact closure hash-locked, preserve text-layer refusal defaults and worker/subprocess limits, and repeat license, native, and advisory review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed OCRmyPDF 17.8.1 metadata declares MPL-2.0 and preserves LICENSE SHA256=1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5. The installed wheel also contains NotoSans-Regular.ttf (556216 bytes, SHA256=2ec33f84606cbaa0a1a944488e14f97faf2f6a25ecdd8354f5358f06da13c7d9; name table Version 2.007, Copyright 2015-2021 Google LLC, OFL-1.1), Occulta.ttf (12512 bytes, SHA256=a1abee200c4d1b3d51295e0d9618b90883e67e3224c50cb31949f46933171903; exact-tag REUSE Copyright (C) 2026 James R. Barlow, Apache-2.0), and sRGB.icc (6922 bytes, SHA256=2a92d4bae450b76d8b0aa42193df974d75f62738ecebf74f01c5e75b12a95796; exact-tag REUSE names Kai-Uwe Behrmann, Marti Maria, Photogamut, Graeme Gill, and ColorSolutions under Zlib). The wheel omits separate OFL/Apache/Zlib asset-license files, so generated notices restore the source-bound terms."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel-with-bundled-asset-notices-restored"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:6f72e4da5fd7805e5d677c0fc55ad380c70e1c7ad33dd9ce2402575194803e08,sha256:df236ea84b6c5d9d1979fd410ca786b67da428a9e6cb0b26654e3039ac129704"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Complex PDFs and rasterized pages may trigger unpublished parser, orchestration, or denial-of-service defects across OCRmyPDF and the separately installed engines; empty advisory results are not a safety guarantee."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "OCR pipeline orchestrator for attacker-controlled PDFs. It runs inside the bounded job worker and coordinates separately installed Tesseract and Ghostscript subprocess engines."
+        }
+      ],
+      "purl": "pkg:pypi/ocrmypdf@17.8.1",
+      "type": "library",
+      "version": "17.8.1"
+    },
+    {
       "bom-ref": "pkg:pypi/packaging@26.2",
       "externalReferences": [
         {
@@ -903,7 +1349,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "Untrusted PDF structure reaches pdfminer.six only in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API."
+          "value": "Untrusted PDF structure reaches pdfminer.six through the OCR pipeline and in explicit table mode through pdfplumber; encrypted-PDF paths may reach cryptography's RC4/AES primitives but not its PKCS#7 EnvelopedData API."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -911,7 +1357,7 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Keep pdfminer.six exactly paired with pdfplumber's pin, contain parsing, and repeat exact-version review on either upgrade."
+          "value": "Keep pdfminer.six exactly pinned without moving the S5-reviewed cryptography floor, contain parsing, and repeat exact-version review on OCRmyPDF, pdfplumber, or pdfminer.six upgrades."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
@@ -959,7 +1405,7 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "Transitive parser behind pdfplumber for table characters, lines, and coordinates in opt-in table mode."
+          "value": "PDF parser used by OCRmyPDF for PDF analysis and by pdfplumber for table characters, lines, and coordinates in opt-in table mode."
         }
       ],
       "purl": "pkg:pypi/pdfminer-six@20260107",
@@ -1317,6 +1763,96 @@
       "purl": "pkg:pypi/pillow@12.3.0",
       "type": "library",
       "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pluggy@1.6.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pytest-dev/pluggy/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pluggy/1.6.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pytest-dev/pluggy/1.6.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pluggy",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "OCRmyPDF invokes pluggy hooks, but LocalDocForge does not expose arbitrary plugin loading from document input or command arguments."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the exact lock and restrict OCRmyPDF plugins to trusted installed code; re-review before exposing user-selectable plugin paths."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed pluggy 1.6.0 metadata declares MIT and installed licenses/LICENSE SHA256=d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3,sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "A compromised or unexpectedly discovered local plugin executes with worker privileges; advisory databases cannot assess local plugin trust."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Plugin dispatch framework used internally by OCRmyPDF's engine and pipeline hooks."
+        }
+      ],
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
     },
     {
       "bom-ref": "pkg:pypi/pycparser@3.0",
@@ -2361,6 +2897,96 @@
       "purl": "pkg:pypi/typing-inspection@0.4.2",
       "type": "library",
       "version": "0.4.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/uharfbuzz@0.55.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/harfbuzz/uharfbuzz/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/uharfbuzz/0.55.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/harfbuzz/uharfbuzz/v0.55.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "uharfbuzz",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "OCR-derived attacker-controlled text reaches uharfbuzz with trusted bundled fonts during searchable-text-layer construction; the binding's native extension embeds HarfBuzz 14.2.1."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep uharfbuzz and embedded HarfBuzz jointly current, hash-lock the exact wheel, retain trusted-font selection and worker limits, and re-inventory the native version on every wheel upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "Installed uharfbuzz 0.55.0 licenses/LICENSE SHA256=1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6. Windows CPython 3.14 _harfbuzz.pyd is 3000320 bytes with SHA256=58e72b8958e586a9dbad690d6c5ce732063a3f48834ee44e95dc4698a505478c; uharfbuzz.version_string() reports embedded HarfBuzz 14.2.1."
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-source-installed-wheel-and-runtime-native-version"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "8"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:13304721967d55e9718200453cae30f7952f95244af4b0fcb4561e8b456f5357,sha256:22415eaa87c670fac764053edfaebce1e05babd2cecb0e933170019ed3263109,sha256:40df0ff4d0c7af29c07a8adc614fb0dd421d9c4d8a139362a80a4ceb71e94a71,sha256:4d880af9e5b6f353945b5f5cd43c6989a01eb14ba327323b6b53f9c831ced801,sha256:72f653625e33f68dda56b258b4b9dcd2ff9c9e4f21fd53c7bbff9d9620c4fba0,sha256:7daeb0ba227246ed8a5a59f64fa23ecec282bc0af13167752d51ae304d20852a,sha256:a29bda4c147c35240a71051315423b1933b46eac558a72f55d9ffdc1f2bbb69f,sha256:d594f9e02a21745846477f02e13e900bfe9a697bad975fb3c26e241b7a8256c1"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native shaping code may contain unpublished memory-safety or complexity defects; trusted fonts narrow but do not eliminate risk from hostile text sequences."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Python binding used by OCRmyPDF for native HarfBuzz text shaping in searchable OCR layers."
+        }
+      ],
+      "purl": "pkg:pypi/uharfbuzz@0.55.0",
+      "type": "library",
+      "version": "0.55.0"
     },
     {
       "bom-ref": "pkg:cargo/asn1@0.24.1",
@@ -5151,7 +5777,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "No attacker-supplied font/shaping path is enabled in current operations."
+          "value": "OCR-derived attacker-controlled text reaches HarfBuzz through uharfbuzz with trusted bundled fonts; no supported operation accepts attacker-supplied font files."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -5159,15 +5785,15 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Keep the Pillow wheel current and repeat review before adding text/font rendering."
+          "value": "Keep the Pillow and uharfbuzz wheels jointly current, retain trusted-font selection and worker limits, and repeat exact native review on either wheel upgrade."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
-          "value": "2026-07-19"
+          "value": "2026-08-10"
         },
         {
           "name": "localdocforge:bundledBy",
-          "value": "Pillow codec bundle"
+          "value": "Pillow codec bundle and uharfbuzz 0.55.0"
         },
         {
           "name": "localdocforge:componentKind",
@@ -5179,7 +5805,7 @@
         },
         {
           "name": "localdocforge:licenseLocalVersionEvidence",
-          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1"
+          "value": "Pillow 12.3.0 wheel licenses/LICENSE heading harfbuzz-14.2.1; installed uharfbuzz 0.55.0 _harfbuzz.pyd SHA256=58e72b8958e586a9dbad690d6c5ce732063a3f48834ee44e95dc4698a505478c and uharfbuzz.version_string() reports 14.2.1"
         },
         {
           "name": "localdocforge:licenseVerification",
@@ -5191,11 +5817,11 @@
         },
         {
           "name": "localdocforge:residualRisk",
-          "value": "Published historical HarfBuzz advisories demonstrate a native font attack surface if reachability changes."
+          "value": "Published historical HarfBuzz advisories demonstrate a native shaping attack surface; trusted fonts narrow but do not eliminate risk from hostile text sequences."
         },
         {
           "name": "localdocforge:role",
-          "value": "Native text-shaping library bundled by Pillow; current conversions do not accept external fonts."
+          "value": "Native text-shaping library bundled by Pillow and embedded by uharfbuzz; OCR-derived text reaches it through uharfbuzz with trusted bundled fonts."
         }
       ],
       "purl": "pkg:generic/harfbuzz@14.2.1",
@@ -8090,9 +8716,33 @@
       "ref": "pkg:pypi/cryptography@50.0.0"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:pypi/defusedxml@0.7.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/fonttools@4.63.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/defusedxml@0.7.1",
+        "pkg:pypi/fonttools@4.63.0",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/fpdf2@2.8.7"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pikepdf@10.10.0",
+        "pkg:pypi/pillow@12.3.0"
+      ],
+      "ref": "pkg:pypi/img2pdf@0.6.3"
+    },
+    {
       "dependsOn": [
         "pkg:pypi/cryptography@50.0.0",
         "pkg:pypi/markdown-it-py@4.2.0",
+        "pkg:pypi/ocrmypdf@17.8.1",
         "pkg:pypi/pdfplumber@0.11.10",
         "pkg:pypi/pi-heif@1.4.0",
         "pkg:pypi/pikepdf@10.10.0",
@@ -8117,6 +8767,24 @@
     {
       "dependsOn": [],
       "ref": "pkg:pypi/mdurl@0.1.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/fpdf2@2.8.7",
+        "pkg:pypi/img2pdf@0.6.3",
+        "pkg:pypi/packaging@26.2",
+        "pkg:pypi/pdfminer-six@20260107",
+        "pkg:pypi/pi-heif@1.4.0",
+        "pkg:pypi/pikepdf@10.10.0",
+        "pkg:pypi/pillow@12.3.0",
+        "pkg:pypi/pluggy@1.6.0",
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/pypdfium2@5.12.1",
+        "pkg:pypi/rich@15.0.0",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/uharfbuzz@0.55.0"
+      ],
+      "ref": "pkg:pypi/ocrmypdf@17.8.1"
     },
     {
       "dependsOn": [],
@@ -8159,6 +8827,10 @@
         "pkg:generic/pillow%20codec%20bundle@12.3.0"
       ],
       "ref": "pkg:pypi/pillow@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pluggy@1.6.0"
     },
     {
       "dependsOn": [],
@@ -8230,6 +8902,12 @@
         "pkg:pypi/typing-extensions@4.16.0"
       ],
       "ref": "pkg:pypi/typing-inspection@0.4.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:generic/harfbuzz@14.2.1"
+      ],
+      "ref": "pkg:pypi/uharfbuzz@0.55.0"
     },
     {
       "dependsOn": [],
@@ -8338,7 +9016,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "3bacaad72cc5aa5f6ecf5b1464a7a10c0a90cf33a682f04b8033a5e3067c4a26"
+        "value": "082bbce44c0fde91eddac3778402c122efd8a42344b4ba0d670ef49bbed5c03d"
       },
       {
         "name": "localdocforge:advisoryReview",

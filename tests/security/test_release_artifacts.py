@@ -13,13 +13,14 @@ ROOT = Path(__file__).resolve().parents[2]
 GENERATOR_PATH = ROOT / "scripts" / "generate_release_artifacts.py"
 REPORT_PATH = ROOT / "docs" / "ADVISORY_REPORT.json"
 PROFILES = ("lite", "standard", "full")
-PYTHON_COUNTS = {"lite": 27, "standard": 35, "full": 36}
+PYTHON_COUNTS = {"lite": 34, "standard": 42, "full": 43}
 NATIVE_COUNT = 52
 UNVERSIONED_COUNT = 19
 REVIEW_DATES = {"2026-07-19", "2026-08-08", "2026-08-09", "2026-08-10"}
 BASE_DIRECT = {
     "pkg:pypi/cryptography@50.0.0",
     "pkg:pypi/markdown-it-py@4.2.0",
+    "pkg:pypi/ocrmypdf@17.8.1",
     "pkg:pypi/pdfplumber@0.11.10",
     "pkg:pypi/pi-heif@1.4.0",
     "pkg:pypi/pikepdf@10.10.0",
@@ -187,6 +188,24 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
             "pkg:pypi/pillow@12.3.0",
             "pkg:pypi/pypdfium2@5.12.1",
         }
+        assert dependency_map["pkg:pypi/ocrmypdf@17.8.1"] == {
+            "pkg:pypi/fpdf2@2.8.7",
+            "pkg:pypi/img2pdf@0.6.3",
+            "pkg:pypi/packaging@26.2",
+            "pkg:pypi/pdfminer-six@20260107",
+            "pkg:pypi/pi-heif@1.4.0",
+            "pkg:pypi/pikepdf@10.10.0",
+            "pkg:pypi/pillow@12.3.0",
+            "pkg:pypi/pluggy@1.6.0",
+            "pkg:pypi/pydantic@2.13.4",
+            "pkg:pypi/pypdfium2@5.12.1",
+            "pkg:pypi/rich@15.0.0",
+            "pkg:pypi/typing-extensions@4.16.0",
+            "pkg:pypi/uharfbuzz@0.55.0",
+        }
+        assert dependency_map["pkg:pypi/uharfbuzz@0.55.0"] == {
+            "pkg:generic/harfbuzz@14.2.1"
+        }
         assert dependency_map["pkg:pypi/cryptography@50.0.0"] == {
             "pkg:cargo/cryptography-rust@0.50.0",
             "pkg:pypi/cffi@2.1.0",
@@ -270,6 +289,21 @@ def test_cyclonedx_16_profile_shape_scope_and_findings():
         assert by_ref["pkg:pypi/pdfminer-six@20260107"]["licenses"] == [
             {"expression": "MIT AND Apache-2.0"}
         ]
+        assert by_ref["pkg:pypi/ocrmypdf@17.8.1"]["licenses"] == [
+            {"expression": "Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib"}
+        ]
+        assert by_ref["pkg:pypi/fpdf2@2.8.7"]["licenses"] == [
+            {"license": {"id": "LGPL-3.0-only"}}
+        ]
+        assert by_ref["pkg:pypi/img2pdf@0.6.3"]["licenses"] == [
+            {"license": {"id": "LGPL-3.0-or-later"}}
+        ]
+        assert by_ref["pkg:pypi/fonttools@4.63.0"]["licenses"] == [
+            {"expression": "Apache-2.0 AND BSD-3-Clause AND MIT"}
+        ]
+        assert by_ref["pkg:pypi/uharfbuzz@0.55.0"]["licenses"] == [
+            {"license": {"id": "Apache-2.0"}}
+        ]
         assert _properties(by_ref["pkg:generic/openjpeg@2.5.4"])[
             "localdocforge:advisoryDisposition"
         ] == "affected"
@@ -314,15 +348,15 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     assert all(source["exactVersions"] for source in refresh["sources"])
     assert all(source["conclusion"] for source in refresh["sources"])
     assert all(source["disposition"] for source in refresh["sources"])
-    assert report["scope"]["versionedReviewRecordCount"] == 88
+    assert report["scope"]["versionedReviewRecordCount"] == 95
     assert report["scope"]["versionedBundledNativeComponents"] == NATIVE_COUNT
     assert report["scope"]["unversionedNestedNativeComponents"] == UNVERSIONED_COUNT
     assert report["scope"]["optionalEngines"]["reviewed"] is False
     assert "Typst 0.15.1 is an enabled" in report["scope"]["optionalEngines"]["reason"]
     components = report["components"]
-    assert len({component["bomRef"] for component in components}) == 88
+    assert len({component["bomRef"] for component in components}) == 95
     assert Counter(component["kind"] for component in components) == {
-        "runtime-python": 36,
+        "runtime-python": 43,
         "bundled-native": NATIVE_COUNT,
     }
     assert Counter(
@@ -412,6 +446,7 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
     ]
 
     cryptography = by_ref["pkg:pypi/cryptography@50.0.0"]
+    assert cryptography["version"] == "50.0.0"
     assert cryptography["reviewDate"] == "2026-08-10"
     assert cryptography["license"]["concluded"] == "Apache-2.0 OR BSD-3-Clause"
     assert "GHSA-g6cj-pr64-35w5" in cryptography["security"]["upstream"]
@@ -429,7 +464,54 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
         "Apache-2.0"
     )
 
+    ocrmypdf = by_ref["pkg:pypi/ocrmypdf@17.8.1"]
+    assert ocrmypdf["license"]["concluded"] == (
+        "Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib"
+    )
+    assert "NotoSans-Regular.ttf" in ocrmypdf["license"]["localVersionEvidence"]
+    assert "Occulta.ttf" in ocrmypdf["license"]["localVersionEvidence"]
+    assert "sRGB.icc" in ocrmypdf["license"]["localVersionEvidence"]
+    ocr_notices = ocrmypdf["license"]["preservedNotices"]
+    assert [notice.get("textId") for notice in ocr_notices] == [
+        "OFL-1.1",
+        "Apache-2.0",
+        None,
+        "Zlib",
+    ]
+    assert ocr_notices[0]["sourceSha256"] == (
+        "1d361a8f8e8ce6e68457dcd93fb56e162e6baa3bbb7e7573a290d44399f6b57e"
+    )
+    assert "Marti Maria" in ocr_notices[2]["text"]
+    assert ocr_notices[3]["sourceSha256"] == (
+        "bfb1112d49db5b1daecdfef24bd7e2f3ea0bafb33aa67aa0ab51e2bf8407c03d"
+    )
+    assert by_ref["pkg:pypi/fpdf2@2.8.7"]["license"]["concluded"] == (
+        "LGPL-3.0-only"
+    )
+    assert by_ref["pkg:pypi/img2pdf@0.6.3"]["license"]["concluded"] == (
+        "LGPL-3.0-or-later"
+    )
+    assert by_ref["pkg:pypi/fonttools@4.63.0"]["license"]["concluded"] == (
+        "Apache-2.0 AND BSD-3-Clause AND MIT"
+    )
+    assert by_ref["pkg:pypi/defusedxml@0.7.1"]["license"]["concluded"] == (
+        "PSF-2.0"
+    )
+    assert by_ref["pkg:pypi/pluggy@1.6.0"]["license"]["concluded"] == "MIT"
+    uharfbuzz = by_ref["pkg:pypi/uharfbuzz@0.55.0"]
+    assert uharfbuzz["license"]["concluded"] == "Apache-2.0"
+    assert "version_string() reports embedded HarfBuzz 14.2.1" in uharfbuzz[
+        "license"
+    ]["localVersionEvidence"]
+    harfbuzz = by_ref["pkg:generic/harfbuzz@14.2.1"]
+    assert harfbuzz["reviewDate"] == "2026-08-10"
+    assert "uharfbuzz 0.55.0" in harfbuzz["bundledBy"]
+    assert "OCR-derived attacker-controlled text" in harfbuzz["security"][
+        "applicability"
+    ]
+
     pdfminer = by_ref["pkg:pypi/pdfminer-six@20260107"]
+    assert pdfminer["version"] == "20260107"
     assert pdfminer["license"]["concluded"] == "MIT AND Apache-2.0"
     assert "installs only the top-level MIT LICENSE" in pdfminer["license"][
         "localVersionEvidence"
@@ -521,6 +603,22 @@ def test_notice_index_and_profile_notices_disclose_required_uncertainty():
         assert "no GPLv2 x265" in notices
         assert "PDFium 152.0.7947.0 is advisory-unknown" in notices
         assert "Typst 0.15.1 is an enabled" in notices
+        assert "fpdf2 | 2.8.7 | LGPL-3.0-only" in notices
+        assert "img2pdf | 0.6.3 | LGPL-3.0-or-later" in notices
+        assert "OCRmyPDF Noto Sans Regular" in notices
+        assert "SIL OPEN FONT LICENSE Version 1.1" in notices
+        assert "1d361a8f8e8ce6e68457dcd93fb56e162e6baa3bbb7e7573a290d44399f6b57e" in (
+            notices
+        )
+        assert "OCRmyPDF Occulta.ttf" in notices
+        assert "OCRmyPDF sRGB.icc author attribution" in notices
+        assert "Marti Maria <www.littlecms.com>" in notices
+        assert "Zlib terms for OCRmyPDF sRGB.icc" in notices
+        assert "zlib License" in notices
+        assert "bfb1112d49db5b1daecdfef24bd7e2f3ea0bafb33aa67aa0ab51e2bf8407c03d" in (
+            notices
+        )
+        assert "Pillow codec bundle and uharfbuzz 0.55.0" in notices
         assert "pdfminer.six pyHanko-derived code notice" in notices
         assert "Copyright (c) 2020 Matthias Valvekens" in notices
         assert "pdfminer.six MongoDB/PyMongo-derived SASLprep attribution" in notices
