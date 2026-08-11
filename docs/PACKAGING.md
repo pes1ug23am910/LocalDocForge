@@ -9,12 +9,13 @@ contract—not proof that an operating system passed.
 Package metadata declares CPython 3.12, 3.13, and 3.14
 (`Requires-Python: >=3.12,<3.15`) and carries the Windows 11 classifier for this
 primary release checkpoint. The universal lock resolves CPython markers for
-Windows, Linux, and macOS, but only these rows are evidence:
+Windows, Linux, and macOS. The retained rows below predate the S8 dependency
+and lock changes; they are historical checkpoint evidence, not an S8 pass:
 
 | Runner | Python | Result | Retained evidence |
 |---|---:|---|---|
-| Windows 11 x64 build 26200 | 3.14.4 | **Passed** Base/Lite/Standard/Full source+wheel install, smoke, uninstall, Ruff, mypy, normal/blocked full tests, drift, manifest and checksum | `packaging-evidence/windows-3.14.4.json` |
-| Windows 11 x64 build 26200 | 3.13.5 | **Passed** same side-by-side matrix | `packaging-evidence/windows-3.13.5.json` |
+| Windows 11 x64 build 26200 | 3.14.4 | **Historical pass** for the retained pre-S8 locks: Base/Lite/Standard/Full source+wheel install, smoke, uninstall, Ruff, mypy, normal/blocked full tests, drift, and release manifest. Its evidence records `checksum_file_verified: false`; no checksum-file pass is claimed. | `packaging-evidence/windows-3.14.4.json` |
+| Windows 11 x64 build 26200 | 3.13.5 | **Historical pass** for its retained pre-S8 side-by-side matrix and checksum file | `packaging-evidence/windows-3.13.5.json` |
 | Windows 11 x64 | 3.12 | Not run | none |
 | Linux | 3.12–3.14 | Not run after hardening | configured CI only |
 | macOS | 3.12–3.14 | Not run after hardening | configured CI only |
@@ -30,7 +31,7 @@ Profiles describe shipped Python dependencies, not the feature roadmap.
 
 | Install | Shipped behavior | Direct additions over base |
 |---|---|---|
-| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, OCR orchestration, and Markdown parsing/render orchestration | none; Lite is an explicit base alias |
+| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, OCR orchestration, Markdown parsing/render orchestration, and the local stdio MCP server | none; Lite is an explicit base alias |
 | `standard` | Lite plus localhost FastAPI service and status page | FastAPI, Uvicorn, python-multipart |
 | `full` | Standard plus optional pypdf diagnostic adapter | pypdf |
 | `dev` | Full plus test, lint, type, build, and artifact tools | pytest, ReportLab, HTTPX, Ruff, mypy, build, Twine |
@@ -46,6 +47,17 @@ profile; the separately installed Tesseract and Ghostscript executables do not.
 Typst ≥0.15.1 is separately installed and never bundled by these profiles, so
 `ldf doctor` remains the live capability authority for external-engine
 availability.
+
+The official `mcp>=1.28.1,<2` SDK is a base dependency and therefore ships in
+every profile. LocalDocForge exposes only its UTF-8 stdio transport: tool calls
+are synchronous and serialized in v1, with no progress streaming. The SDK's
+mandatory HTTP/SSE/JWT dependencies are installed but are not enabled as MCP
+transports or authentication surfaces. On Windows, the stdio transport uses
+pywin32 to preserve a private protocol descriptor while redirecting inherited
+standard handles; the platform marker omits pywin32 elsewhere. Because that
+mandatory closure already includes Uvicorn and python-multipart, the resolved
+Standard-minus-Lite delta is FastAPI alone even though the Standard extra
+declares all three API dependencies explicitly.
 
 The Windows-primary reproducible Standard install is:
 
@@ -91,6 +103,12 @@ cryptography uses 2026-08-01 so the locks can select 50.0.0, the first release
 fixing CVE-2026-69247. The exception does not move any other package's cutoff,
 and no insecure/trusted-host bypass is used. Adding OCRmyPDF 17.8.1 did not move
 the protected cryptography 50.0.0 or pdfminer.six 20260107 resolutions.
+
+At that global cutoff uv resolves stable `mcp==1.28.1`, whose latest supported
+protocol generation is `2025-11-25`; later stable SDK releases postdate the
+cutoff. The ten-node universal-lock delta is reviewed in
+`docs/ENGINE_DECISIONS.md`. It leaves `cryptography==50.0.0` and
+`pdfminer-six==20260107` unchanged.
 
 ```powershell
 .venv\Scripts\python.exe -m pip install --require-hashes `
@@ -449,6 +467,53 @@ Disposable evidence SHA-256 is
 `d7ab4f3a059ec418e29c232c5f4c969c94d7a07f0406eb1c42c9630e2ad13924`;
 the pre-commit run honestly records `source.working_tree_changes: true`.
 
+### 2026-08-11 pre-rebase S8 local-agent MCP identity (superseded)
+
+S8 packages the registry-derived MCP stdio server, shared typed API operation
+models, pipeline-backed inspect transport, and official `mcp==1.28.1` runtime
+closure. A 29.9-second build-only gate used a fresh system-temporary directory,
+reproduced both direct builds and the sdist-to-wheel build, passed Twine/member/
+metadata checks, and refreshed only the live Windows-AMD64 manifest. Retained
+`dist/` and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `09c44bc90ca476d9eb50bd6196dc001c5dc5529bfa46de27e0f833014d703c7d` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `7c2050a9f249d2f80dcb3a1808b87696ccf27f1cfa9706c4909582164dfdadc8` | 165,408 |
+| `localdocforge-0.1.0.tar.gz` | `a0d746ffaf320cab84e4af9109c172503fd0b9c9d77da872478b7b156b250954` | 148,012 |
+
+This build-only identity predates the required S7-first rebase and is retained
+only as implementation chronology. It is not final S8 release evidence; the
+merged S7+S8 identity and coordinated full gate supersede it below.
+
+### 2026-08-11 post-S7 S8 merged manifest identity
+
+After rebasing onto S7 at `6c42eb7`, S8 regenerated the combined uv lock and
+all profile exports, SBOMs, notices, advisory metadata, and this manifest. A
+32.2-second build-only gate used a fresh system-temporary directory, reproduced
+both direct builds and the sdist-to-wheel build, passed Twine/member/metadata
+checks, and refreshed only the live Windows-AMD64 manifest. Retained `dist/`
+and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `a25ba617544ce7315b546322dfeb8bdd24785b2ec45665242d76e1265d48040a` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `8eb3bf044d85b39d1aebb989a38e58ad611782a36aa6e2a619de2c3a11315350` | 183,814 |
+| `localdocforge-0.1.0.tar.gz` | `f254b8a09ad9db833aa392a20a90df3286696d7de2f637470e8334fb4c63a5f3` | 165,260 |
+
+The post-rebase direct suite collected 814 outcomes: 810 passed, four expected
+platform skips, and zero failed in 109.18 seconds. A subsequent 638.6-second
+verify-mode gate reproduced the identity above; passed native, Linux, and
+Darwin mypy; passed both ordinary and blocked-network 814-outcome suites; and
+passed fresh Base/Lite/Standard/Full source and wheel installs plus the isolated
+Full test profile. Its disposable evidence records
+`release_manifest_verified: true`, `source_install_syntax_tested: true`, and
+`full_tests.status: passed`; SHA-256 is
+`c53b702cdfa081fcc0b560a6bdc5a433800219e3983de00d82c93525d5f47dce`.
+It also honestly records `source.working_tree_changes: true` because this was
+the executor's pre-review branch gate. The evidence remained disposable under
+the §1.8 rule; retained `packaging-evidence/` was not modified.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source
@@ -473,9 +538,12 @@ $python313 = & .venv\Scripts\uv.exe python find 3.13
 
 Each profile gets a fresh venv, matching hash lock, source install/import/
 uninstall, wheel install, `pip check`, `ldf doctor` plus focused core smoke, and
-wheel uninstall. The additional fresh Dev venv runs Ruff, mypy, the complete
-collected suite (639 outcomes as of 2026-08-10), the same suite with Python
-DNS/non-loopback sockets denied, and generated-artifact drift.
+wheel uninstall. In the retained pre-S8 evidence, the additional fresh Dev
+venv ran Ruff, mypy, the then-complete collected suite (639 outcomes at the S8
+kickoff), the same suite with Python DNS/non-loopback sockets denied, and
+generated-artifact drift. Current S8 evidence is recorded only after its final
+gate completes; the post-S7 S8 gate and its disposable evidence identity are
+recorded in the preceding section.
 
 ## SBOMs, notices, and the complete gate
 
@@ -485,18 +553,27 @@ Profile-specific artifacts are:
 - `docs/SBOM.standard.cdx.json` / `THIRD_PARTY_NOTICES.standard.md`
 - `docs/SBOM.full.cdx.json` / `THIRD_PARTY_NOTICES.full.md`
 
-The 2026-08-10 S7 inventory contains 43 unique runtime Python records, 52
-versioned bundled-native records, and 19 enumerated version-unknown native
-children. Profile component totals are 105 Lite, 113 Standard, and 114 Full.
+The merged 2026-08-10 S7+S8 inventory contains 56 unique runtime Python
+records, 52 versioned bundled-native records, and 19 enumerated version-unknown
+native children. Runtime Python counts are 54 Lite, 55 Standard, and 56 Full;
+profile component/dependency totals are 125/126 Lite, 126/127 Standard, and
+127/128 Full.
 Cryptography's supplier SBOM boundary retains its aggregate plus all 32
 `scope=required` Cargo children and OpenSSL 4.0.1, while excluding exactly seven
 supplier-marked build dependencies and a duplicate target record. CFFI's
 embedded libffi remains version-unknown. Composition is still explicitly
 `incomplete`: the pre-existing pydantic-core 2.46.4 embedded Cargo inventory is
-disclosed but not flattened, and other static/platform-specific children may
-exist. The uharfbuzz 0.55.0 Windows extension reports embedded HarfBuzz 14.2.1,
-so its SBOM dependency edge reuses the existing native HarfBuzz record also
-reached through Pillow rather than adding a duplicate component.
+disclosed but not flattened. The uharfbuzz 0.55.0 Windows extension reports
+embedded HarfBuzz 14.2.1, so its SBOM dependency edge reuses the existing
+native HarfBuzz record also reached through Pillow rather than adding a
+duplicate component. The rpds-py 2026.6.3 wheel likewise retains a
+hash-identified supplier SBOM with 15 required and two excluded Cargo records;
+their exact versions, license expressions, and OSV results were reviewed, but
+the identities are not flattened and the wheel supplies no child copyright/
+license texts. Its redistribution notice coverage must not be represented as
+complete. The pywin32 312 wheel's entire composite license directory and MAPI
+notice must be preserved rather than reduced to its incomplete PSF metadata
+label. Other static/platform-specific children may exist.
 
 Regenerate/check them offline:
 
@@ -584,3 +661,13 @@ that the OCRmyPDF wheel does not install as separate files. Empty advisory
 results remain time-bounded no-findings, and the repository-wide release
 disposition remains `not-cleared` because the pre-existing native findings are
 unchanged.
+
+On 2026-08-10, S8 added the official MCP Python SDK 1.28.1 under the global
+2026-07-19 cutoff. Official PyPI metadata, exact release-tag license texts,
+OSV, GitHub reviewed advisories, the exact CPython 3.14 Windows wheels, and the
+SDK's exact-tag protocol constants were reviewed for the ten new lock nodes and
+the three Dev-only nodes promoted into runtime profiles. The review preserves
+pywin32's composite license bundle and MAPI notice, and records rpds-py's
+unflattened 15-child Cargo SBOM and missing child notice texts as an incomplete
+composition/redistribution boundary. Exact package records and source URLs are
+in the report's S8 verification run; empty results remain time-bounded.

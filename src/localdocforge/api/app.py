@@ -46,6 +46,7 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 from starlette.types import Receive, Scope, Send
 
 from localdocforge import __version__
+from localdocforge.api import operations as operation_module
 from localdocforge.api.worker import (
     Admission,
     AdmissionError,
@@ -56,24 +57,34 @@ from localdocforge.api.worker import (
 )
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import ConversionReport
-from localdocforge.domain.pages import PageRange, PageRangeError
-from localdocforge.engines.base import EngineUnavailableError
 from localdocforge.engines.registry import default_registry
 from localdocforge.jobs.workspace import (
-    CollisionPolicy,
     default_jobs_root,
     make_private_dir,
     remove_tree_with_retries,
 )
-from localdocforge.operations import images as image_ops
-from localdocforge.operations import markdown as markdown_ops
-from localdocforge.operations import ocr as ocr_ops
-from localdocforge.operations import optimize as optimize_ops
-from localdocforge.operations import organize as organize_ops
-from localdocforge.operations import text as text_ops
 from localdocforge.pipelines.runner import PipelineError
 from localdocforge.security.filenames import sanitize_filename
 from localdocforge.security.paths import ensure_contained
+
+_OPERATIONS = operation_module.OPERATIONS
+_OPERATION_PARAMS = operation_module.OPERATION_PARAMS
+_ApiError = operation_module._ApiError
+
+# Narrow compatibility for existing API runner-contract tests and downstream
+# imports; execution still dispatches through the shared typed operation table.
+ocr_ops = operation_module.ocr_ops
+
+
+def _run_ocr(paths, output_dir, params, settings, progress=None):
+    typed = operation_module.parse_operation_params("ocr", params)
+    return operation_module._run_ocr(
+        paths,
+        output_dir,
+        typed,
+        settings,
+        progress,
+    )
 
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
 _TOKEN_HEADER = "X-LDF-Token"  # noqa: S105 - header name, not a credential
@@ -479,91 +490,6 @@ def _save_uploads(
     return saved
 
 
-class _ApiError(Exception):
-    def __init__(self, status: int, message: str) -> None:
-        self.status = status
-        self.message = message
-        super().__init__(message)
-
-
-def _range_or_none(value: str | None, *, what: str) -> PageRange | None:
-    if value is None or value == "":
-        return None
-    try:
-        return PageRange(spec=value)
-    except (PageRangeError, ValueError) as exc:
-        raise _ApiError(422, f"Invalid {what}: {exc}") from exc
-
-
-def _int_param(
-    params: dict[str, str],
-    key: str,
-    *,
-    default: int | None = None,
-    minimum: int | None = None,
-    maximum: int | None = None,
-) -> int | None:
-    raw = params.get(key)
-    if raw in (None, ""):
-        return default
-    try:
-        value = int(raw)
-    except (TypeError, ValueError):
-        raise _ApiError(422, f"'{key}' must be an integer") from None
-    if minimum is not None and value < minimum:
-        raise _ApiError(422, f"'{key}' must be at least {minimum}")
-    if maximum is not None and value > maximum:
-        raise _ApiError(422, f"'{key}' must be at most {maximum}")
-    return value
-
-
-def _float_param(
-    params: dict[str, str],
-    key: str,
-    *,
-    default: float | None = None,
-    minimum: float | None = None,
-    maximum: float | None = None,
-) -> float | None:
-    raw = params.get(key)
-    if raw in (None, ""):
-        return default
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        raise _ApiError(422, f"'{key}' must be a number") from None
-    if not math.isfinite(value):
-        raise _ApiError(422, f"'{key}' must be finite")
-    if minimum is not None and value < minimum:
-        raise _ApiError(422, f"'{key}' must be at least {minimum:g}")
-    if maximum is not None and value > maximum:
-        raise _ApiError(422, f"'{key}' must be at most {maximum:g}")
-    return value
-
-
-def _strict_bool_param(
-    params: dict[str, str],
-    key: str,
-    *,
-    default: bool,
-) -> bool:
-    raw = params.get(key)
-    if raw is None:
-        return default
-    normalized = raw.strip().casefold()
-    if normalized == "true":
-        return True
-    if normalized == "false":
-        return False
-    raise _ApiError(422, f"'{key}' must be true or false")
-
-
-def _one_input(paths: list[Path], operation: str) -> Path:
-    if len(paths) != 1:
-        raise _ApiError(422, f"{operation} needs exactly one file")
-    return paths[0]
-
-
 def create_app(
     settings: Settings | None = None,
     *,
@@ -900,8 +826,10 @@ printed when the server started. This page never runs remote code.</p>
         )
         try:
             make_private_dir(transport_root, exist_ok=False)
-            if not request.headers.get("content-type", "").lower().startswith(
-                "multipart/form-data"
+            if (
+                not request.headers.get("content-type", "")
+                .lower()
+                .startswith("multipart/form-data")
             ):
                 raise _ApiError(422, "Job submissions require multipart/form-data")
             parser = _ContainedMultiPartParser(
@@ -1082,338 +1010,3 @@ async def _submit_job_form(
             state.jobs.pop(job_id, None)
             _remove_private_job(job_root)
         raise
-
-
-# ------------------------------------------------------------------ operations
-# Each runner: (input_paths, output_dir, form_params, settings, progress)
-# -> ConversionReport.
-# Outputs always land inside the server-managed job output dir; browser
-# payloads never name filesystem paths.
-
-
-def _organize_options(
-    settings: Settings,
-    params: dict[str, str],
-    progress=None,
-) -> organize_ops.OrganizeOptions:
-    return organize_ops.OrganizeOptions(
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        password=params.get("password") or None,
-        progress=progress,
-    )
-
-
-def _run_merge(paths, output_dir, params, settings, progress=None):
-    if len(paths) < 2:
-        raise _ApiError(422, "merge needs at least two files")
-    ranges = None
-    if params.get("pages"):
-        try:
-            specs = json.loads(params["pages"])
-        except json.JSONDecodeError as exc:
-            raise _ApiError(422, "'pages' must be valid JSON") from exc
-        if not isinstance(specs, list) or len(specs) != len(paths):
-            raise _ApiError(422, "'pages' must be a JSON list with one entry per file")
-        if any(spec is not None and not isinstance(spec, str) for spec in specs):
-            raise _ApiError(422, "Each 'pages' entry must be a string or null")
-        ranges = [_range_or_none(spec, what="pages") for spec in specs]
-    return organize_ops.merge_pdfs(
-        paths,
-        output_dir / "merged.pdf",
-        page_ranges=ranges,
-        options=_organize_options(settings, params, progress),
-    )
-
-
-def _run_split(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "split")
-    every = _int_param(params, "every", minimum=1)
-    return organize_ops.split_pdf(
-        source,
-        output_dir,
-        pages=_range_or_none(params.get("pages"), what="pages"),
-        every=every,
-        options=_organize_options(settings, params, progress),
-    )
-
-
-def _single_input_range_op(fn, key):
-    def runner(paths, output_dir, params, settings, progress=None):
-        source = _one_input(paths, fn.__name__.replace("_", "-"))
-        page_range = _range_or_none(params.get(key), what=key)
-        if page_range is None:
-            raise _ApiError(422, f"'{key}' is required")
-        return fn(
-            source,
-            output_dir / "result.pdf",
-            page_range,
-            options=_organize_options(settings, params, progress),
-        )
-
-    return runner
-
-
-def _run_rotate(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "rotate")
-    degrees = _int_param(params, "degrees")
-    if degrees is None:
-        raise _ApiError(422, "'degrees' is required")
-    return organize_ops.rotate_pages(
-        source,
-        output_dir / "rotated.pdf",
-        degrees=degrees,
-        pages=_range_or_none(params.get("pages"), what="pages"),
-        options=_organize_options(settings, params, progress),
-    )
-
-
-def _run_crop(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "crop")
-    try:
-        box = tuple(float(v) for v in params.get("box", "").split(","))
-        if len(box) != 4 or not all(math.isfinite(value) for value in box):
-            raise ValueError
-    except ValueError:
-        raise _ApiError(422, "'box' must be 'x0,y0,x1,y1' in points") from None
-    return organize_ops.crop_pages(
-        source,
-        output_dir / "cropped.pdf",
-        box=box,  # type: ignore[arg-type]
-        pages=_range_or_none(params.get("pages"), what="pages"),
-        options=_organize_options(settings, params, progress),
-    )
-
-
-def _run_compress(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "compress")
-    preset = params.get("preset", "lossless")
-    if preset not in optimize_ops.COMPRESS_PRESETS:
-        raise _ApiError(
-            422,
-            "'preset' must be one of: " + ", ".join(optimize_ops.COMPRESS_PRESETS),
-        )
-    return optimize_ops.compress_pdf(
-        source,
-        output_dir / "compressed.pdf",
-        preset=preset,
-        options=_organize_options(settings, params, progress),
-    )
-
-
-def _run_ocr(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "ocr")
-    skip_text = _strict_bool_param(params, "skip_text", default=False)
-    force_ocr = _strict_bool_param(params, "force_ocr", default=False)
-    write_sidecar = _strict_bool_param(params, "sidecar", default=False)
-    if skip_text and force_ocr:
-        raise _ApiError(422, "'skip_text' and 'force_ocr' are mutually exclusive")
-    language = params.get("language", "eng")
-    try:
-        ocr_ops._language_codes(language)
-    except PipelineError as exc:
-        raise _ApiError(422, str(exc)) from exc
-    options = ocr_ops.OcrOptions(
-        language=language,
-        sidecar=output_dir / "document.txt" if write_sidecar else None,
-        skip_text=skip_text,
-        force_ocr=force_ocr,
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        progress=progress,
-        password=params.get("password") or None,
-    )
-    try:
-        return ocr_ops.ocr_pdf(source, output_dir / "document.pdf", options=options)
-    except EngineUnavailableError as exc:
-        raise _ApiError(503, str(exc)) from exc
-
-
-def _run_images_to_pdf(paths, output_dir, params, settings, progress=None):
-    margin = _float_param(params, "margin", default=24.0, minimum=0)
-    dpi = _int_param(params, "dpi", default=200, minimum=36, maximum=600)
-    quality = _int_param(params, "quality", default=95, minimum=1, maximum=100)
-    assert margin is not None and dpi is not None and quality is not None
-    options = image_ops.ImagesToPdfOptions(
-        page_size=params.get("page_size", "A4"),
-        fit=params.get("fit", "fit"),
-        margin_pt=margin,
-        background=params.get("background", "white"),
-        dpi=dpi,
-        jpeg_quality=quality,
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        progress=progress,
-    )
-    return image_ops.images_to_pdf(paths, output_dir / "images.pdf", options=options)
-
-
-def _run_pdf_to_images(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "pdf-to-images")
-    image_format = params.get("format") or None
-    if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
-        raise _ApiError(422, "'format' must be one of: png, jpeg, webp, tiff")
-    preset = params.get("preset") or None
-    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
-        raise _ApiError(
-            422, "'preset' must be one of: " + ", ".join(sorted(image_ops.CONVERT_PRESETS))
-        )
-    dpi = _int_param(params, "dpi", minimum=18, maximum=1200)
-    quality = _int_param(params, "quality", minimum=1, maximum=100)
-    options = image_ops.PdfToImagesOptions(
-        pages=_range_or_none(params.get("pages"), what="pages"),
-        preset=preset,
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        password=params.get("password") or None,
-        progress=progress,
-    )
-    if image_format is not None:
-        options.image_format = image_format
-    if dpi is not None:
-        options.dpi = dpi
-    if quality is not None:
-        options.jpeg_quality = quality
-    return image_ops.pdf_to_images(source, output_dir, options=options)
-
-
-def _run_pdf_to_md(paths, output_dir, params, settings, progress=None):
-    source = _one_input(paths, "pdf-to-md")
-    output_format = (params.get("format") or "md").strip().lower()
-    if output_format not in text_ops.TEXT_OUTPUT_FORMATS:
-        raise _ApiError(
-            422,
-            "'format' must be one of: " + ", ".join(text_ops.TEXT_OUTPUT_FORMATS),
-        )
-    tables = _strict_bool_param(params, "tables", default=False)
-    if tables and output_format != "md":
-        raise _ApiError(422, "'tables' requires 'format' to be 'md'")
-    options = text_ops.PdfToMdOptions(
-        output_format=output_format,
-        pages=_range_or_none(params.get("pages"), what="pages"),
-        page_anchors=_strict_bool_param(
-            params,
-            "page_anchors",
-            default=True,
-        ),
-        tables=tables,
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        progress=progress,
-        password=params.get("password") or None,
-    )
-    return text_ops.pdf_to_md(
-        source,
-        output_dir / f"document.{output_format}",
-        options=options,
-    )
-
-
-def _transport_upload_alias(path: Path) -> str:
-    """Undo the private numeric transport prefix while retaining sanitization."""
-    prefix, separator, alias = path.name.partition("-")
-    if separator and prefix.isdecimal() and alias:
-        return alias
-    return path.name
-
-
-def _run_md_to_pdf(paths, output_dir, params, settings, progress=None):
-    aliases = {_transport_upload_alias(path): path for path in paths}
-    if len(aliases) != len(paths):
-        raise _ApiError(422, "Markdown uploads must have distinct sanitized basenames")
-    markdown_names = [
-        name for name in aliases if Path(name).suffix.casefold() in {".md", ".markdown"}
-    ]
-    if len(markdown_names) != 1:
-        raise _ApiError(422, "md-to-pdf needs exactly one .md or .markdown upload")
-    source_name = markdown_names[0]
-    source = aliases.pop(source_name)
-    margin = _float_param(params, "margin", default=20.0, minimum=0)
-    assert margin is not None
-    try:
-        paper = markdown_ops.normalize_paper(params.get("paper", "A4"))
-        markdown_ops.validate_margin(margin, paper)
-    except PipelineError as exc:
-        raise _ApiError(422, str(exc)) from exc
-    options = markdown_ops.MdToPdfOptions(
-        paper=paper[0],
-        margin_mm=margin,
-        toc=_strict_bool_param(params, "toc", default=False),
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        progress=progress,
-    )
-    try:
-        return markdown_ops.md_to_pdf(
-            source,
-            output_dir / "document.pdf",
-            options=options,
-            image_inputs=aliases,
-        )
-    except EngineUnavailableError as exc:
-        raise _ApiError(503, str(exc)) from exc
-
-
-def _run_convert_images(paths, output_dir, params, settings, progress=None):
-    image_format = params.get("format") or None
-    if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
-        raise _ApiError(422, "'format' must be one of: png, jpeg, webp, tiff")
-    preset = params.get("preset") or None
-    if preset is not None and preset not in image_ops.CONVERT_PRESETS:
-        raise _ApiError(
-            422, "'preset' must be one of: " + ", ".join(sorted(image_ops.CONVERT_PRESETS))
-        )
-    keep_raw = params.get("keep_metadata", "false").strip().lower()
-    if keep_raw not in ("true", "false", "1", "0"):
-        raise _ApiError(422, "'keep_metadata' must be true or false")
-    options = image_ops.ConvertImagesOptions(
-        image_format=image_format,
-        quality=_int_param(params, "quality", minimum=1, maximum=100),
-        max_dimension=_int_param(params, "max_dimension", minimum=16, maximum=30000),
-        preset=preset,
-        keep_metadata=keep_raw in ("true", "1"),
-        background=params.get("background", "white"),
-        collision=CollisionPolicy.RENAME,
-        settings=settings,
-        progress=progress,
-    )
-    return image_ops.convert_images(paths, output_dir, options=options)
-
-
-_OPERATIONS = {
-    "merge": _run_merge,
-    "split": _run_split,
-    "remove-pages": _single_input_range_op(organize_ops.remove_pages, "pages"),
-    "extract-pages": _single_input_range_op(organize_ops.extract_pages, "pages"),
-    "organize": _single_input_range_op(organize_ops.organize_pdf, "order"),
-    "rotate": _run_rotate,
-    "crop": _run_crop,
-    "compress": _run_compress,
-    "ocr": _run_ocr,
-    "images-to-pdf": _run_images_to_pdf,
-    "pdf-to-images": _run_pdf_to_images,
-    "pdf-to-md": _run_pdf_to_md,
-    "md-to-pdf": _run_md_to_pdf,
-    "convert-images": _run_convert_images,
-}
-
-_OPERATION_PARAMS: dict[str, frozenset[str]] = {
-    "merge": frozenset({"pages", "password"}),
-    "split": frozenset({"pages", "every", "password"}),
-    "remove-pages": frozenset({"pages", "password"}),
-    "extract-pages": frozenset({"pages", "password"}),
-    "organize": frozenset({"order", "password"}),
-    "rotate": frozenset({"degrees", "pages", "password"}),
-    "crop": frozenset({"box", "pages", "password"}),
-    "compress": frozenset({"preset", "password"}),
-    "ocr": frozenset({"language", "sidecar", "skip_text", "force_ocr", "password"}),
-    "images-to-pdf": frozenset({"page_size", "fit", "margin", "background", "dpi", "quality"}),
-    "pdf-to-images": frozenset(
-        {"format", "dpi", "pages", "quality", "preset", "password"}
-    ),
-    "pdf-to-md": frozenset({"pages", "format", "page_anchors", "tables", "password"}),
-    "md-to-pdf": frozenset({"paper", "margin", "toc"}),
-    "convert-images": frozenset(
-        {"format", "quality", "max_dimension", "preset", "keep_metadata", "background"}
-    ),
-}

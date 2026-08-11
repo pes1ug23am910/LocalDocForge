@@ -1,7 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-10 (S5 opt-in PDF-to-Markdown table reconstruction;
-definitive Windows-AMD64 gate passed on clean 639-outcome revision `073b7b3`).
+Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio implementation and
+Windows-AMD64 gate complete; required external delta review is pending).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -20,8 +20,8 @@ git diff --check
 ```
 
 The full gate checks lock drift, Ruff, mypy, `pip check`, generated
-SBOM/notices drift, the complete collected test suite (639 outcomes as of
-2026-08-10) normally and with Python DNS/non-loopback sockets denied,
+SBOM/notices drift, the retained pre-S8 test suite (639 outcomes at the S8
+kickoff) normally and with Python DNS/non-loopback sockets denied,
 reproducible isolated wheel/sdist builds, sdist-to-wheel equivalence,
 artifact-manifest drift, and clean profile install/smoke/uninstall. A local
 result applies only to the recorded OS, architecture, and interpreter.
@@ -717,6 +717,43 @@ result applies only to the recorded OS, architecture, and interpreter.
   `release_manifest_verified: true`, `source_install_syntax_tested: true`, and
   `full_tests.status: passed`; SHA-256 is `d7ab4f3a…13924`.
 
+## Implemented surface — 2026-08-11 (post-S7 local-agent MCP stdio, S8)
+
+- `ldf mcp` adds a synchronous MCP 2025-11-25 compatibility-profile server on
+  inherited stdio. Its tool list is generated from implemented
+  `CAPABILITY_SPECS`, while the JSON schemas reuse the typed operation parameter
+  models; planned capabilities cannot be called through a hidden hand-written
+  list.
+- MCP callers provide absolute same-user input/output paths. Every job still
+  uses the standard validation, collision, resource-limit, pipeline, output-
+  validation, and fresh-worker path. Calls serialize in v1 with no progress
+  streaming, and disconnect cancellation terminates and finalizes the worker
+  tree before cleanup.
+- The protocol boundary is strict UTF-8 newline JSON with 1 MiB frames and 64
+  nesting levels. Stdout contains protocol frames only; stderr carries bounded
+  diagnostics. A private binary handle avoids the Windows console codepage for
+  non-ANSI paths. Control characters, traversal-shaped paths, and
+  prompt-injection-shaped filenames remain typed data.
+- Oversized successful reports are returned as bounded success summaries with
+  original counts rather than as post-publication failures that could trigger
+  an unsafe retry.
+- The inherited same-user pipe is the trust boundary, so MCP has no
+  token; the HTTP API retains its separate bearer-token control. Strict-offline
+  policy, configured output roots, and password redaction remain in force.
+- The post-rebase direct suite collected 814 outcomes: 810 passed, four
+  expected platform skips, and zero failed in 109.18 seconds. The subsequent
+  638.6-second verify-mode release gate reran all 814 outcomes normally and
+  with network access blocked, passed native/Linux/Darwin mypy, reproduced the
+  source/wheel/sdist identity, and passed clean Base/Lite/Standard/Full source
+  and wheel installs plus the isolated Full test profile. Its disposable
+  evidence records `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, and `full_tests.status: passed`; the
+  evidence SHA-256 is
+  `c53b702cdfa081fcc0b560a6bdc5a433800219e3983de00d82c93525d5f47dce`.
+  The branch was intentionally uncommitted during the executor gate, so the
+  evidence honestly records `source.working_tree_changes: true`; external
+  cross-model delta review and merge approval remain pending.
+
 ## Implemented hardening
 
 ### Worker, cancellation, and API admission
@@ -778,10 +815,10 @@ result applies only to the recorded OS, architecture, and interpreter.
   517 backend is `setuptools==83.0.0`, authenticated against official PyPI
   hashes, downloaded into a one-use wheelhouse, and installed by isolated builds
   with the wheelhouse forced offline; build isolation was not weakened.
-- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 43 unique
-  runtime Python components (34 Lite / 42 Standard / 43 Full), 52 versioned
+- Profile-specific CycloneDX 1.6 SBOMs/notices remain deterministic: 56 unique
+  runtime Python components (54 Lite / 55 Standard / 56 Full), 52 versioned
   bundled-native components, and 19 separately enumerated version-unknown
-  children. Profile totals are 105 / 113 / 114 components.
+  children. Profile totals are 125 / 126 / 127 components.
 - The base advisory/license review date is 2026-07-19. A 2026-07-20 OSV refresh
   returned no matches for 29 exact PyPI queries and one match among 16 versioned
   native queries: OpenJPEG 2.5.4 / `OSV-2025-219`. Empty results are not safety
@@ -827,6 +864,9 @@ reconstruction through pdfplumber. Its bounded Markdown rendering path ships as
 `md-to-pdf` when Typst ≥0.15.1 is available; borderless/merged-cell and broader
 semantic reconstruction remain future work. OCR now ships as `ocr` when its
 OCRmyPDF/Tesseract/Ghostscript probe set passes.
+The S8 surface adds same-user local-agent access through `ldf mcp`; it reuses
+those operation pipelines and isolated workers instead of introducing a second
+conversion implementation.
 Lossy compression presets, repair, Office-to-PDF, HTML-to-PDF,
 PDF/A/PDF/UA, editing/forms,
 protection, secure redaction, signatures, compare, scanner/camera
@@ -841,6 +881,9 @@ acquisition, and the React UI remain unavailable.
   `stem-pages-token.pdf`.
 - Reports are human-readable by default and optionally JSON; they omit document
   text and passwords. Public API serialization also omits private server paths.
+- MCP speaks the cutoff-compatible 2025-11-25 protocol over strict UTF-8 stdio.
+  Implemented registry entries generate its tools, calls serialize
+  synchronously in v1, and stdout is reserved exclusively for protocol frames.
 - Exit codes remain `0/1/2/3/4/5/130` as documented in `docs/CLI.md`.
 - `compress` means lossless structural optimization until lossy presets exist;
   presets that would degrade images are refused, never silently approximated,

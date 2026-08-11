@@ -98,7 +98,10 @@ def _profile_specific_smoke(profile: str, payload: dict[str, Any], root: Path) -
     has_pypdf = importlib.util.find_spec("pypdf") is not None
 
     if effective == "lite":
-        if has_fastapi or has_uvicorn or has_multipart or has_pypdf:
+        # MCP's mandatory transport closure brings uvicorn and
+        # python-multipart into every profile. FastAPI remains the only
+        # resolved Standard-only package; pypdf remains Full-only.
+        if has_fastapi or has_pypdf:
             raise AssertionError("lite environment contains Standard/Full-only Python packages")
         result = _run_cli("web", "--port", "8477", check=False, timeout=10)
         combined = result.stdout + result.stderr

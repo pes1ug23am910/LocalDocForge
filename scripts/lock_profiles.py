@@ -111,16 +111,9 @@ def _validate_profile_relationships(contents: dict[str, str]) -> None:
         raise ValueError("full lock must be a strict superset of standard")
     if sets["full"] - sets["standard"] != {"pypdf"}:
         raise ValueError("full must add only the optional pypdf diagnostic adapter")
-    expected_standard = {
-        "anyio",
-        "click",
-        "fastapi",
-        "h11",
-        "idna",
-        "python-multipart",
-        "starlette",
-        "uvicorn",
-    }
+    # The base MCP SDK also uses the ASGI transport closure; Standard adds the
+    # FastAPI application layer itself while Lite remains CLI/MCP only.
+    expected_standard = {"fastapi"}
     if sets["standard"] - sets["lite"] != expected_standard:
         raise ValueError("standard dependency delta no longer matches the localhost API stack")
     if not sets["full"] < sets["dev"]:

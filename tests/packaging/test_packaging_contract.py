@@ -59,6 +59,7 @@ def test_published_profiles_match_shipped_capabilities():
     )
     assert release_gate.EXPECTED_BASE_DEPENDENCIES == declared_base
     assert "pi-heif" in release_gate.EXPECTED_BASE_DEPENDENCIES
+    assert "mcp" in release_gate.EXPECTED_BASE_DEPENDENCIES
     assert "Operating System :: Microsoft :: Windows :: Windows 11" in metadata[
         "classifiers"
     ]
@@ -79,16 +80,7 @@ def test_published_profiles_match_shipped_capabilities():
 def test_hash_locks_have_expected_strict_profile_deltas():
     profiles = {name: _profile_names(name) for name in ("lite", "standard", "full", "dev")}
     assert profiles["lite"] < profiles["standard"] < profiles["full"] < profiles["dev"]
-    assert profiles["standard"] - profiles["lite"] == {
-        "anyio",
-        "click",
-        "fastapi",
-        "h11",
-        "idna",
-        "python-multipart",
-        "starlette",
-        "uvicorn",
-    }
+    assert profiles["standard"] - profiles["lite"] == {"fastapi"}
     assert profiles["full"] - profiles["standard"] == {"pypdf"}
     for profile in profiles:
         text = (ROOT / "requirements" / "locks" / f"{profile}.txt").read_text(encoding="utf-8")
@@ -186,6 +178,33 @@ def test_lite_web_command_has_actionable_profile_hint(monkeypatch):
     assert result.exit_code == EXIT_USAGE
     assert "pip install 'localdocforge[standard]'" in result.output
     assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize("profile", ["base", "lite"])
+def test_lite_smoke_allows_mcp_transport_dependencies(monkeypatch, tmp_path, profile):
+    present = {"uvicorn", "python_multipart"}
+
+    monkeypatch.setattr(
+        profile_smoke.importlib.util,
+        "find_spec",
+        lambda name: object() if name in present else None,
+    )
+    monkeypatch.setattr(
+        profile_smoke,
+        "_run_cli",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args,
+            2,
+            profile_smoke.STANDARD_HINT,
+            "",
+        ),
+    )
+
+    profile_smoke._profile_specific_smoke(
+        profile,
+        {"engines": [{"name": "pypdf", "available": False}]},
+        tmp_path,
+    )
 
 
 def test_blocked_network_wrapper_propagates_to_child_python():

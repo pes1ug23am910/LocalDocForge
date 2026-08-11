@@ -13,12 +13,61 @@ Probed state on this machine is always visible via `ldf doctor`.
 | pdfplumber | 0.11.10 | MIT | Opt-in, Markdown-only explicit-line table detection and cell extraction for `pdf-to-md --tables` | Its line strategy exposes table/cell geometry without an AGPL dependency. LocalDocForge adds strict rectangular confidence and resource bounds, uses pdfplumber text only inside an accepted table region, and falls back to PDFium flowed text rather than emitting a doubtful table |
 | Pillow | 12.3.0 | MIT-CMU; bundled codecs have per-component terms | Image decode/encode, images-to-pdf composition, convert-images transcoding | The standard Python imaging library; built-in decompression-bomb guard which we wire to `ResourceLimits.max_image_pixels` |
 | pi-heif (libheif) | 1.4.0 / libheif 1.23.0, libde265 1.1.1 | BSD-3-Clause wrapper; LGPL-3.0-or-later libheif + libde265 | HEIF/HEIC **decode-only** Pillow plugin: iPhone photo input for convert-images and images-to-pdf | The decode-only distribution of pillow-heif — its wheels bundle no GPLv2 x265 encoder, keeping the runtime license ceiling at LGPLv3; the full pillow-heif package is a dev-profile fixture-encoding tool only |
+| MCP Python SDK | 1.28.1 | MIT SDK; exact closure remains weak-copyleft-or-lighter | Local `ldf mcp` JSON-RPC server over UTF-8 stdio | The official SDK provides maintained protocol models, negotiation, error mapping, and stdio lifecycle behavior for a modest reviewed closure; HTTP/SSE/auth features remain unused |
 | Typst | 0.15.1 | Apache-2.0 | Separately installed executable for Markdown→PDF; not bundled in Python profiles | Fast deterministic PDF generation, explicit project root, dependency manifest, bounded subprocess runner, and a permissive license. Availability requires a parseable version ≥0.15.1; generated source uses only application-controlled code and escaped strings |
 
 Rationale for the split: structural edits (pikepdf) and rendering/text
 extraction (PDFium) are different failure domains; no single library is trusted for
 both. A pypdf production fallback remains a future implementation task; an
 installed library alone is not reported as an executable operation engine.
+
+### MCP SDK dependency decision (S8)
+
+The official `mcp` SDK was selected instead of a hand-written JSON-RPC subset.
+Repo-pinned uv 0.11.26, using the global `exclude-newer = 2026-07-19`
+cutoff, resolves stable `mcp==1.28.1`; later stable 1.29.0 and 2.0.0 releases
+postdate that cutoff, and the resolver does not select pre-release 2.0 builds.
+The reviewed SDK supports protocol versions `2024-11-05`, `2025-03-26`,
+`2025-06-18`, and `2025-11-25`, with `2025-11-25` as its latest generation.
+LocalDocForge constrains the SDK to `>=1.28.1,<2`; an SDK major, cutoff, or
+supported-protocol change requires a fresh compatibility, closure, advisory,
+and framing review.
+
+The ten new universal-lock nodes and their compatible CPython 3.14 / Windows
+x86-64 wheel sizes are:
+
+| Package | License conclusion | Wheel bytes |
+|---|---|---:|
+| attrs 26.1.0 | MIT | 67,548 |
+| httpx-sse 0.4.3 | MIT | 8,960 |
+| jsonschema 4.26.0 | MIT | 90,630 |
+| jsonschema-specifications 2025.9.1 | MIT | 18,437 |
+| mcp 1.28.1 | MIT | 222,620 |
+| PyJWT 2.13.0 | MIT | 31,274 |
+| pywin32 312 | BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1 | 7,024,157 |
+| referencing 0.37.0 | MIT | 26,766 |
+| rpds-py 2026.6.3 | MIT top level; supplier Cargo expressions are MIT/Apache-2.0/Unicode-3.0 combinations | 220,380 |
+| sse-starlette 3.4.5 | BSD-3-Clause | 16,518 |
+
+That lock delta is 7,727,290 bytes (7.369 MiB), 90.9% of it pywin32. The
+complete standalone SDK closure on this platform is 31 packages and 15,341,779
+wheel bytes (14.631 MiB). Relative to the previous profile locks, MCP adds 20
+packages / 8,537,799 bytes (8.142 MiB) to Lite and 13 packages / 8,012,880
+bytes (7.642 MiB) to Standard and Full; the latter already carried HTTPX and
+the ASGI stack. `cryptography==50.0.0` and `pdfminer-six==20260107` do not move.
+Exact-tag and installed-wheel review found no license above the program's
+weak-copyleft ceiling. The pywin32 composite license directory and MAPI notice
+must be preserved. The rpds-py supplier SBOM lists 15 required Cargo children
+but no child copyright/license texts, so notice coverage and CycloneDX
+composition remain explicitly incomplete under the existing native-boundary
+convention.
+
+For stdio-only v1, the installed HTTP/SSE/JWT portion is dormant overhead;
+calls are synchronous and serialized with no progress streaming. Even so, the
+closure is reasonable compared with implementing and maintaining negotiation,
+typed protocol messages, lifecycle/cancellation semantics, and JSON-RPC error
+behavior by hand. The stdio surface must not silently enable the SDK's network
+transports or HTTP authorization features.
 
 PDF→Markdown/text uses PDFium's page-scoped text and geometry APIs. It was
 chosen because PDFium is already shipped, probed, worker-contained for API

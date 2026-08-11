@@ -284,9 +284,10 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
     )
 
     status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    status_flat = " ".join(status.split())
     assert "non-interactive PDF passwords, S1" in status
     assert "464 outcomes: 462 passed and two expected" in status
-    assert "639 outcomes as of" in status and "2026-08-10" in status
+    assert "639 outcomes at the S8 kickoff" in status_flat and "2026-08-10" in status
 
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
     assert "2026-08-08 S1 manifest identity" in packaging
@@ -387,7 +388,7 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     row = next(
         line for line in feature.splitlines() if line.startswith("| PDF → Markdown/text/JSONL")
     )
-    assert "| ✅ | pdfium text API + pdfplumber (opt-in tables) | Lib, CLI, API |" in row
+    assert "| ✅ | pdfium text API + pdfplumber (opt-in tables) | Lib, CLI, API, MCP |" in row
     assert "No OCR, bidi repair, or silent dehyphenation" in row
     assert "first physical row is an inferred header" in row
     assert "No warning proves no table exists" in row

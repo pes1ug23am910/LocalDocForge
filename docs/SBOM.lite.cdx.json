@@ -175,6 +175,272 @@
       "version": "0.7.0"
     },
     {
+      "bom-ref": "pkg:pypi/anyio@4.14.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/agronholm/anyio/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/anyio/4.14.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/agronholm/anyio/4.14.2/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "anyio",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Reachable through every MCP stdio session and indirectly through concurrent API requests in standard/full profiles; both surfaces remain local by default."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Retain request, concurrency, timeout, and process-isolation controls and update if a matching advisory appears."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494,sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Concurrency cancellation and resource-exhaustion defects can still affect availability even without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Async concurrency and cancellation layer used by the MCP stdio server in every profile and by Starlette when the local web service is enabled."
+        }
+      ],
+      "purl": "pkg:pypi/anyio@4.14.2",
+      "type": "library",
+      "version": "4.14.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/attrs@26.1.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-attrs/attrs/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/attrs/26.1.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-attrs/attrs/26.1.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "attrs",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Protocol schemas and SDK-owned model metadata can reach this dependency; document bytes do not define attrs classes or validators."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat exact-version review with the MCP closure."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309,sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Validation and class-construction defects can still affect availability without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Declarative class and validator support used by jsonschema/referencing in the MCP SDK closure."
+        }
+      ],
+      "purl": "pkg:pypi/attrs@26.1.0",
+      "type": "library",
+      "version": "26.1.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/certifi@2026.6.17",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/certifi/python-certifi/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/certifi/2026.6.17/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/certifi/python-certifi/2026.06.17/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "name": "certifi",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Dormant for the stdio-only MCP server; it becomes security-relevant if an installed HTTPX client path performs outbound TLS."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Refresh the CA bundle with reviewed MCP dependency updates and remove it if the SDK later separates stdio-only extras."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MPL-2.0"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432,sha256:2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Trust-store changes and delayed CA removals can affect any future outbound TLS use."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Mozilla-derived CA bundle installed through HTTPX in the MCP SDK closure; LocalDocForge's v1 MCP server uses stdio and does not initiate HTTP requests."
+        }
+      ],
+      "purl": "pkg:pypi/certifi@2026.6.17",
+      "type": "library",
+      "version": "2026.6.17"
+    },
+    {
       "bom-ref": "pkg:pypi/cffi@2.1.0",
       "externalReferences": [
         {
@@ -353,6 +619,92 @@
       "purl": "pkg:pypi/charset-normalizer@3.4.9",
       "type": "library",
       "version": "3.4.9"
+    },
+    {
+      "bom-ref": "pkg:pypi/click@8.4.2",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/pallets/click/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/click/8.4.2/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/pallets/click/8.4.2/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "click",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Parses trusted local launch arguments when Uvicorn is invoked; `ldf mcp` does not invoke the SDK's Uvicorn surface, and document bytes are not passed to Click."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and repeat exact-version review on upgrade."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6,sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Terminal and argument-handling defects remain possible for attacker-influenced filenames shown by higher layers."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Command-line parsing dependency of Uvicorn, retained in every profile by the MCP SDK's mandatory HTTP-server closure; the LocalDocForge MCP path is stdio-only."
+        }
+      ],
+      "purl": "pkg:pypi/click@8.4.2",
+      "type": "library",
+      "version": "8.4.2"
     },
     {
       "bom-ref": "pkg:pypi/colorama@0.4.6",
@@ -797,6 +1149,448 @@
       "version": "2.8.7"
     },
     {
+      "bom-ref": "pkg:pypi/h11@0.16.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-hyper/h11/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/h11/0.16.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-hyper/h11/v0.16.0/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "h11",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Attacker-controlled HTTP bytes reach h11 whenever the standard/full web server is enabled. The Lite MCP command does not activate an HTTP transport."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Uvicorn/h11 jointly current and preserve request-size, timeout, concurrency, and loopback controls."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1,sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Protocol differential and request-smuggling defects may arise from interactions with Uvicorn or intermediaries."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "HTTP/1.1 parser used by Uvicorn/HTTP Core and retained in every profile by MCP; the LocalDocForge MCP transport is stdio-only."
+        }
+      ],
+      "purl": "pkg:pypi/h11@0.16.0",
+      "type": "library",
+      "version": "0.16.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/httpcore@1.0.9",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/encode/httpcore/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/httpcore/1.0.9/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/encode/httpcore/1.0.9/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "httpcore",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No supported `ldf mcp` flow opens an HTTP connection through HTTPcore; future SDK HTTP transport use would expand reachability."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep MCP transport restricted to stdio and repeat review before enabling HTTP or SSE transports."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE.md SHA256=fdcb59154c74cbaba16a11242f7740bea9f23d6feb5547917d8c5f94a80392a5"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55,sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "The installed transport parser could become reachable through an accidental or future HTTP client path."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "HTTP transport core installed through HTTPX for MCP client transports; it is not invoked by LocalDocForge's stdio-only MCP server."
+        }
+      ],
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "type": "library",
+      "version": "1.0.9"
+    },
+    {
+      "bom-ref": "pkg:pypi/httpx@0.28.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/encode/httpx/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/httpx/0.28.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/encode/httpx/0.28.1/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "httpx",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "The v1 server exchanges JSON-RPC over inherited process pipes and does not construct an HTTPX client."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Do not enable SDK remote transports without a fresh network threat model and dependency review."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE.md SHA256=4ec59d544f12b5f539a3a716fd321ac58ccd8030b465221f2c880200cdf28d8d"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc,sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "A future or accidental remote-transport import could expose request, proxy, redirect, or TLS handling."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "HTTP client required by the official MCP SDK's client and remote-transport features; installed but deliberately unused by LocalDocForge's stdio server."
+        }
+      ],
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "type": "library",
+      "version": "0.28.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/httpx-sse@0.4.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/florimondmanca/httpx-sse/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/httpx-sse/0.4.3/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/florimondmanca/httpx-sse/0.4.3/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "httpx-sse",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No supported LocalDocForge MCP request parses SSE framing."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the transport at stdio and repeat review before any SSE client is enabled."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=beec67e4ee83a7af26f242bed9987aa863d6d2dfb776106aa2360c4187f31901"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc,sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Malformed-event parsing issues would become relevant if the dormant remote transport were activated."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Server-Sent Events client helper required by the MCP SDK's remote transports; installed but unused by the stdio-only LocalDocForge server."
+        }
+      ],
+      "purl": "pkg:pypi/httpx-sse@0.4.3",
+      "type": "library",
+      "version": "0.4.3"
+    },
+    {
+      "bom-ref": "pkg:pypi/idna@3.18",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/kjd/idna/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/idna/3.18/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/kjd/idna/v3.18/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "idna",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No application route passes untrusted document domains to IDNA; it is retained by the ASGI dependency closure."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep the hash lock and remove the dependency if the upstream closure no longer requires it."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2,sha256:ffb385a7e039654cef1ab9ef32c6fafe283c0c0467bba1d9029738ce4a14a848"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Future API or networking features could make normalization issues reachable."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Internationalized-domain helper pulled by AnyIO/HTTPX; MCP installs it in every profile, while LocalDocForge's stdio server ships no outbound client."
+        }
+      ],
+      "purl": "pkg:pypi/idna@3.18",
+      "type": "library",
+      "version": "3.18"
+    },
+    {
       "bom-ref": "pkg:pypi/img2pdf@0.6.3",
       "externalReferences": [
         {
@@ -885,6 +1679,186 @@
       "purl": "pkg:pypi/img2pdf@0.6.3",
       "type": "library",
       "version": "0.6.3"
+    },
+    {
+      "bom-ref": "pkg:pypi/jsonschema@4.26.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-jsonschema/jsonschema/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/jsonschema/4.26.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-jsonschema/jsonschema/v4.26.0/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "jsonschema",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "MCP clients receive application-generated tool schemas and may send parameters described by them; LocalDocForge additionally delegates parameter validation to its Pydantic API models."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Bound incoming JSON depth/size and repeat exact-version review on SDK upgrades."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed COPYING SHA256=4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0c26707e2efad8aa1bfc5b7ce170f3fccc2e4918ff85989ba9ffa9facb2be326,sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Complex schema evaluation can consume CPU or memory even without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "JSON Schema evaluation library in the official MCP SDK closure for protocol and tool schema handling."
+        }
+      ],
+      "purl": "pkg:pypi/jsonschema@4.26.0",
+      "type": "library",
+      "version": "4.26.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-jsonschema/jsonschema-specifications/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/jsonschema-specifications/2025.9.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-jsonschema/jsonschema-specifications/v2025.9.1/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "jsonschema-specifications",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Static specification resources can be selected while handling protocol schemas; document contents cannot replace the packaged resources."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep aligned with the reviewed jsonschema version."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed COPYING SHA256=42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe,sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Incorrect packaged specifications could weaken or reject validation without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Packaged JSON Schema specification resources consumed by jsonschema in the MCP SDK closure."
+        }
+      ],
+      "purl": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "type": "library",
+      "version": "2025.9.1"
     },
     {
       "bom-ref": "pkg:pypi/lxml@6.1.1",
@@ -1061,6 +2035,96 @@
       "purl": "pkg:pypi/markdown-it-py@4.2.0",
       "type": "library",
       "version": "4.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/mcp@1.28.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/modelcontextprotocol/python-sdk/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/mcp/1.28.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v1.28.1/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "mcp",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Every `ldf mcp` session reaches SDK framing, lifecycle, request dispatch, and protocol models; tool jobs still enter LocalDocForge's standard validated worker pipeline."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Constrain to the reviewed v1 SDK/protocol generation and repeat closure, protocol, and adversarial framing review on change."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d; wheel SHA256=2726bca5e7193f61c5dde8b12500a6de2d9acf6d1a1c0be9e8c2e706437991df"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:2726bca5e7193f61c5dde8b12500a6de2d9acf6d1a1c0be9e8c2e706437991df,sha256:d51e36a5f5644faea4f85ea649bfffa6bc6c26770d42798ad6a3de3d2ba69683"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Protocol parser, lifecycle, cancellation, or framing defects can affect confidentiality, integrity, or availability even without a published advisory."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Official Model Context Protocol Python SDK used to implement `ldf mcp` over UTF-8 stdio."
+        }
+      ],
+      "purl": "pkg:pypi/mcp@1.28.1",
+      "type": "library",
+      "version": "1.28.1"
     },
     {
       "bom-ref": "pkg:pypi/mdurl@0.1.2",
@@ -2293,6 +3357,96 @@
       "version": "2.20.0"
     },
     {
+      "bom-ref": "pkg:pypi/pyjwt@2.13.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/jpadilla/pyjwt/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/PyJWT/2.13.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/jpadilla/pyjwt/2.13.0/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pyjwt",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Installed but not invoked because stdio trusts the same-user process boundary and exposes no HTTP bearer-token endpoint."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Do not repurpose the stdio server as a network service; perform a separate auth review before enabling SDK HTTP authorization."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=797a7a20231d4c433e9f1911db1731d06b5828b98f499819a034f7c0f56f5ce5; AUTHORS.rst SHA256=925ce43461029eedbf558ec0b7cf7fc4b045def5120ebb97937c70814071cf07"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423,sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "JWT parsing and algorithm-selection risks become reachable if dormant network authorization features are enabled."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "JWT implementation required by the MCP SDK's HTTP authorization features; LocalDocForge's local stdio transport has no token-auth path."
+        }
+      ],
+      "purl": "pkg:pypi/pyjwt@2.13.0",
+      "type": "library",
+      "version": "2.13.0"
+    },
+    {
       "bom-ref": "pkg:pypi/pypdfium2@5.12.1",
       "externalReferences": [
         {
@@ -2469,6 +3623,270 @@
       "version": "1.2.2"
     },
     {
+      "bom-ref": "pkg:pypi/python-multipart@0.0.32",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/Kludex/python-multipart/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/python-multipart/0.0.32/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/Kludex/python-multipart/0.0.32/LICENSE.txt"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "python-multipart",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly parses attacker-controlled HTTP multipart framing before document processing in standard/full profiles. It is installed but not invoked by `ldf mcp` in Lite."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve receive/body/file/field bounds and promptly update on parser advisories."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "Apache-2.0"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e,sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Streaming parsers remain exposed to malformed boundaries and algorithmic denial of service."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Streaming multipart/form-data parser for API uploads and for the MCP SDK's dormant HTTP transport; the LocalDocForge MCP transport is stdio-only."
+        }
+      ],
+      "purl": "pkg:pypi/python-multipart@0.0.32",
+      "type": "library",
+      "version": "0.0.32"
+    },
+    {
+      "bom-ref": "pkg:pypi/pywin32@312",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/mhammond/pywin32/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/pywin32/312/"
+        },
+        {
+          "type": "license",
+          "url": "https://github.com/mhammond/pywin32/tree/b312"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1"
+        }
+      ],
+      "name": "pywin32",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Every Windows `ldf mcp` session reaches fixed GetStdHandle/SetStdHandle calls; attacker-controlled frame bytes are not passed as Win32 API arguments."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Preserve the complete wheel license bundle and re-review the exact platform wheel on every pywin32 or MCP update."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "cp314-cp314-win_amd64 wheel SHA256=a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e; preserve all eight declared files: adodbapi/license.txt=5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e, com/License.txt=fad39c18fc3825fa278db1c86fd52cf88d7c525b3c2fbf7817fa383cbae4d423, MAPIStubLibrary/LICENSE=1c4cf44d2fb8bf2d10214d6da80cc9e05502824cc4460f35be4c7bcb4cde53da, isapi/README.txt=41383bcc95edb8138d37077ae54bfdcbd2a3b77bf745a8529a9c161146e22303, pythonwin/License.txt=a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924, idle/LICENSE.txt=a0fa1e7b8a4230055685e796548ac084a6c0eea395294574093bba72efd9191b, Scintilla/License.txt=57ec79bbeab4fd1cf7460a7ad450d2ab01471810459aeae9e75e4c66b472095f, win32/License.txt=a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924; also preserve win32comext/mapi/NOTICE.md SHA256=dedf997c8f5568a0e0aff57d009f501226ea30c401323d67912b6a8f8735a825"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-exact-tag-and-installed-wheel-bundle"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "9"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831,sha256:6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950,sha256:7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c,sha256:9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa,sha256:a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e,sha256:a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b,sha256:b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc,sha256:c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9,sha256:dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "implementation_name == 'cpython' and sys_platform == 'win32'"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Handle-redirection defects could compromise framing or availability, and the wheel exposes many broader native Windows APIs outside the supported server path."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Windows API bridge used directly by LocalDocForge's MCP stdio transport to redirect inherited standard handles while preserving the private protocol descriptor; also required by SDK Windows helpers."
+        }
+      ],
+      "purl": "pkg:pypi/pywin32@312",
+      "type": "library",
+      "version": "312"
+    },
+    {
+      "bom-ref": "pkg:pypi/referencing@0.37.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/python-jsonschema/referencing/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/referencing/0.37.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/python-jsonschema/referencing/v0.37.0/COPYING"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "referencing",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Application-generated MCP tool schemas can exercise reference resolution; caller-controlled parameters are validated by the reused API models rather than dynamically becoming schemas."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep schemas application-controlled, bound protocol input, and review with jsonschema upgrades."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed COPYING SHA256=42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231,sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Reference-resolution complexity or implementation defects can still cause excessive resource use."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "JSON Schema reference resolution support consumed by jsonschema in the MCP SDK closure."
+        }
+      ],
+      "purl": "pkg:pypi/referencing@0.37.0",
+      "type": "library",
+      "version": "0.37.0"
+    },
+    {
       "bom-ref": "pkg:pypi/rich@15.0.0",
       "externalReferences": [
         {
@@ -2555,6 +3973,104 @@
       "version": "15.0.0"
     },
     {
+      "bom-ref": "pkg:pypi/rpds-py@2026.6.3",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/crate-py/rpds/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/rpds-py/2026.6.3/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/crate-py/rpds/v2026.6.3/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "rpds-py",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Protocol schema processing can reach the compiled extension through referencing; malformed JSON cannot load native code but can stress collection operations."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Upgrade as an atomic reviewed wheel and re-inventory its embedded supplier SBOM on every change."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:evidencePlatform",
+          "value": "rpds-py 2026.6.3 CPython 3.14 Windows x86-64 wheel"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "MIT"
+        },
+        {
+          "name": "localdocforge:licenseExactVersionEvidence",
+          "value": "The supplier SBOM declares required-child expressions MIT, MIT OR Apache-2.0, or (MIT OR Apache-2.0) AND Unicode-3.0, but supplies no child copyright/license texts; preserve the embedded SBOM and do not claim complete redistribution notices."
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed top-level MIT LICENSE SHA256=8bcb72c82ea8ae74802293c41d93ad7d51434001b0ae45a603a5af0f507aee0; embedded rpds-py.cyclonedx.json SHA256=5fa8e62b8f860c23a9da6ddb19c215184397d1a7f2cd3d93055898d119ba0e40 records 15 scope-required and two scope-excluded Cargo dependencies"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel; supplier-SBOM child expressions reviewed with notice-text limitation"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "60"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:0be972be84cfcaf46c8c6edf690ca0f154ac17babf1f6a955a51579b34ad2dc5,sha256:127565fead0a10943b282957bd5447804ff3160ad79f2ad2635e6d249e380680,sha256:166cf54d9f44fc6ceb53c7860258dde44a81406646de79f8ed3234fca3b6e538,sha256:1cebd1337c242e4ec2293e541f712b2da849b29f48f0c293684b71c0632625d4,sha256:1cf01971c4f2c5553b772a542e4aaf191789cd331bc2cd4ff0e6e65ba49e1e97,sha256:22bffe6042b9bcb0822bcd1955ec00e245daf17b4344e4ed8e9551b976b63e96,sha256:270b293dae9058fc9fcedab50f13cebf46fb8ed1d1d54e0521a9da5d6b211975,sha256:29dfa0533a5d4c94d4dfa1b694fcb56c9c63aad8330ffdd816fd225d0a7a162f,sha256:2a9c6f195058cb45335e8cc3802745c603d716eb96bc9625950c1aac71c0c703,sha256:2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f,sha256:2c99f7e8ccb3dd6e3e4bfeac657a7b208c9bac8075f4b078c02d7404c34107fa,sha256:3cfe765c1da0072636ca06628261e0ea05688e160d5c8a03e0217c3854037223,sha256:425560c6fa0415f27261727bb20bd097568485e5eb0c121f1949417d1c516885,sha256:4470ce197d4090875cf6affbf1f853338387428df97c4fb7b7106317b8214698,sha256:4f4bca01b63096f606e095734dd56e74e175f94cfbf24ff3d63281cec61f7bb7,sha256:501f9f04a588d6a09179368c57071301445191767c64e4b52a6aa9871f1ef5ed,sha256:536bceea4fa4acf7e1c61da2b5786304367c816c8895be71b8f537c480b0ea1f,sha256:538949e262e46caa31ac01bdb3c1e8f642622922cacbabbae6a8445d9dc33eaf,sha256:539d75de9e0d536c84ff18dfeb805398e58227001ce09231a26a08b9aed1ee0e,sha256:54f45a148e28767bf343d33a684693c70e451c6f4c0e9904709a723fafbdfc1f,sha256:55927d532399c2c646100ff7feb48eaa940ad70f42cd68e1328f3ded9f81ca24,sha256:58eadac9cd119677b60e1cf8ac4052f35949d71b8a9e5556efccbe82533cf22a,sha256:62698275682bf121181861295c9181e789030a2d516071f5b8f3c23c170cd0fc,sha256:639c8929aa0afe81be836b04de888460d6bed38b9c54cfc18da8f6bfabf5af5d,sha256:6de4744d05bd1aa1be4ed7ea1189e3979196808008113bbbf899a460966b925e,sha256:7491ee23305ac3eb59e492b6945881f5cd77a6f731061a3f25b77fd40f9e99a4,sha256:8020133a74bd81b4572dd8e4be028a6b1ebcd70e6726edc3918008c08bee6ee6,sha256:842e7b070435622248c7a2c44ae53fa1440e073cc3023bc919fed570884097a7,sha256:847927daf4cffbd4e90e42bc890069897101edd015f956cb8721b3473372edda,sha256:882076c00c0a608b131187055ddc5ae29f2e7eaf870d6168980420d58528a5c8,sha256:8c3d1e9c15b9d51ca0391e13da1a25a0a4df3c58a37c9dc368e0736cf7f69df0,sha256:8c6e5a2f750cc71c3e3b11d71661f21d6f9bc6cebc6564b1466417a1ec03ec77,sha256:900a67df3fd1660b035a4761c4ce73c382ea6b35f90f9863c36c6fd8bf8b09bb,sha256:9250a9a0a6fd4648b3f868da8d91a4c52b5811a62df58e753d50ae4454a36f80,sha256:931908d9fc855d8f74783377822be318edb6dcb19e47169dc038f9a1bf60b06e,sha256:9826217f048f620d9a712672818bf231442c1b35d96b227a07eabd11b4bb6945,sha256:a0811d33247c3d6128a3001d763f2aa056bb3425204335400ac54f89eec3a0d0,sha256:a214c993455f99a89aaeadc9b21241900037adc9d97203e374d75513c5911822,sha256:a550fb4950a06dde3beb4721f5ad4b25bf4513784665b0a8522c792e2bd822a4,sha256:aca6c1ef08a82bfe327cc156da694660f599923e2e6665b6d81c9c2d0ac9ffc8,sha256:acac386b453c2516111b50985d60ce46e7fadb5ea71ae7b25f4c946935bf27cf,sha256:ae50181a047c871561212bb97f7932a2d45fb53e947bd9b57ebad85b529cbc53,sha256:af05d726809bff6b141be124d4c7ce998f9c9c7f30edb1f46c07aa103d540b41,sha256:afd70d95892096cdb26f15a00c45907b17817577aa8d1c76b2dcc2788391f9e9,sha256:bc0011654b91cc4fb2ae701bec0a0ba1e552c0714247fa7af6c59e0ccfa3a4e1,sha256:bcfbcf66006befb9fd2aeaa9e01feaf881b4dc330a02ba07d2322b1c11be7b5d,sha256:c7b9a2f8f4d8e90af72571d3d495deebdd7e3c75451f5b41719aee166e940fc2,sha256:ccffae9a092a00deb7efd545fe5e2c33c33b88e7c054337e9a74c179347d0b7d,sha256:cdc7e35386f3847df728fbcb5e887e2d79c19e2fa1eba9e51b6621d23e3243af,sha256:d34c20167764fbcf927194d532dd7e0c56772f0a5f943fa5ef9e9afbba8fb9db,sha256:d7469697dce35be237db177d42e2a2ee26e6dcc5fc052078a6fefabd288c6edd,sha256:dc319e5a1de4b6913aac94bf6a2f9e847371e0a140a43dd4991db1a09bc2d504,sha256:e4316bf32babbed84e691e352faf967ce2f0f024174a8643c37c94a1080374fc,sha256:ea7bb13b7c9a29791f87a0387ba7d3ad3a6d783d827e4d3f27b40a0ff44495e2,sha256:ea964164cc9afa72d4d9b23cc28dafae93693c0a53e0b42acbff15b22c3f9ddd,sha256:ec829541c45bca16e61c7ae50c20501f213605beb75d1aba91a6ee37fbbb56a4,sha256:ecabd69db66de867690f9797f2f8fa27ba501bbc24540cbdbdc649cd15888ba6,sha256:f4d78253f6996be4901669ad25319f842f740eccf4d58e3c7f3dd39e6dde1d8f,sha256:f56f1695bc5c0871cbc33dc0130fcf503aab0c57dcc5a6700a4f49eba4f2652e,sha256:f90938e92afda60266da758ee7d363447f7f0138c9559f9e1811629580582d90"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Native memory-safety and algorithmic-complexity defects remain possible; the 15 reviewed Cargo identities are preserved as an unflattened supplier-SBOM boundary."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "Native persistent-data-structure implementation used by referencing/jsonschema in the MCP SDK closure."
+        }
+      ],
+      "purl": "pkg:pypi/rpds-py@2026.6.3",
+      "type": "library",
+      "version": "2026.6.3"
+    },
+    {
       "bom-ref": "pkg:pypi/shellingham@1.5.4",
       "externalReferences": [
         {
@@ -2639,6 +4155,182 @@
       "purl": "pkg:pypi/shellingham@1.5.4",
       "type": "library",
       "version": "1.5.4"
+    },
+    {
+      "bom-ref": "pkg:pypi/sse-starlette@3.4.5",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/sysid/sse-starlette/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/sse-starlette/3.4.5/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/sysid/sse-starlette/v3.4.5/LICENSE"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "sse-starlette",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "No supported `ldf mcp` flow creates an ASGI SSE response or network listener."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep remote MCP transports disabled and perform a separate review before enabling them."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-08-10"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseLocalVersionEvidence",
+          "value": "installed LICENSE SHA256=80af6bfccbebd2c14d4aab96695cab9950e177190cc80f5ef819e99996883e8e; AUTHORS SHA256=c2ff63d2ecf128bbda8ab1b2016830a5da124202fbb97168685bb9946aed3f1a"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream-and-installed-wheel"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:83072538bc211a2f68b7b0422226c4af3e9b62e106e07034664b832ca019842a,sha256:e71bad53323f65573c3864a6c3bd0c1eb6e5f092b2e48082b0c35927d19ca296"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Connection lifecycle, cancellation, and event framing defects become reachable if the dormant transport is enabled."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "ASGI Server-Sent Events implementation required by the MCP SDK's remote server transport; installed but unused by LocalDocForge's stdio-only MCP surface."
+        }
+      ],
+      "purl": "pkg:pypi/sse-starlette@3.4.5",
+      "type": "library",
+      "version": "3.4.5"
+    },
+    {
+      "bom-ref": "pkg:pypi/starlette@1.3.1",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/Kludex/starlette/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/starlette/1.3.1/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/Kludex/starlette/1.3.1/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "starlette",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly reachable by untrusted API requests, uploads, headers, and disconnect behavior when the web service is enabled. The stdio-only MCP path does not construct Starlette routes."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Starlette/FastAPI compatible and preserve multipart, request-size, timeout, auth, Host, and cleanup controls."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:05d0213193f2fbaae60e2ecb593b4add4262ad4e46536b54abe36f11a71724e0,sha256:c7372aae11c3c3f26a42df7bd626cec2f47d03483d261d369516a615a53714c6"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Historical advisories show upload/request parsing is security-sensitive; no exact match does not eliminate new defects."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "ASGI request, response, upload, and routing implementation beneath FastAPI and the MCP SDK's HTTP/SSE transports; LocalDocForge MCP uses stdio only."
+        }
+      ],
+      "purl": "pkg:pypi/starlette@1.3.1",
+      "type": "library",
+      "version": "1.3.1"
     },
     {
       "bom-ref": "pkg:pypi/typer@0.27.0",
@@ -2987,6 +4679,92 @@
       "purl": "pkg:pypi/uharfbuzz@0.55.0",
       "type": "library",
       "version": "0.55.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/uvicorn@0.51.0",
+      "externalReferences": [
+        {
+          "type": "advisories",
+          "url": "https://github.com/Kludex/uvicorn/security/advisories"
+        },
+        {
+          "type": "distribution",
+          "url": "https://pypi.org/project/uvicorn/0.51.0/"
+        },
+        {
+          "type": "license",
+          "url": "https://raw.githubusercontent.com/Kludex/uvicorn/0.51.0/LICENSE.md"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "uvicorn",
+      "properties": [
+        {
+          "name": "localdocforge:advisoryApplicability",
+          "value": "Directly accepts untrusted socket/HTTP traffic when standard/full web mode is running; loopback is the default. It remains dormant in the Lite MCP path."
+        },
+        {
+          "name": "localdocforge:advisoryDisposition",
+          "value": "no-known-applicable-advisory"
+        },
+        {
+          "name": "localdocforge:advisoryRemediation",
+          "value": "Keep Uvicorn and h11 jointly current and preserve loopback default, Host/token controls, and admission/resource limits."
+        },
+        {
+          "name": "localdocforge:advisoryReviewDate",
+          "value": "2026-07-19"
+        },
+        {
+          "name": "localdocforge:componentKind",
+          "value": "runtime-python"
+        },
+        {
+          "name": "localdocforge:licenseConclusion",
+          "value": "BSD-3-Clause"
+        },
+        {
+          "name": "localdocforge:licenseVerification",
+          "value": "verified-upstream"
+        },
+        {
+          "name": "localdocforge:lockHashCount",
+          "value": "2"
+        },
+        {
+          "name": "localdocforge:lockHashes",
+          "value": "sha256:5d38af6cd620f2ae3849fb44fd4879e0890aa1febe8d47eb355fb45d93fe6a5b,sha256:f6f4b69b657c312f516dd2d268ab9ae6f254b11e4bac504f37b2ab58b24dd0b0"
+        },
+        {
+          "name": "localdocforge:lockMarker",
+          "value": "(implementation_name == 'cpython' and sys_platform == 'darwin') or (implementation_name == 'cpython' and sys_platform == 'linux') or (implementation_name == 'cpython' and sys_platform == 'win32')"
+        },
+        {
+          "name": "localdocforge:lockPath",
+          "value": "requirements/locks/lite.txt"
+        },
+        {
+          "name": "localdocforge:profile",
+          "value": "lite"
+        },
+        {
+          "name": "localdocforge:residualRisk",
+          "value": "Protocol handling, disconnect, and resource-exhaustion defects may be unpublished or interaction-specific."
+        },
+        {
+          "name": "localdocforge:role",
+          "value": "ASGI server for `ldf web`, also retained in every profile by the MCP SDK's mandatory HTTP transport closure; `ldf mcp` does not launch it."
+        }
+      ],
+      "purl": "pkg:pypi/uvicorn@0.51.0",
+      "type": "library",
+      "version": "0.51.0"
     },
     {
       "bom-ref": "pkg:cargo/asn1@0.24.1",
@@ -8695,6 +10473,21 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/idna@3.18",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/anyio@4.14.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/attrs@26.1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/certifi@2026.6.17"
+    },
+    {
+      "dependsOn": [
         "pkg:pypi/pycparser@3.0",
         "urn:localdocforge:native:cffi:libffi:unversioned"
       ],
@@ -8703,6 +10496,12 @@
     {
       "dependsOn": [],
       "ref": "pkg:pypi/charset-normalizer@3.4.9"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/colorama@0.4.6"
+      ],
+      "ref": "pkg:pypi/click@8.4.2"
     },
     {
       "dependsOn": [],
@@ -8732,6 +10531,34 @@
       "ref": "pkg:pypi/fpdf2@2.8.7"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:pypi/h11@0.16.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/certifi@2026.6.17",
+        "pkg:pypi/h11@0.16.0"
+      ],
+      "ref": "pkg:pypi/httpcore@1.0.9"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/httpx-sse@0.4.3"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/certifi@2026.6.17",
+        "pkg:pypi/httpcore@1.0.9",
+        "pkg:pypi/idna@3.18"
+      ],
+      "ref": "pkg:pypi/httpx@0.28.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/idna@3.18"
+    },
+    {
       "dependsOn": [
         "pkg:pypi/pikepdf@10.10.0",
         "pkg:pypi/pillow@12.3.0"
@@ -8740,8 +10567,24 @@
     },
     {
       "dependsOn": [
+        "pkg:pypi/referencing@0.37.0"
+      ],
+      "ref": "pkg:pypi/jsonschema-specifications@2025.9.1"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/attrs@26.1.0",
+        "pkg:pypi/jsonschema-specifications@2025.9.1",
+        "pkg:pypi/referencing@0.37.0",
+        "pkg:pypi/rpds-py@2026.6.3"
+      ],
+      "ref": "pkg:pypi/jsonschema@4.26.0"
+    },
+    {
+      "dependsOn": [
         "pkg:pypi/cryptography@50.0.0",
         "pkg:pypi/markdown-it-py@4.2.0",
+        "pkg:pypi/mcp@1.28.1",
         "pkg:pypi/ocrmypdf@17.8.1",
         "pkg:pypi/pdfplumber@0.11.10",
         "pkg:pypi/pi-heif@1.4.0",
@@ -8763,6 +10606,25 @@
         "pkg:pypi/mdurl@0.1.2"
       ],
       "ref": "pkg:pypi/markdown-it-py@4.2.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/httpx-sse@0.4.3",
+        "pkg:pypi/httpx@0.28.1",
+        "pkg:pypi/jsonschema@4.26.0",
+        "pkg:pypi/pydantic-settings@2.14.2",
+        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/pyjwt@2.13.0",
+        "pkg:pypi/python-multipart@0.0.32",
+        "pkg:pypi/pywin32@312",
+        "pkg:pypi/sse-starlette@3.4.5",
+        "pkg:pypi/starlette@1.3.1",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/typing-inspection@0.4.2",
+        "pkg:pypi/uvicorn@0.51.0"
+      ],
+      "ref": "pkg:pypi/mcp@1.28.1"
     },
     {
       "dependsOn": [],
@@ -8864,6 +10726,10 @@
       "ref": "pkg:pypi/pygments@2.20.0"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pyjwt@2.13.0"
+    },
+    {
       "dependsOn": [
         "pkg:generic/pdfium@152.0.7947.0"
       ],
@@ -8874,6 +10740,22 @@
       "ref": "pkg:pypi/python-dotenv@1.2.2"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:pypi/python-multipart@0.0.32"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:pypi/pywin32@312"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/attrs@26.1.0",
+        "pkg:pypi/rpds-py@2026.6.3",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/referencing@0.37.0"
+    },
+    {
       "dependsOn": [
         "pkg:pypi/markdown-it-py@4.2.0",
         "pkg:pypi/pygments@2.20.0"
@@ -8882,7 +10764,25 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:pypi/rpds-py@2026.6.3"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:pypi/shellingham@1.5.4"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/starlette@1.3.1"
+      ],
+      "ref": "pkg:pypi/sse-starlette@3.4.5"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.14.2",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
+      "ref": "pkg:pypi/starlette@1.3.1"
     },
     {
       "dependsOn": [
@@ -8908,6 +10808,13 @@
         "pkg:generic/harfbuzz@14.2.1"
       ],
       "ref": "pkg:pypi/uharfbuzz@0.55.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/click@8.4.2",
+        "pkg:pypi/h11@0.16.0"
+      ],
+      "ref": "pkg:pypi/uvicorn@0.51.0"
     },
     {
       "dependsOn": [],
@@ -9016,7 +10923,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "082bbce44c0fde91eddac3778402c122efd8a42344b4ba0d670ef49bbed5c03d"
+        "value": "49b7a35946c1ea69ec18da773228eaaa03a0088b18427fae4d57eabe5747f2b2"
       },
       {
         "name": "localdocforge:advisoryReview",

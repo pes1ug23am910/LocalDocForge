@@ -1,10 +1,10 @@
-# CLI and Local API Reference (`ldf` / `localdocforge`)
+# CLI, MCP, and Local API Reference (`ldf` / `localdocforge`)
 
 Implemented conversion engines execute on the host machine. The shipped
-package contains no outbound network client or remote browser asset, but
-non-strict CLI paths may refer to filesystems the operating system exposes over
-a network. Use strict-offline mode for the application's strongest local-only
-policy.
+application makes no outbound request and includes no remote browser asset, but
+non-strict CLI or MCP paths may refer to filesystems the operating system exposes
+over a network. Use strict-offline mode for the application's strongest
+local-only policy.
 
 Global options come **before** the command:
 
@@ -67,6 +67,7 @@ ldf doctor                      # engines + capability list
 ldf --json doctor               # machine-readable diagnostics
 ldf agent-brief                 # registry-derived Markdown for coding agents
 ldf --json agent-brief          # the same ordered snapshot as structured JSON
+ldf mcp                         # MCP 2025-11-25 JSON-RPC over local stdio
 ldf inspect input.pdf           # read-only structure + per-page text counts
 ldf --strict-offline web        # API + status shell on http://127.0.0.1:8477
 ldf web --port 9000             # loopback on another port
@@ -501,6 +502,112 @@ Notes:
 - The local API is unchanged: its existing optional multipart `password` form
   field provides interface parity without using the CLI's stdin/environment
   mechanisms.
+
+## Local-agent MCP stdio server (`ldf mcp`)
+
+`ldf mcp` exposes the implemented LocalDocForge operations to a same-user local
+agent over inherited standard input/output. It uses the official MCP Python SDK
+selected under this repository's dependency cutoff and advertises the
+MCP **2025-11-25** compatibility profile. The session begins with the normal
+`initialize` handshake; this documentation does not claim the newer 2026-07-28
+protocol revision.
+
+The transport is one strict UTF-8 JSON-RPC object per newline. Each input frame
+is limited to 1 MiB and 64 levels of JSON nesting; invalid UTF-8, duplicate
+members, non-finite numbers, batches, oversized frames, and deeper values are
+refused as protocol errors. Multi-input tool arrays are limited to 256 paths.
+Server stdout contains protocol frames only. Logs
+and bounded diagnostics go to stderr, and passwords never appear in either
+responses or diagnostics. On Windows the server writes through a private binary
+UTF-8 protocol handle instead of the console text/codepage path, so non-ANSI
+paths are preserved and cannot degrade to `?` as console-formatted CLI output
+can. JSON escaping keeps control characters and newlines inside string values;
+filenames that resemble instructions or prompt injection are always treated as
+data, never executed or interpolated into protocol framing.
+
+`tools/list` is generated in registry order from entries with
+`implemented=True` in `CAPABILITY_SPECS`; it is not a second hand-maintained
+command list. Each input schema is generated from the same typed operation
+parameter model used at the API boundary, with MCP's absolute filesystem path
+fields layered on top. A planned/unimplemented capability is therefore absent
+and a direct call to it is refused with a JSON-RPC error. A listed operation can
+still report an ordinary engine-unavailable failure when its live engine probe
+does not pass.
+
+MCP callers provide absolute input and destination paths. Windows drive paths
+use ordinary JSON escaping (for example `E:\\docs\\input.pdf` in raw JSON) and
+are normalized by the same path policy as other interfaces; `..`, aliases, and
+reparse/symlink cases do not bypass containment or input/output-alias checks.
+The caller chooses output files or directories and therefore carries the same
+filesystem authority as the account running `ldf`. Writing tools expose
+`collision=fail|rename|overwrite`, defaulting to `fail`; existing outputs are
+not silently replaced.
+
+The `ocr` MCP tool takes an absolute PDF `output` and, when requested, an
+absolute text `sidecar` destination. This differs only at the transport layer
+from the HTTP API's boolean `sidecar` form field, where the server chooses the
+fixed `document.pdf` and `document.txt` names; language and mode validation are
+shared.
+
+The read-only `inspect` tool returns its inventory in `structuredContent` and
+has no caller-visible output artifact. Its validated private JSON transport
+file stays inside the worker workspace and is removed before the response.
+
+Every `tools/call` passes through typed validation, engine gating, collision and
+resource-limit enforcement, the standard operation pipeline, output validation,
+and a fresh worker process. The server serializes tool calls in v1. Calls are
+synchronous and there is no MCP progress streaming; a client receives the final
+result or error. If the client disconnects during a job, the server cancels the
+call, terminates the complete contained worker tree, waits for finalization, and
+cleans the private workspace before exiting.
+
+Successful jobs with unusually large per-output reports remain successful:
+the response retains bounded leading artifacts/warnings and adds
+`mcp_response.report_truncated=true` plus the original counts. A client must not
+retry merely because response details were summarized; already-published files
+remain the authoritative outputs under the requested destination and collision
+policy.
+
+Strict-offline mode is selected before the command:
+
+```powershell
+ldf --strict-offline mcp
+```
+
+It remains in force for the server lifetime and rejects recognizable remote
+inputs, outputs, and configured roots. As elsewhere, it is application policy,
+not a kernel network or filesystem sandbox. The MCP transport itself neither
+listens on a port nor makes an outbound connection.
+
+Unlike `ldf web`, `ldf mcp` has no bearer token. Authentication would not add a
+meaningful boundary to private pipes inherited by a client that already starts
+the subprocess as the same OS user. The trust boundary is the local process and
+account boundary: configure only a trusted local agent client, protect that
+client's configuration and process handles, and do not relay the stdio channel
+to another user or a network service. The agent is intentionally authorized to
+name any absolute path the LocalDocForge process could otherwise access, subject
+to configured `allowed_output_roots` and strict-offline policy. Documents,
+filenames, and tool arguments remain untrusted data even though the client
+process is trusted to select them.
+
+Register the server in the MCP client's configuration as a stdio command. A
+typical TOML entry (literal strings preserve Windows backslashes):
+
+```toml
+[mcp_servers.localdocforge]
+command = 'C:\path\to\LocalDocForge\.venv\Scripts\ldf.exe'
+args = ["mcp"]
+```
+
+Clients configured by command line use the same command and argument:
+`C:\path\to\LocalDocForge\.venv\Scripts\ldf.exe mcp`.
+
+Because stdin carries protocol traffic, do not combine `mcp` with
+`--password-stdin`. The CLI presentation flags `--json` and `--quiet` do not
+change MCP framing and should also be omitted. Supply an encrypted-input password
+only through the relevant tool argument; it crosses the inherited private pipe
+and worker spawn channel, is cleared after the call, and is omitted from reports,
+logs, diagnostics, and protocol responses.
 
 ## The local API (`ldf web`)
 

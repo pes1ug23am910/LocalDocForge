@@ -1,9 +1,9 @@
 # Threat Model
 
-Scope: the current LocalDocForge core library, CLI, worker-backed FastAPI
-service, and minimal browser status page. Controls below are implemented unless
-explicitly marked planned. Unimplemented roadmap features are not assumed to
-inherit these controls automatically.
+Scope: the current LocalDocForge core library, CLI, local-agent MCP stdio
+server, worker-backed FastAPI service, and minimal browser status page. Controls
+below are implemented unless explicitly marked planned. Unimplemented roadmap
+features are not assumed to inherit these controls automatically.
 
 ## Assets
 
@@ -30,6 +30,11 @@ inherit these controls automatically.
   timeout, and process cleanup, but does not provide an OS/container sandbox.
 - The local CLI user is trusted to choose ordinary local input/output paths.
   The optional CLI `allowed_output_roots` setting can narrow this authority.
+- A local MCP client is trusted to start `ldf mcp` under the same OS account and
+  choose absolute input/output paths. Its inherited stdio pipes are a local
+  process boundary, not an authentication boundary; documents, filenames, and
+  tool arguments remain untrusted data. MCP jobs use fresh contained workers,
+  which retain that account's filesystem authority just like API workers.
 - Browser requests are untrusted. The API accepts uploads and fixed operation
   parameters, not arbitrary server-side input/output paths.
 - Other local processes with the same user privileges, administrators/root,
@@ -323,6 +328,12 @@ inherit these controls automatically.
   size-capped JSON; progress, reports, errors, paths, and secrets are sanitized
   before they cross back. Worker Python/native stdout and stderr are redirected
   away from server logs, and unexpected parser errors become generic.
+- MCP passwords appear only in the relevant request's typed tool arguments.
+  They cross the inherited private pipe and private worker spawn channel, are
+  cleared from parent request state after the call, and are omitted from
+  protocol responses, reports, stdout, stderr diagnostics, and logs. The MCP
+  command does not use the CLI's `--password-stdin` mechanism because stdin is
+  reserved for protocol frames.
 - Successful API jobs remove uploads, scratch, and worker-temp data before
   publishing their validated outputs and `success` together under the job lock.
   Downloads acquire a lifetime lease and reject every non-success state;
@@ -338,9 +349,9 @@ inherit these controls automatically.
 
 ### T6. Network and privacy boundary
 
-- Source inspection and socket-denial tests found no outbound HTTP client,
-  telemetry, update checker, CDN, remote font/script, cloud conversion, or
-  automatic external-URI resolution in the shipped package. A synthetic PDF
+- Source inspection and socket-denial tests found no LocalDocForge outbound
+  request path, telemetry, update checker, CDN, remote font/script, cloud
+  conversion, or automatic external-URI resolution. A synthetic PDF
   containing an external URI completed a strict operation without DNS or
   socket use.
 - Strict-offline mode is preserved from `LDF_STRICT_OFFLINE`, recorded in job
@@ -371,7 +382,8 @@ inherit these controls automatically.
   compromised parser or dependency from calling the OS network stack. Use a
   host firewall or a container/VM with no network for defense in depth.
 - Outside strict mode, the CLI may intentionally access a path the OS exposes as
-  a network filesystem. `ldf web` still binds to loopback by default;
+  a network filesystem. The MCP server uses inherited stdio and opens no
+  listening or outbound transport. `ldf web` still binds to loopback by default;
   non-loopback inbound serving requires `--allow-nonlocal` and is prominently
   warned. Strict mode refuses that override.
 
@@ -406,7 +418,45 @@ inherit these controls automatically.
   complete before a terminal event releases accounting. Non-loopback mode has
   no TLS and is not recommended for sensitive documents.
 
-### T8. Unavailable security-sensitive capabilities
+### T8. Local-agent MCP stdio surface
+
+- `ldf mcp` implements the MCP 2025-11-25 compatibility profile over inherited
+  stdio. It has no bearer token: a same-user client already has authority to
+  launch the subprocess and own its private pipes, while the HTTP API's token is
+  needed for a different browser/request boundary. Relaying those pipes to
+  another account or a network service is outside the supported deployment
+  model.
+- Stdout is reserved for one strict UTF-8 JSON-RPC object per newline; all
+  logging and bounded diagnostics use stderr. A private binary protocol handle
+  avoids the Windows console codepage, preserving non-ANSI paths. Frames over
+  1 MiB, JSON deeper than 64 levels, invalid UTF-8, duplicate members,
+  non-finite numbers, batches, and multi-input arrays above 256 paths are
+  rejected before dispatch. JSON string encoding prevents control characters
+  or newlines in filenames from becoming protocol frames.
+- Tool names and ordering are generated from implemented `CAPABILITY_SPECS`,
+  while schemas reuse the typed operation parameter models. An unimplemented or
+  unknown capability receives a JSON-RPC error instead of reaching a worker.
+  Prompt-injection-shaped filenames and argument strings are never instructions;
+  they pass only as bounded data to typed validation and the selected operation.
+- Inputs and destinations must be absolute. Normalization, `..`, symlink/reparse
+  handling, path aliases, input/output alias prevention, configured
+  `allowed_output_roots`, strict-offline network-path refusal, and
+  `fail|rename|overwrite` collision policy use the standard path/pipeline
+  controls. This deliberately permits a trusted same-user client to select any
+  path the process could otherwise access when no narrower output roots are
+  configured.
+- Each call uses the standard pipeline and a fresh contained worker with the
+  configured time, memory, process, input, output, and temporary limits. Calls
+  are serialized in v1 and return only a final synchronous result; progress
+  streaming is unavailable. Client disconnect cancels the active call, kills
+  the contained worker tree, waits for finalization, and cleans its private
+  workspace.
+- A successful report that would exceed the bounded worker/protocol channels is
+  summarized as a successful result with original counts and bounded leading
+  entries. It is never relabelled as failure after outputs have been published,
+  avoiding unsafe agent retries with duplicate or overwrite side effects.
+
+### T9. Unavailable security-sensitive capabilities
 
 Lossy compression presets, repair, Office-to-PDF, HTML-to-PDF,
 PDF/A or PDF/UA validation/conversion, form editing, encryption/protection
@@ -424,6 +474,9 @@ refused, never approximated.
   hard failure/resource boundaries but retain the user's filesystem authority;
   they are not AppContainers, restricted tokens, seccomp sandboxes, or network
   namespaces.
+- A configured MCP client has the same-user filesystem authority of the
+  LocalDocForge process. Stdio prevents ambient network access to the protocol;
+  it does not sandbox a compromised or over-authorized local agent.
 - On POSIX, repository-managed tools remain in the worker process group, but
   arbitrary same-user code can create a new session and escape group-based
   descendant accounting and termination.
@@ -460,10 +513,12 @@ refused, never approximated.
 ## Deployment modes
 
 1. Local CLI under the user's account (implemented).
-2. Loopback FastAPI service plus minimal status shell under the same account
+2. Same-user local-agent MCP 2025-11-25 over inherited stdio (implemented;
+   synchronous serialized calls with per-job workers).
+3. Loopback FastAPI service plus minimal status shell under the same account
    (implemented with per-job workers; strict-offline recommended).
-3. Explicit non-loopback API bind outside strict mode (implemented but
+4. Explicit non-loopback API bind outside strict mode (implemented but
    dangerous, plaintext transport with token authentication, and not
    recommended).
-4. Container/VM deployment with OS-enforced network and resource isolation
+5. Container/VM deployment with OS-enforced network and resource isolation
    (example and packaging still planned).

@@ -20,15 +20,15 @@
       "standard": "requirements/locks/standard.txt",
       "full": "requirements/locks/full.txt"
     },
-    "runtimePythonComponents": 43,
+    "runtimePythonComponents": 56,
     "runtimePythonComponentsByProfile": {
-      "lite": 34,
-      "standard": 42,
-      "full": 43
+      "lite": 54,
+      "standard": 55,
+      "full": 56
     },
     "versionedBundledNativeComponents": 52,
     "unversionedNestedNativeComponents": 19,
-    "versionedReviewRecordCount": 95,
+    "versionedReviewRecordCount": 108,
     "optionalEngines": {
       "reviewed": false,
       "reason": "Typst 0.15.1 is an enabled, separately installed subprocess engine for Markdown-to-PDF, but it is not distributed by these Python profiles and remains outside their component inventory. OCRmyPDF 17.8.1 is shipped as a Python component; Tesseract and Ghostscript remain separately installed subprocess engines outside this component inventory. qpdf CLI, LibreOffice, Pandoc, and veraPDF are likewise not shipped by these profiles."
@@ -39,7 +39,7 @@
       "affected": 2,
       "contains-affected-component": 3,
       "contains-unknown-component": 2,
-      "no-known-applicable-advisory": 87,
+      "no-known-applicable-advisory": 100,
       "unknown": 1
     },
     "uniqueApplicableAdvisories": 3,
@@ -293,6 +293,59 @@
       ],
       "releaseDisposition": "not-cleared",
       "releaseRationale": "The seven new Python records and OCRmyPDF's bundled asset license obligations are reviewed and represented, and the protected cryptography 50.0.0 and pdfminer.six 20260107 pins did not move. Existing affected OpenJPEG/libheif and advisory-unknown PDFium findings remain, so the repository-wide disposition is unchanged."
+    },
+    {
+      "accessDate": "2026-08-10",
+      "scope": "MCP stdio server: cutoff-constrained official SDK resolution, exact-version license/advisory review, and Windows wheel-notice inspection for the new and newly shipped runtime closure",
+      "dataBoundary": "Only public component names, exact public versions, supplier SBOM identifiers, and published source metadata were submitted; no repository source, document data, filenames, environment values, credentials, or private paths were transmitted.",
+      "sources": [
+        {
+          "url": "https://api.osv.dev/v1/querybatch",
+          "exactVersions": "The ten new universal-lock PyPI nodes, three pre-existing dev-lock nodes newly promoted into runtime profiles, seven existing runtime nodes newly promoted into Lite, and the 17 Cargo identities in rpds-py 2026.6.3's supplier SBOM",
+          "conclusion": "Exact-version OSV queries returned no matching record for any of the 20 Python distributions or 17 Cargo identities.",
+          "disposition": "The empty results are time-bounded no-findings, not safety guarantees. Two rpds supplier entries are build-excluded and are retained in the query evidence without being represented as shipped runtime components."
+        },
+        {
+          "url": "https://api.github.com/advisories",
+          "exactVersions": "The 20 exact PyPI distributions entering or changing shipped runtime profile scope through MCP",
+          "conclusion": "GitHub reviewed global advisories returned no matching pip advisory for any exact package/version query.",
+          "disposition": "The empty results corroborate OSV but do not prove the SDK, protocol parser, schema validator, HTTP support stack, or native extensions safe."
+        },
+        {
+          "url": "https://pypi.org/pypi/mcp/1.28.1/json",
+          "cutoffComparisonUrls": ["https://pypi.org/pypi/mcp/1.29.0/json", "https://pypi.org/pypi/mcp/2.0.0/json"],
+          "exactVersions": "mcp 1.28.1 and its repo-cutoff-constrained dependency closure",
+          "conclusion": "Repo-pinned uv 0.11.26 selected stable mcp 1.28.1 under exclude-newer=2026-07-19; its wheel was uploaded 2026-06-26, declares MIT, and has SHA-256 2726bca5e7193f61c5dde8b12500a6de2d9acf6d1a1c0be9e8c2e706437991df. Stable 1.29.0 and 2.0.0 were uploaded after the cutoff, while pre-cutoff 2.0 prereleases remain excluded by the resolver's default prerelease policy.",
+          "disposition": "The exact reviewed SDK is constrained to mcp>=1.28.1,<2 and the 2025-11-25 protocol generation; any SDK major, cutoff, or protocol revision change requires a new closure and compatibility review."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v1.28.1/src/mcp/shared/version.py",
+          "corroboratingUrl": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v1.28.1/src/mcp/types.py",
+          "exactVersions": "mcp 1.28.1 protocol constants, corroborated by the exact-tag src/mcp/types.py binding",
+          "conclusion": "SUPPORTED_PROTOCOL_VERSIONS contains 2024-11-05, 2025-03-26, 2025-06-18, and LATEST_PROTOCOL_VERSION; the exact-tag types.py sets LATEST_PROTOCOL_VERSION to 2025-11-25.",
+          "disposition": "LocalDocForge stays within the SDK's reviewed v1 protocol set; any supported-version or latest-generation change requires protocol and interoperability re-review."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v1.28.1/LICENSE",
+          "exactVersions": "mcp 1.28.1 and the exact-tag license sources named by all 13 newly added runtime review records",
+          "conclusion": "Each exact tag matched its installed wheel license text after accounting for wheel newline normalization. The Python closure stays at MIT, BSD, Apache, MPL, LGPL, HPND, Python-2.0.1, or equivalent permissive terms; no GPL or AGPL runtime enters the profiles.",
+          "disposition": "license ceiling satisfied"
+        },
+        {
+          "url": "https://github.com/mhammond/pywin32/tree/b312",
+          "exactVersions": "pywin32 312 cp314-cp314-win_amd64 wheel",
+          "conclusion": "The wheel's metadata-level PSF label is not a complete license summary. Its eight declared license files include BSD-3-Clause core terms, LGPL-2.1-or-later adodbapi terms, MIT MAPIStubLibrary terms, the Python-2.0.1 composite license, and HPND Scintilla/ISAPI terms. Their installed paths and SHA-256 values plus the MAPI NOTICE are retained in the pywin32 record.",
+          "disposition": "weak-copyleft-or-lighter ceiling satisfied; redistributors must preserve the complete wheel license directory and MAPI NOTICE rather than only the PyPI PSF classifier"
+        },
+        {
+          "url": "https://pypi.org/project/rpds-py/2026.6.3/",
+          "exactVersions": "rpds-py 2026.6.3 CPython 3.14 Windows x86-64 wheel and embedded rpds-py.cyclonedx.json",
+          "conclusion": "The wheel preserves its top-level MIT license and a supplier SBOM with 15 scope-required and two scope-excluded Cargo records. Required child expressions are MIT, MIT OR Apache-2.0, or (MIT OR Apache-2.0) AND Unicode-3.0; exact Cargo OSV queries returned no matches.",
+          "disposition": "license ceiling satisfied from supplier-declared expressions; supplier identities remain an explicitly disclosed unflattened SBOM inventory boundary, and the wheel does not supply their full copyright/license texts"
+        }
+      ],
+      "releaseDisposition": "not-cleared",
+      "releaseRationale": "The MCP Python closure and its Windows wheel notices pass the license ceiling and have no exact-version OSV/GitHub reviewed match in this refresh. Existing affected OpenJPEG/libheif and advisory-unknown PDFium findings remain; unflattened pydantic-core and rpds-py Cargo inventories keep composition incomplete."
     }
   ],
   "method": {
@@ -320,6 +373,13 @@
       "exclusionRule": "Exclude exactly the seven supplier records marked scope=excluded (cc, find-msvc-tools, pkg-config, pyo3-build-config, shlex, target-lexicon, and vcpkg) and the nested cryptography_rust bin-target duplicate, which is a target representation rather than a distinct dependency identity.",
       "platform": "Windows x86-64 / CPython abi3 wheel",
       "limitation": "The supplier cryptography Cargo SBOM was generated with all_targets=true and therefore may over-approximate Windows linkage, including proc-macro crates. Required scope is retained rather than second-guessed. The pre-existing pydantic-core 2.46.4 embedded Cargo SBOM is not flattened by this S5 change and remains a disclosed inventory gap."
+    },
+    "rpdsEmbeddedSbomBoundary": {
+      "evidence": "rpds-py 2026.6.3 CPython 3.14 Windows x86-64 wheel: rpds_py-2026.6.3.dist-info/sboms/rpds-py.cyclonedx.json, SHA256=5fa8e62b8f860c23a9da6ddb19c215184397d1a7f2cd3d93055898d119ba0e40",
+      "inclusionRule": "Review the supplier SBOM's 15 scope-required Cargo dependency identities and their declared license expressions; retain the top-level rpds-py lock record as the generated profile-SBOM component.",
+      "exclusionRule": "Do not treat the two supplier records marked scope=excluded (pyo3-build-config and target-lexicon) as runtime dependencies. Do not treat the rpds_py bin-target representation as a second dependency identity.",
+      "platform": "Windows x86-64 / CPython 3.14 wheel",
+      "limitation": "The 15 required Cargo records were exact-version queried against OSV and their MIT, Apache-2.0, and Unicode-3.0 expressions were reviewed, but they are not flattened into LocalDocForge's lock-level component array. Several identities overlap other native aggregates at different versions, so preserving the supplier SBOM as an explicit boundary avoids false de-duplication. The wheel supplies no child copyright/license texts, so generated CycloneDX composition and third-party notice coverage remain incomplete and must not be represented as redistribution-complete."
     },
     "unversionedComponentPolicy": {
       "securityDisposition": "unknown",
@@ -590,6 +650,79 @@
         "version": "4.0.1",
         "results": [],
         "limitation": "No matching published advisory was identified for exact OpenSSL 4.0.1 on the access date; this is not proof of safety."
+      },
+      "osv-pypi-exact-s8-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "PyPI",
+        "accessDate": "2026-08-10",
+        "results": {
+          "pkg:pypi/anyio@4.14.2": [],
+          "pkg:pypi/attrs@26.1.0": [],
+          "pkg:pypi/certifi@2026.6.17": [],
+          "pkg:pypi/click@8.4.2": [],
+          "pkg:pypi/h11@0.16.0": [],
+          "pkg:pypi/httpcore@1.0.9": [],
+          "pkg:pypi/httpx@0.28.1": [],
+          "pkg:pypi/httpx-sse@0.4.3": [],
+          "pkg:pypi/idna@3.18": [],
+          "pkg:pypi/jsonschema@4.26.0": [],
+          "pkg:pypi/jsonschema-specifications@2025.9.1": [],
+          "pkg:pypi/mcp@1.28.1": [],
+          "pkg:pypi/pyjwt@2.13.0": [],
+          "pkg:pypi/python-multipart@0.0.32": [],
+          "pkg:pypi/pywin32@312": [],
+          "pkg:pypi/referencing@0.37.0": [],
+          "pkg:pypi/rpds-py@2026.6.3": [],
+          "pkg:pypi/sse-starlette@3.4.5": [],
+          "pkg:pypi/starlette@1.3.1": [],
+          "pkg:pypi/uvicorn@0.51.0": []
+        }
+      },
+      "github-reviewed-pip-exact-s8-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.github.com/advisories",
+        "documentation": "https://docs.github.com/en/rest/security-advisories/global-advisories",
+        "ecosystem": "pip",
+        "accessDate": "2026-08-10",
+        "queriedBomRefs": [
+          "pkg:pypi/anyio@4.14.2",
+          "pkg:pypi/attrs@26.1.0",
+          "pkg:pypi/certifi@2026.6.17",
+          "pkg:pypi/click@8.4.2",
+          "pkg:pypi/h11@0.16.0",
+          "pkg:pypi/httpcore@1.0.9",
+          "pkg:pypi/httpx@0.28.1",
+          "pkg:pypi/httpx-sse@0.4.3",
+          "pkg:pypi/idna@3.18",
+          "pkg:pypi/jsonschema@4.26.0",
+          "pkg:pypi/jsonschema-specifications@2025.9.1",
+          "pkg:pypi/mcp@1.28.1",
+          "pkg:pypi/pyjwt@2.13.0",
+          "pkg:pypi/python-multipart@0.0.32",
+          "pkg:pypi/pywin32@312",
+          "pkg:pypi/referencing@0.37.0",
+          "pkg:pypi/rpds-py@2026.6.3",
+          "pkg:pypi/sse-starlette@3.4.5",
+          "pkg:pypi/starlette@1.3.1",
+          "pkg:pypi/uvicorn@0.51.0"
+        ],
+        "results": []
+      },
+      "osv-crates-rpds-exact-s8-2026-08-10": {
+        "authority": "official advisory database corroboration",
+        "endpoint": "https://api.osv.dev/v1/querybatch",
+        "documentation": "https://google.github.io/osv.dev/post-v1-querybatch/",
+        "ecosystem": "crates.io",
+        "accessDate": "2026-08-10",
+        "supplierSbomSha256": "5fa8e62b8f860c23a9da6ddb19c215184397d1a7f2cd3d93055898d119ba0e40",
+        "includedRequiredResults": {
+          "archery@1.2.2": [], "heck@0.5.0": [], "libc@0.2.177": [], "once_cell@1.21.3": [], "proc-macro2@1.0.103": [], "pyo3@0.29.0": [], "pyo3-ffi@0.29.0": [], "pyo3-macros@0.29.0": [], "pyo3-macros-backend@0.29.0": [], "quote@1.0.42": [], "rpds@1.2.1": [], "smallvec@1.15.1": [], "syn@2.0.111": [], "triomphe@0.1.15": [], "unicode-ident@1.0.22": []
+        },
+        "supplierExcludedBuildResults": {
+          "pyo3-build-config@0.29.0": [], "target-lexicon@0.13.3": []
+        }
       }
     },
     "limitations": [
@@ -598,6 +731,8 @@
       "PDFium security bugs are generally handled through Chromium/Google private disclosure. The installed wheel records PDFium 152.0.7947.0 with n_commits=0 and hash=null, so public release notices cannot be mapped authoritatively to this binary.",
       "The components array contains versioned review records, not an exhaustive native inventory. Known unversioned PDFium, Pillow/libavif, and CFFI/libffi children are enumerated separately, inherit unknown advisory provenance, and make the CycloneDX composition incomplete.",
       "The pre-existing pydantic-core 2.46.4 wheel contains an embedded Cargo SBOM with 103 components (101 supplier-marked required) that this S5 dependency delta does not flatten. Those Cargo records remain outside the LocalDocForge component array; the CycloneDX composition stays incomplete until every runtime wheel receives the same supplier-SBOM boundary review.",
+      "The rpds-py 2026.6.3 wheel contains a supplier Cargo SBOM with 15 scope-required dependencies and two scope-excluded build dependencies. Exact Cargo advisories and license expressions were reviewed, but the child identities remain unflattened behind the recorded supplier-SBOM boundary and the wheel supplies no child copyright/license texts; CycloneDX composition and redistribution notice coverage therefore remain incomplete.",
+      "The pywin32 312 Windows wheel has a composite eight-file license bundle, including LGPL-2.1-or-later adodbapi, MIT MAPIStubLibrary, Python-2.0.1 composite, BSD-3-Clause core, and HPND Scintilla/ISAPI terms. The full installed license directory and win32comext/mapi/NOTICE.md must be retained; a single metadata classifier is not an adequate notice. Other platform profiles omit this marker-gated package.",
       "Native evidence comes from Windows x86-64 / CPython 3.14 wheels even though the Python lock and generated SBOM files are universal-profile artifacts. Other platform wheels require independent native inventory.",
       "Platform markers mean a package can be absent on a particular operating system. Dispositions apply whenever the listed artifact is installed."
     ]
@@ -889,8 +1024,8 @@
       "name": "anyio",
       "version": "4.14.2",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "ASGI concurrency layer used by Starlette when the local web service is enabled.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Async concurrency and cancellation layer used by the MCP stdio server in every profile and by Starlette when the local web service is enabled.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream",
@@ -901,9 +1036,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/agronholm/anyio/security/advisories",
-        "applicability": "Reachable indirectly through concurrent API requests only in standard/full profiles; the service defaults to loopback.",
+        "applicability": "Reachable through every MCP stdio session and indirectly through concurrent API requests in standard/full profiles; both surfaces remain local by default.",
         "remediation": "Retain request, concurrency, timeout, and process-isolation controls and update if a matching advisory appears.",
         "residualRisk": "Concurrency cancellation and resource-exhaustion defects can still affect availability even without a published advisory."
       }
@@ -913,8 +1048,8 @@
       "name": "click",
       "version": "8.4.2",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "Command-line parsing dependency of Uvicorn.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Command-line parsing dependency of Uvicorn, retained in every profile by the MCP SDK's mandatory HTTP-server closure; the LocalDocForge MCP path is stdio-only.",
       "license": {
         "concluded": "BSD-3-Clause",
         "status": "verified-upstream",
@@ -925,9 +1060,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/pallets/click/security/advisories",
-        "applicability": "Parses trusted local launch arguments; uploaded document bytes are not passed to Click.",
+        "applicability": "Parses trusted local launch arguments when Uvicorn is invoked; `ldf mcp` does not invoke the SDK's Uvicorn surface, and document bytes are not passed to Click.",
         "remediation": "Keep the hash lock and repeat exact-version review on upgrade.",
         "residualRisk": "Terminal and argument-handling defects remain possible for attacker-influenced filenames shown by higher layers."
       }
@@ -986,8 +1121,8 @@
       "name": "h11",
       "version": "0.16.0",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "HTTP/1.1 protocol parser used by Uvicorn.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "HTTP/1.1 parser used by Uvicorn/HTTP Core and retained in every profile by MCP; the LocalDocForge MCP transport is stdio-only.",
       "license": {
         "concluded": "MIT",
         "status": "verified-upstream",
@@ -998,9 +1133,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/python-hyper/h11/security/advisories",
-        "applicability": "Attacker-controlled HTTP bytes reach h11 whenever the standard/full web server is enabled.",
+        "applicability": "Attacker-controlled HTTP bytes reach h11 whenever the standard/full web server is enabled. The Lite MCP command does not activate an HTTP transport.",
         "remediation": "Keep Uvicorn/h11 jointly current and preserve request-size, timeout, concurrency, and loopback controls.",
         "residualRisk": "Protocol differential and request-smuggling defects may arise from interactions with Uvicorn or intermediaries."
       }
@@ -1010,8 +1145,8 @@
       "name": "idna",
       "version": "3.18",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "Internationalized-domain helper pulled by AnyIO; LocalDocForge ships no outbound client.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Internationalized-domain helper pulled by AnyIO/HTTPX; MCP installs it in every profile, while LocalDocForge's stdio server ships no outbound client.",
       "license": {
         "concluded": "BSD-3-Clause",
         "status": "verified-upstream",
@@ -1022,7 +1157,7 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/kjd/idna/security/advisories",
         "applicability": "No application route passes untrusted document domains to IDNA; it is retained by the ASGI dependency closure.",
         "remediation": "Keep the hash lock and remove the dependency if the upstream closure no longer requires it.",
@@ -1357,8 +1492,8 @@
       "name": "python-multipart",
       "version": "0.0.32",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "Streaming multipart/form-data parser for API uploads and fields.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Streaming multipart/form-data parser for API uploads and for the MCP SDK's dormant HTTP transport; the LocalDocForge MCP transport is stdio-only.",
       "license": {
         "concluded": "Apache-2.0",
         "status": "verified-upstream",
@@ -1369,9 +1504,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/Kludex/python-multipart/security/advisories",
-        "applicability": "Directly parses attacker-controlled HTTP multipart framing before document processing in standard/full profiles.",
+        "applicability": "Directly parses attacker-controlled HTTP multipart framing before document processing in standard/full profiles. It is installed but not invoked by `ldf mcp` in Lite.",
         "remediation": "Preserve receive/body/file/field bounds and promptly update on parser advisories.",
         "residualRisk": "Streaming parsers remain exposed to malformed boundaries and algorithmic denial of service."
       }
@@ -1429,8 +1564,8 @@
       "name": "starlette",
       "version": "1.3.1",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "ASGI request, response, upload, and routing implementation beneath FastAPI.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "ASGI request, response, upload, and routing implementation beneath FastAPI and the MCP SDK's HTTP/SSE transports; LocalDocForge MCP uses stdio only.",
       "license": {
         "concluded": "BSD-3-Clause",
         "status": "verified-upstream",
@@ -1441,9 +1576,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/Kludex/starlette/security/advisories",
-        "applicability": "Directly reachable by untrusted API requests, uploads, headers, and disconnect behavior when the web service is enabled.",
+        "applicability": "Directly reachable by untrusted API requests, uploads, headers, and disconnect behavior when the web service is enabled. The stdio-only MCP path does not construct Starlette routes.",
         "remediation": "Keep Starlette/FastAPI compatible and preserve multipart, request-size, timeout, auth, Host, and cleanup controls.",
         "residualRisk": "Historical advisories show upload/request parsing is security-sensitive; no exact match does not eliminate new defects."
       }
@@ -1525,8 +1660,8 @@
       "name": "uvicorn",
       "version": "0.51.0",
       "kind": "runtime-python",
-      "profiles": ["standard", "full"],
-      "role": "ASGI server for `ldf web`.",
+      "profiles": ["lite", "standard", "full"],
+      "role": "ASGI server for `ldf web`, also retained in every profile by the MCP SDK's mandatory HTTP transport closure; `ldf mcp` does not launch it.",
       "license": {
         "concluded": "BSD-3-Clause",
         "status": "verified-upstream",
@@ -1537,9 +1672,9 @@
         "disposition": "no-known-applicable-advisory",
         "advisories": [],
         "affectedVersionRanges": [],
-        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact"],
+        "sourceRefs": ["osv-pypi-exact", "github-reviewed-pip-exact", "osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/Kludex/uvicorn/security/advisories",
-        "applicability": "Directly accepts untrusted socket/HTTP traffic when standard/full web mode is running; loopback is the default.",
+        "applicability": "Directly accepts untrusted socket/HTTP traffic when standard/full web mode is running; loopback is the default. It remains dormant in the Lite MCP path.",
         "remediation": "Keep Uvicorn and h11 jointly current and preserve loopback default, Host/token controls, and admission/resource limits.",
         "residualRisk": "Protocol handling, disconnect, and resource-exhaustion defects may be unpublished or interaction-specific."
       }
@@ -2466,6 +2601,347 @@
         "applicability": "OCR-derived attacker-controlled text reaches uharfbuzz with trusted bundled fonts during searchable-text-layer construction; the binding's native extension embeds HarfBuzz 14.2.1.",
         "remediation": "Keep uharfbuzz and embedded HarfBuzz jointly current, hash-lock the exact wheel, retain trusted-font selection and worker limits, and re-inventory the native version on every wheel upgrade.",
         "residualRisk": "Native shaping code may contain unpublished memory-safety or complexity defects; trusted fonts narrow but do not eliminate risk from hostile text sequences."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/attrs@26.1.0",
+      "name": "attrs",
+      "version": "26.1.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Declarative class and validator support used by jsonschema/referencing in the MCP SDK closure.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/python-attrs/attrs/26.1.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/attrs/26.1.0/",
+        "localVersionEvidence": "installed LICENSE SHA256=882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/python-attrs/attrs/security/advisories",
+        "applicability": "Protocol schemas and SDK-owned model metadata can reach this dependency; document bytes do not define attrs classes or validators.",
+        "remediation": "Keep the hash lock and repeat exact-version review with the MCP closure.",
+        "residualRisk": "Validation and class-construction defects can still affect availability without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/certifi@2026.6.17",
+      "name": "certifi",
+      "version": "2026.6.17",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Mozilla-derived CA bundle installed through HTTPX in the MCP SDK closure; LocalDocForge's v1 MCP server uses stdio and does not initiate HTTP requests.",
+      "license": {
+        "concluded": "MPL-2.0",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/certifi/python-certifi/2026.06.17/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/certifi/2026.6.17/",
+        "localVersionEvidence": "installed LICENSE SHA256=e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/certifi/python-certifi/security/advisories",
+        "applicability": "Dormant for the stdio-only MCP server; it becomes security-relevant if an installed HTTPX client path performs outbound TLS.",
+        "remediation": "Refresh the CA bundle with reviewed MCP dependency updates and remove it if the SDK later separates stdio-only extras.",
+        "residualRisk": "Trust-store changes and delayed CA removals can affect any future outbound TLS use."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/httpcore@1.0.9",
+      "name": "httpcore",
+      "version": "1.0.9",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "HTTP transport core installed through HTTPX for MCP client transports; it is not invoked by LocalDocForge's stdio-only MCP server.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/encode/httpcore/1.0.9/LICENSE.md",
+        "exactReleaseMetadata": "https://pypi.org/project/httpcore/1.0.9/",
+        "localVersionEvidence": "installed LICENSE.md SHA256=fdcb59154c74cbaba16a11242f7740bea9f23d6feb5547917d8c5f94a80392a5"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/encode/httpcore/security/advisories",
+        "applicability": "No supported `ldf mcp` flow opens an HTTP connection through HTTPcore; future SDK HTTP transport use would expand reachability.",
+        "remediation": "Keep MCP transport restricted to stdio and repeat review before enabling HTTP or SSE transports.",
+        "residualRisk": "The installed transport parser could become reachable through an accidental or future HTTP client path."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/httpx@0.28.1",
+      "name": "httpx",
+      "version": "0.28.1",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "HTTP client required by the official MCP SDK's client and remote-transport features; installed but deliberately unused by LocalDocForge's stdio server.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/encode/httpx/0.28.1/LICENSE.md",
+        "exactReleaseMetadata": "https://pypi.org/project/httpx/0.28.1/",
+        "localVersionEvidence": "installed LICENSE.md SHA256=4ec59d544f12b5f539a3a716fd321ac58ccd8030b465221f2c880200cdf28d8d"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/encode/httpx/security/advisories",
+        "applicability": "The v1 server exchanges JSON-RPC over inherited process pipes and does not construct an HTTPX client.",
+        "remediation": "Do not enable SDK remote transports without a fresh network threat model and dependency review.",
+        "residualRisk": "A future or accidental remote-transport import could expose request, proxy, redirect, or TLS handling."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/httpx-sse@0.4.3",
+      "name": "httpx-sse",
+      "version": "0.4.3",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Server-Sent Events client helper required by the MCP SDK's remote transports; installed but unused by the stdio-only LocalDocForge server.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/florimondmanca/httpx-sse/0.4.3/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/httpx-sse/0.4.3/",
+        "localVersionEvidence": "installed LICENSE SHA256=beec67e4ee83a7af26f242bed9987aa863d6d2dfb776106aa2360c4187f31901"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/florimondmanca/httpx-sse/security/advisories",
+        "applicability": "No supported LocalDocForge MCP request parses SSE framing.",
+        "remediation": "Keep the transport at stdio and repeat review before any SSE client is enabled.",
+        "residualRisk": "Malformed-event parsing issues would become relevant if the dormant remote transport were activated."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/jsonschema@4.26.0",
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "JSON Schema evaluation library in the official MCP SDK closure for protocol and tool schema handling.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/python-jsonschema/jsonschema/v4.26.0/COPYING",
+        "exactReleaseMetadata": "https://pypi.org/project/jsonschema/4.26.0/",
+        "localVersionEvidence": "installed COPYING SHA256=4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/python-jsonschema/jsonschema/security/advisories",
+        "applicability": "MCP clients receive application-generated tool schemas and may send parameters described by them; LocalDocForge additionally delegates parameter validation to its Pydantic API models.",
+        "remediation": "Bound incoming JSON depth/size and repeat exact-version review on SDK upgrades.",
+        "residualRisk": "Complex schema evaluation can consume CPU or memory even without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Packaged JSON Schema specification resources consumed by jsonschema in the MCP SDK closure.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/python-jsonschema/jsonschema-specifications/v2025.9.1/COPYING",
+        "exactReleaseMetadata": "https://pypi.org/project/jsonschema-specifications/2025.9.1/",
+        "localVersionEvidence": "installed COPYING SHA256=42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/python-jsonschema/jsonschema-specifications/security/advisories",
+        "applicability": "Static specification resources can be selected while handling protocol schemas; document contents cannot replace the packaged resources.",
+        "remediation": "Keep aligned with the reviewed jsonschema version.",
+        "residualRisk": "Incorrect packaged specifications could weaken or reject validation without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/mcp@1.28.1",
+      "name": "mcp",
+      "version": "1.28.1",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Official Model Context Protocol Python SDK used to implement `ldf mcp` over UTF-8 stdio.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/v1.28.1/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/mcp/1.28.1/",
+        "localVersionEvidence": "installed LICENSE SHA256=5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d; wheel SHA256=2726bca5e7193f61c5dde8b12500a6de2d9acf6d1a1c0be9e8c2e706437991df"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/modelcontextprotocol/python-sdk/security/advisories",
+        "applicability": "Every `ldf mcp` session reaches SDK framing, lifecycle, request dispatch, and protocol models; tool jobs still enter LocalDocForge's standard validated worker pipeline.",
+        "remediation": "Constrain to the reviewed v1 SDK/protocol generation and repeat closure, protocol, and adversarial framing review on change.",
+        "residualRisk": "Protocol parser, lifecycle, cancellation, or framing defects can affect confidentiality, integrity, or availability even without a published advisory."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pyjwt@2.13.0",
+      "name": "PyJWT",
+      "version": "2.13.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "JWT implementation required by the MCP SDK's HTTP authorization features; LocalDocForge's local stdio transport has no token-auth path.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/jpadilla/pyjwt/2.13.0/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/PyJWT/2.13.0/",
+        "localVersionEvidence": "installed LICENSE SHA256=797a7a20231d4c433e9f1911db1731d06b5828b98f499819a034f7c0f56f5ce5; AUTHORS.rst SHA256=925ce43461029eedbf558ec0b7cf7fc4b045def5120ebb97937c70814071cf07"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/jpadilla/pyjwt/security/advisories",
+        "applicability": "Installed but not invoked because stdio trusts the same-user process boundary and exposes no HTTP bearer-token endpoint.",
+        "remediation": "Do not repurpose the stdio server as a network service; perform a separate auth review before enabling SDK HTTP authorization.",
+        "residualRisk": "JWT parsing and algorithm-selection risks become reachable if dormant network authorization features are enabled."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/pywin32@312",
+      "name": "pywin32",
+      "version": "312",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "platformMarker": "sys_platform == 'win32'",
+      "role": "Windows API bridge used directly by LocalDocForge's MCP stdio transport to redirect inherited standard handles while preserving the private protocol descriptor; also required by SDK Windows helpers.",
+      "license": {
+        "concluded": "BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1",
+        "status": "verified-exact-tag-and-installed-wheel-bundle",
+        "upstreamText": "https://github.com/mhammond/pywin32/tree/b312",
+        "exactReleaseMetadata": "https://pypi.org/project/pywin32/312/",
+        "localVersionEvidence": "cp314-cp314-win_amd64 wheel SHA256=a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e; preserve all eight declared files: adodbapi/license.txt=5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e, com/License.txt=fad39c18fc3825fa278db1c86fd52cf88d7c525b3c2fbf7817fa383cbae4d423, MAPIStubLibrary/LICENSE=1c4cf44d2fb8bf2d10214d6da80cc9e05502824cc4460f35be4c7bcb4cde53da, isapi/README.txt=41383bcc95edb8138d37077ae54bfdcbd2a3b77bf745a8529a9c161146e22303, pythonwin/License.txt=a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924, idle/LICENSE.txt=a0fa1e7b8a4230055685e796548ac084a6c0eea395294574093bba72efd9191b, Scintilla/License.txt=57ec79bbeab4fd1cf7460a7ad450d2ab01471810459aeae9e75e4c66b472095f, win32/License.txt=a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924; also preserve win32comext/mapi/NOTICE.md SHA256=dedf997c8f5568a0e0aff57d009f501226ea30c401323d67912b6a8f8735a825"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/mhammond/pywin32/security/advisories",
+        "applicability": "Every Windows `ldf mcp` session reaches fixed GetStdHandle/SetStdHandle calls; attacker-controlled frame bytes are not passed as Win32 API arguments.",
+        "remediation": "Preserve the complete wheel license bundle and re-review the exact platform wheel on every pywin32 or MCP update.",
+        "residualRisk": "Handle-redirection defects could compromise framing or availability, and the wheel exposes many broader native Windows APIs outside the supported server path."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/referencing@0.37.0",
+      "name": "referencing",
+      "version": "0.37.0",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "JSON Schema reference resolution support consumed by jsonschema in the MCP SDK closure.",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/python-jsonschema/referencing/v0.37.0/COPYING",
+        "exactReleaseMetadata": "https://pypi.org/project/referencing/0.37.0/",
+        "localVersionEvidence": "installed COPYING SHA256=42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/python-jsonschema/referencing/security/advisories",
+        "applicability": "Application-generated MCP tool schemas can exercise reference resolution; caller-controlled parameters are validated by the reused API models rather than dynamically becoming schemas.",
+        "remediation": "Keep schemas application-controlled, bound protocol input, and review with jsonschema upgrades.",
+        "residualRisk": "Reference-resolution complexity or implementation defects can still cause excessive resource use."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/rpds-py@2026.6.3",
+      "name": "rpds-py",
+      "version": "2026.6.3",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "Native persistent-data-structure implementation used by referencing/jsonschema in the MCP SDK closure.",
+      "evidencePlatform": "rpds-py 2026.6.3 CPython 3.14 Windows x86-64 wheel",
+      "license": {
+        "concluded": "MIT",
+        "status": "verified-upstream-and-installed-wheel; supplier-SBOM child expressions reviewed with notice-text limitation",
+        "upstreamText": "https://raw.githubusercontent.com/crate-py/rpds/v2026.6.3/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/rpds-py/2026.6.3/",
+        "localVersionEvidence": "installed top-level MIT LICENSE SHA256=8bcb72c82ea8ae74802293c41d93ad7d51434001b0ae45a603a5af0f507aee0; embedded rpds-py.cyclonedx.json SHA256=5fa8e62b8f860c23a9da6ddb19c215184397d1a7f2cd3d93055898d119ba0e40 records 15 scope-required and two scope-excluded Cargo dependencies",
+        "exactVersionEvidence": "The supplier SBOM declares required-child expressions MIT, MIT OR Apache-2.0, or (MIT OR Apache-2.0) AND Unicode-3.0, but supplies no child copyright/license texts; preserve the embedded SBOM and do not claim complete redistribution notices."
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10", "osv-crates-rpds-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/crate-py/rpds/security/advisories",
+        "applicability": "Protocol schema processing can reach the compiled extension through referencing; malformed JSON cannot load native code but can stress collection operations.",
+        "remediation": "Upgrade as an atomic reviewed wheel and re-inventory its embedded supplier SBOM on every change.",
+        "residualRisk": "Native memory-safety and algorithmic-complexity defects remain possible; the 15 reviewed Cargo identities are preserved as an unflattened supplier-SBOM boundary."
+      }
+    },
+    {
+      "bomRef": "pkg:pypi/sse-starlette@3.4.5",
+      "name": "sse-starlette",
+      "version": "3.4.5",
+      "kind": "runtime-python",
+      "reviewDate": "2026-08-10",
+      "profiles": ["lite", "standard", "full"],
+      "role": "ASGI Server-Sent Events implementation required by the MCP SDK's remote server transport; installed but unused by LocalDocForge's stdio-only MCP surface.",
+      "license": {
+        "concluded": "BSD-3-Clause",
+        "status": "verified-upstream-and-installed-wheel",
+        "upstreamText": "https://raw.githubusercontent.com/sysid/sse-starlette/v3.4.5/LICENSE",
+        "exactReleaseMetadata": "https://pypi.org/project/sse-starlette/3.4.5/",
+        "localVersionEvidence": "installed LICENSE SHA256=80af6bfccbebd2c14d4aab96695cab9950e177190cc80f5ef819e99996883e8e; AUTHORS SHA256=c2ff63d2ecf128bbda8ab1b2016830a5da124202fbb97168685bb9946aed3f1a"
+      },
+      "security": {
+        "disposition": "no-known-applicable-advisory",
+        "advisories": [],
+        "affectedVersionRanges": [],
+        "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
+        "upstream": "https://github.com/sysid/sse-starlette/security/advisories",
+        "applicability": "No supported `ldf mcp` flow creates an ASGI SSE response or network listener.",
+        "remediation": "Keep remote MCP transports disabled and perform a separate review before enabling them.",
+        "residualRisk": "Connection lifecycle, cancellation, and event framing defects become reachable if the dormant transport is enabled."
       }
     },
     {

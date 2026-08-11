@@ -5,13 +5,13 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](docs/PACKAGING.md)
 
 **Merge, split, extract text, compress, convert, and inspect PDFs entirely on your own
-machine.** No uploads, no account, no telemetry — the shipped package
-contains no outbound network client at all.
+machine.** No uploads, no account, no telemetry — LocalDocForge makes no
+outbound requests during document processing.
 
 LocalDocForge is a privacy-first document-processing workbench: a typed
-Python core library, a scriptable `ldf` CLI, and a localhost API with a
-status page. It exists for the documents you would never paste into a
-cloud converter.
+Python core library, a scriptable `ldf` CLI, a local-agent MCP stdio server,
+and a localhost API with a status page. It exists for the documents you would
+never paste into a cloud converter.
 
 ```text
 $ ldf compress outline-6page.pdf -o smaller.pdf
@@ -55,6 +55,7 @@ source before anything was published.*
 | Convert | PDF → UTF-8 Markdown/plain text/JSONL via PDFium (`pdf-to-md`, page anchors, per-page coverage, honest layout warnings, and opt-in conservative ruled tables through pdfplumber) · Markdown → validated PDF through Typst ≥0.15.1 (`md-to-pdf`, bounded CommonMark + GFM tables, local raster images, honest dropped-construct warnings) · images → PDF (HEIC/JPG/PNG/TIFF/BMP/WebP, multipage TIFF, EXIF orientation, A4/Letter/Legal/image/custom page sizes) · PDF → images (PNG/JPEG/WebP/TIFF, 18–1200 DPI; `--preset llm` makes per-page JPEG q85 renders with long edge ≤ 1568 px) · convert images (iPhone HEIC and the other formats → PNG/JPEG/WebP/TIFF; `--preset llm` produces AI-assistant-ready JPEGs with GPS/EXIF stripped) |
 | Inspect | page count, encryption, page sizes, per-page extracted character counts, annotations, outlines, forms, attachments, JavaScript presence |
 | Agent integration | deterministic `ldf agent-brief` Markdown/JSON generated from implemented `CAPABILITY_SPECS` plus one live capability probe, including usage, exit codes, gotchas, workflow, and feedback rules |
+| Local-agent MCP | synchronous `ldf mcp` stdio server; tools and JSON schemas are generated from implemented `CAPABILITY_SPECS` and the typed operation models, and every call uses the standard validation/pipeline/isolated-worker path |
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
 Everything above is covered by the repository's test suite and full release
@@ -142,6 +143,7 @@ ldf convert-images photos/*.HEIC -d ready/ --preset llm  # iPhone photos → AI-
 ldf inspect input.pdf
 ldf agent-brief                   # registry-derived Markdown for coding agents
 ldf --json agent-brief            # the same ordered snapshot as structured JSON
+ldf mcp                           # MCP 2025-11-25 over stdio for local agents
 ldf --json doctor
 ldf --strict-offline web   # localhost API + status page; prints the session token
 ```
@@ -150,6 +152,16 @@ ldf --strict-offline web   # localhost API + status page; prints the session tok
 `docs/AGENT_FEEDBACK.md`. It works with a discoverable source checkout (including
 the repository-local environment above); a detached wheel/direct VCS install
 outside any checkout exits 1 rather than pointing agents at a packaged imitation.
+
+`ldf mcp` is configured as a subprocess by a same-user agent client; it is not
+an interactive shell command or a network listener. Its stdout is reserved for
+strict UTF-8 JSON-RPC frames, while diagnostics use stderr. Calls are serialized
+in this first version and complete synchronously without progress streaming.
+Inputs and destinations are absolute local paths supplied by that trusted client,
+and the usual collision, strict-offline, resource-limit, validation, and
+worker-isolation controls still apply. See the client registration
+recipes and the full trust boundary in
+[`docs/CLI.md`](docs/CLI.md#local-agent-mcp-stdio-server-ldf-mcp).
 
 Page ranges: `1-5,9,12-end`, `odd`, `even`, `reverse`, `last`, `last-5`
 (the last five pages). For encrypted PDFs, non-interactive callers use the
@@ -213,8 +225,8 @@ terminal state is published only after the process tree is verified gone.
 
 **Early alpha, honestly scoped.** Phase 0 (foundation), the core of Phase 1
 (structural PDF tools + image conversion), the first Phase 2 slice
-(lossless compression, 2026-08-03), and the core Phase 3 PDF text-extraction
-path are implemented, tested, and gated.
+(lossless compression, 2026-08-03), the core Phase 3 PDF text-extraction path,
+and the local-agent MCP stdio surface are implemented.
 
 - **For everyday, non-sensitive documents:** working and validated — the
   full release gate (locks, lint, types, two full test-suite runs including
@@ -236,13 +248,13 @@ path are implemented, tested, and gated.
 
 ## FAQ
 
-**Is it really offline?** The shipped package contains no outbound network
-client, telemetry, update check, or remote asset — verified by source
-inspection and by running the complete test suite with Python DNS and
-non-loopback sockets denied. `--strict-offline` additionally rejects
-recognizable network filesystem paths and non-loopback serving. It is
-application policy, not an OS firewall; a host firewall or offline VM
-remains the stronger guarantee.
+**Is it really offline?** LocalDocForge performs no outbound request, telemetry,
+update check, or remote-asset load during document processing. The MCP surface
+is inherited stdio, not a listening or outbound network transport. Source
+inspection and the complete test suite run with Python DNS and non-loopback
+sockets denied. `--strict-offline` additionally rejects recognizable network
+filesystem paths and non-loopback serving. It is application policy, not an OS
+firewall; a host firewall or offline VM remains the stronger guarantee.
 
 **Can it OCR / convert Office files / shrink scanned PDFs?** OCR is implemented
 when the locked OCRmyPDF, Tesseract, and Ghostscript probes all pass; `ldf

@@ -13,6 +13,7 @@
             "localdocforge/__init__.py",
             "localdocforge/api/__init__.py",
             "localdocforge/api/app.py",
+            "localdocforge/api/operations.py",
             "localdocforge/api/worker.py",
             "localdocforge/cli/__init__.py",
             "localdocforge/cli/agent_brief.py",
@@ -28,8 +29,15 @@
             "localdocforge/engines/registry.py",
             "localdocforge/jobs/__init__.py",
             "localdocforge/jobs/workspace.py",
+            "localdocforge/mcp/__init__.py",
+            "localdocforge/mcp/executor.py",
+            "localdocforge/mcp/runner.py",
+            "localdocforge/mcp/server.py",
+            "localdocforge/mcp/tools.py",
+            "localdocforge/mcp/transport.py",
             "localdocforge/operations/__init__.py",
             "localdocforge/operations/images.py",
+            "localdocforge/operations/inspect.py",
             "localdocforge/operations/markdown.py",
             "localdocforge/operations/ocr.py",
             "localdocforge/operations/optimize.py",
@@ -48,8 +56,8 @@
             "localdocforge/validation/__init__.py",
             "localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "eae5787b0a8011454e87269a77a635639b9033648be6c6ec709fff75edf20c83",
-          "size": 162870
+          "sha256": "8eb3bf044d85b39d1aebb989a38e58ad611782a36aa6e2a619de2c3a11315350",
+          "size": 183814
         },
         "localdocforge-0.1.0.tar.gz": {
           "members": [
@@ -67,6 +75,7 @@
             "localdocforge-0.1.0/src/localdocforge/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/api/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/api/app.py",
+            "localdocforge-0.1.0/src/localdocforge/api/operations.py",
             "localdocforge-0.1.0/src/localdocforge/api/worker.py",
             "localdocforge-0.1.0/src/localdocforge/cli/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/cli/agent_brief.py",
@@ -82,8 +91,15 @@
             "localdocforge-0.1.0/src/localdocforge/engines/registry.py",
             "localdocforge-0.1.0/src/localdocforge/jobs/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/jobs/workspace.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/__init__.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/executor.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/runner.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/server.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/tools.py",
+            "localdocforge-0.1.0/src/localdocforge/mcp/transport.py",
             "localdocforge-0.1.0/src/localdocforge/operations/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/operations/images.py",
+            "localdocforge-0.1.0/src/localdocforge/operations/inspect.py",
             "localdocforge-0.1.0/src/localdocforge/operations/markdown.py",
             "localdocforge-0.1.0/src/localdocforge/operations/ocr.py",
             "localdocforge-0.1.0/src/localdocforge/operations/optimize.py",
@@ -102,12 +118,12 @@
             "localdocforge-0.1.0/src/localdocforge/validation/__init__.py",
             "localdocforge-0.1.0/src/localdocforge/validation/pdf_checks.py"
           ],
-          "sha256": "d0f608450bad0f854f61e7328ac1e546d3168d94d826cff6152af9dba3438221",
-          "size": 148364
+          "sha256": "f254b8a09ad9db833aa392a20a90df3286696d7de2f637470e8334fb4c63a5f3",
+          "size": 165260
         }
       },
       "source_date_epoch": 1704067200,
-      "source_tree_sha256": "f32525313ca360ae413564365d5fe6e1afb72824b1590fff8efb2f2e678f6199"
+      "source_tree_sha256": "a25ba617544ce7315b546322dfeb8bdd24785b2ec45665242d76e1265d48040a"
     }
   },
   "schema": 3

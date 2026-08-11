@@ -49,12 +49,15 @@ from localdocforge.jobs.workspace import remove_tree_with_retries
 from localdocforge.security.paths import ensure_contained
 
 _MAX_IPC_BYTES = 1024 * 1024
+_MAX_MCP_REPORT_IPC_BYTES = 192 * 1024
+_MCP_REPORT_LIST_LIMIT = 8
 _WATCHDOG_INTERVAL_SECONDS = 0.05
 _WORKER_START_TIMEOUT_SECONDS = 15.0
 _WORKER_EXIT_GRACE_SECONDS = 2.0
 _WORKER_PROCESS_GROUP_ENV = "LDF_WORKER_PROCESS_GROUP"
 _BLOCK_NETWORK_ENV = "LDF_BLOCK_NETWORK"
 _BLOCK_NETWORK_GUARD_ENV = "LDF_BLOCK_NETWORK_GUARD_DIR"
+_SPAWN_MAIN_LOCK = threading.Lock()
 
 
 class WorkerJobStatus(StrEnum):
@@ -159,6 +162,7 @@ class WorkerRequest:
     input_names: tuple[str, ...]
     params: dict[str, str]
     settings_json: str
+    mcp_arguments_json: str | None = None
     probe: str | None = None  # internal real-process test hook; never API-controlled
 
 
@@ -171,6 +175,7 @@ class WorkerOutcome:
     http_status: int = 500
     containment: dict[str, str | int | float | bool | None] = field(default_factory=dict)
     probe: dict[str, Any] = field(default_factory=dict)
+    result_data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -365,12 +370,48 @@ def _linux_descendant_count(pid: int) -> int | None:
 
 def _send_message(connection, payload: dict[str, Any]) -> None:
     try:
-        encoded = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+        encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         if len(encoded) > _MAX_IPC_BYTES:
             encoded = b'{"kind":"fatal","error":"Worker message exceeded the IPC limit"}'
         connection.send_bytes(encoded)
     except (BrokenPipeError, EOFError, OSError):
         return
+
+
+@contextlib.contextmanager
+def _private_spawn_standard_handles():
+    """Give a Windows worker NUL stdio from interpreter startup onward."""
+    if os.name != "nt":
+        yield
+        return
+
+    import msvcrt
+
+    import win32api  # type: ignore[import-untyped]
+
+    original = {
+        win32api.STD_INPUT_HANDLE: win32api.GetStdHandle(win32api.STD_INPUT_HANDLE),
+        win32api.STD_OUTPUT_HANDLE: win32api.GetStdHandle(win32api.STD_OUTPUT_HANDLE),
+        win32api.STD_ERROR_HANDLE: win32api.GetStdHandle(win32api.STD_ERROR_HANDLE),
+    }
+    with open(os.devnull, "rb") as null_input, open(os.devnull, "wb") as null_output:
+        input_handle = msvcrt.get_osfhandle(null_input.fileno())
+        output_handle = msvcrt.get_osfhandle(null_output.fileno())
+        try:
+            win32api.SetStdHandle(win32api.STD_INPUT_HANDLE, input_handle)
+            win32api.SetStdHandle(win32api.STD_OUTPUT_HANDLE, output_handle)
+            win32api.SetStdHandle(win32api.STD_ERROR_HANDLE, output_handle)
+            yield
+        finally:
+            for kind, handle in original.items():
+                win32api.SetStdHandle(kind, handle)
+
+
+def _start_worker_process(process) -> None:
+    """Start a worker while process-global Windows std handles point at NUL."""
+    with _SPAWN_MAIN_LOCK:
+        with _private_spawn_standard_handles():
+            process.start()
 
 
 def _receive_message(connection, timeout: float) -> dict[str, Any] | None:
@@ -497,8 +538,39 @@ def _sanitize_value(value: Any, replacements: tuple[str, ...]) -> Any:
     if isinstance(value, list):
         return [_sanitize_value(item, replacements) for item in value]
     if isinstance(value, dict):
-        return {str(key): _sanitize_value(item, replacements) for key, item in value.items()}
+        return {
+            str(key): _sanitize_value(item, replacements)
+            for key, item in value.items()
+        }
     return value
+
+
+def _sanitize_result_data(
+    data: dict[str, Any],
+    replacements: tuple[str, ...],
+) -> dict[str, Any]:
+    """Sanitize result values while preserving internal response-schema keys.
+
+    Executor-owned mapping keys are protocol schema, not document data. The
+    inspection ``docinfo`` mapping is the one deliberate exception: PDF
+    metadata keys are user controlled and must be scrubbed alongside values.
+    """
+    sanitized = _sanitize_value(data, replacements)
+    if not isinstance(sanitized, dict):  # pragma: no cover - signature invariant
+        return {}
+    raw_inspection = data.get("inspection")
+    safe_inspection = sanitized.get("inspection")
+    if isinstance(raw_inspection, dict) and isinstance(safe_inspection, dict):
+        raw_docinfo = raw_inspection.get("docinfo")
+        if isinstance(raw_docinfo, dict):
+            safe_inspection["docinfo"] = {
+                str(_sanitize_value(str(key), replacements)): _sanitize_value(
+                    item,
+                    replacements,
+                )
+                for key, item in raw_docinfo.items()
+            }
+    return sanitized
 
 
 def _sanitized_report(
@@ -507,14 +579,113 @@ def _sanitized_report(
     api_job_id: str,
     job_root: Path,
     secrets: tuple[str, ...],
+    preserve_paths: bool = False,
 ) -> dict[str, Any]:
     payload = report.model_dump(mode="json")
     payload["job_id"] = api_job_id
+    replacements = (str(job_root), job_root.as_posix(), *secrets)
     for collection in ("inputs", "outputs"):
         for artifact in payload.get(collection, []):
-            artifact["path"] = Path(str(artifact.get("path", ""))).name
-    replacements = (str(job_root), job_root.as_posix(), *secrets)
-    return _sanitize_value(payload, replacements)
+            raw_path = str(artifact.get("path", ""))
+            if not preserve_paths:
+                raw_path = Path(raw_path).name
+            artifact["path"] = _sanitize_value(raw_path, replacements)
+    for collection in ("security_warnings", "fidelity_warnings"):
+        for warning in payload.get(collection, []):
+            warning["message"] = _sanitize_value(
+                warning.get("message", ""),
+                replacements,
+            )
+    payload["errors"] = [
+        _sanitize_value(error, replacements) for error in payload.get("errors", [])
+    ]
+    validation = payload.get("validation")
+    if isinstance(validation, dict):
+        for check in validation.get("checks", []):
+            if isinstance(check, dict):
+                check["detail"] = _sanitize_value(
+                    check.get("detail", ""),
+                    replacements,
+                )
+    payload["details"] = _sanitize_value(payload.get("details", {}), replacements)
+    return payload
+
+
+def _compact_mcp_report(
+    payload: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, int | bool]]:
+    """Bound a successful MCP report without relabelling published work as failure."""
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    if len(encoded) <= _MAX_MCP_REPORT_IPC_BYTES:
+        return payload, {}
+
+    list_fields = (
+        "inputs",
+        "outputs",
+        "security_warnings",
+        "fidelity_warnings",
+        "errors",
+    )
+    count_names = {
+        "inputs": "input_count",
+        "outputs": "output_count",
+        "security_warnings": "security_warning_count",
+        "fidelity_warnings": "fidelity_warning_count",
+        "errors": "error_count",
+    }
+    counts = {
+        count_names[field_name]: len(value)
+        for field_name in list_fields
+        if isinstance((value := payload.get(field_name)), list)
+    }
+    validation = payload.get("validation")
+    validation_checks = (
+        validation.get("checks", []) if isinstance(validation, dict) else []
+    )
+    if not isinstance(validation_checks, list):
+        validation_checks = []
+    counts["validation_checks_count"] = len(validation_checks)
+
+    compact = {
+        key: value
+        for key, value in payload.items()
+        if key not in {*list_fields, "validation", "details"}
+    }
+    for field_name in list_fields:
+        value = payload.get(field_name)
+        compact[field_name] = (
+            value[:_MCP_REPORT_LIST_LIMIT] if isinstance(value, list) else []
+        )
+    if isinstance(validation, dict):
+        compact["validation"] = {
+            **validation,
+            "checks": validation_checks[:_MCP_REPORT_LIST_LIMIT],
+        }
+
+    retained_details: dict[str, Any] = {}
+    raw_details = payload.get("details")
+    if isinstance(raw_details, dict):
+        for key in sorted(raw_details)[:16]:
+            value = raw_details[key]
+            if isinstance(value, str):
+                retained_details[key] = _bounded_text(value, 4096)
+            elif value is None or isinstance(value, (int, float, bool)):
+                retained_details[key] = value
+    summary: dict[str, int | bool] = {
+        "report_truncated": True,
+        **counts,
+    }
+    retained_details["mcp_response"] = summary
+    compact["details"] = retained_details
+
+    encoded = json.dumps(compact, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    if len(encoded) > _MAX_MCP_REPORT_IPC_BYTES:
+        for field_name in list_fields:
+            compact[field_name] = []
+        if isinstance(compact.get("validation"), dict):
+            compact["validation"] = {**compact["validation"], "checks": []}
+        compact["details"] = {"mcp_response": summary}
+    return compact, summary
 
 
 def _public_pipeline_error(message: str) -> str:
@@ -965,6 +1136,11 @@ def _run_probe(
 
 
 def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> None:
+    # This is deliberately the first child action: imports, containment setup,
+    # parser warnings, and native descendants must never inherit a protocol or
+    # server log stream as ordinary stdout/stderr.
+    _silence_worker_output()
+    _send_message(connection, {"kind": "boot", "stdio": "silenced"})
     fsize_limit_active = False
     try:
         settings = Settings.model_validate_json(request.settings_json)
@@ -984,7 +1160,6 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
         )
         temporary_root.mkdir(mode=0o700, exist_ok=False)
         _scrub_worker_environment(temporary_root)
-        _silence_worker_output()
         if settings.strict_offline:
             _install_python_offline_guard()
         secrets = tuple(
@@ -1006,23 +1181,19 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
 
         worker_settings_data = settings.model_dump(mode="json")
         worker_settings_data["jobs_root"] = str(work_dir)
-        worker_settings_data["allowed_output_roots"] = [str(output_dir)]
+        is_mcp = request.mcp_arguments_json is not None
+        if not is_mcp:
+            # HTTP clients never choose filesystem destinations. MCP clients
+            # are same-user local processes and retain the caller's configured
+            # output-root policy for their explicit absolute destinations.
+            worker_settings_data["allowed_output_roots"] = [str(output_dir)]
         worker_settings = Settings.model_validate(worker_settings_data)
 
-        # Delayed import keeps PDF/native parsers out of the long-lived API
-        # process and avoids importing the operation table until containment is
-        # active and the parent has opened the start gate.
-        from localdocforge.api import app as api_module
+        # Delayed imports keep PDF/native parsers out of long-lived transports
+        # until containment is active and the parent has opened the start gate.
+        from localdocforge.engines.base import EngineUnavailableError
         from localdocforge.operations.ocr import OcrToolFailure, OcrToolTimeout
         from localdocforge.pipelines.runner import PipelineError
-
-        runner = api_module._OPERATIONS.get(request.operation)
-        if runner is None:
-            _send_message(
-                connection,
-                {"kind": "fatal", "error": "Worker operation is unavailable", "http_status": 500},
-            )
-            return
 
         def progress(event: ProgressEvent) -> None:
             _send_message(
@@ -1037,21 +1208,79 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                 },
             )
 
+        result_data: dict[str, Any] = {}
         try:
-            report = runner(
-                input_paths,
-                output_dir,
-                request.params,
-                worker_settings,
-                progress,
-            )
-        except api_module._ApiError as exc:
+            if is_mcp:
+                from localdocforge.mcp.executor import McpExecutionError, execute_tool
+                from localdocforge.mcp.tools import ToolArgumentsError, ToolLookupError
+
+                try:
+                    raw_arguments = json.loads(request.mcp_arguments_json or "")
+                    if not isinstance(raw_arguments, dict):
+                        raise ToolArgumentsError("arguments must be a JSON object")
+                    execution = execute_tool(
+                        request.operation,
+                        raw_arguments,
+                        worker_settings,
+                        inspection_output=work_dir / "inspection-result.json",
+                    )
+                    report = execution.report
+                    result_data = execution.data
+                except (McpExecutionError, ToolArgumentsError, ToolLookupError) as exc:
+                    _send_message(
+                        connection,
+                        {
+                            "kind": "failure",
+                            "error": _sanitize_value(str(exc), replacements),
+                            "http_status": 422,
+                        },
+                    )
+                    return
+                finally:
+                    request.mcp_arguments_json = None
+            else:
+                from localdocforge.api import operations as operation_module
+
+                runner = operation_module.OPERATIONS.get(request.operation)
+                if runner is None:
+                    _send_message(
+                        connection,
+                        {
+                            "kind": "fatal",
+                            "error": "Worker operation is unavailable",
+                            "http_status": 500,
+                        },
+                    )
+                    return
+                try:
+                    operation_params = operation_module.parse_operation_params(
+                        request.operation,
+                        request.params,
+                    )
+                    report = runner(
+                        input_paths,
+                        output_dir,
+                        operation_params,
+                        worker_settings,
+                        progress,
+                    )
+                except operation_module._ApiError as exc:
+                    _send_message(
+                        connection,
+                        {
+                            "kind": "failure",
+                            "error": _sanitize_value(exc.message, replacements),
+                            "http_status": exc.status,
+                        },
+                    )
+                    return
+        except EngineUnavailableError:
             _send_message(
                 connection,
                 {
                     "kind": "failure",
-                    "error": _sanitize_value(exc.message, replacements),
-                    "http_status": exc.status,
+                    "error": "Required local engine is unavailable",
+                    "http_status": 503,
                 },
             )
             return
@@ -1093,6 +1322,7 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                     api_job_id=request.job_id,
                     job_root=job_root,
                     secrets=secrets,
+                    preserve_paths=is_mcp,
                 )
                 if report_payload.get("errors"):
                     report_payload["errors"] = [public_error]
@@ -1125,17 +1355,25 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
             return
 
         output_names = [artifact.path.name for artifact in report.outputs]
+        report_payload = _sanitized_report(
+            report,
+            api_job_id=request.job_id,
+            job_root=job_root,
+            secrets=secrets,
+            preserve_paths=is_mcp and request.operation != "inspect",
+        )
+        if is_mcp:
+            report_payload, response_summary = _compact_mcp_report(report_payload)
+            if response_summary:
+                result_data = {**result_data, "mcp_response": response_summary}
+                output_names = output_names[:_MCP_REPORT_LIST_LIMIT]
         _send_message(
             connection,
             {
                 "kind": "result",
-                "report": _sanitized_report(
-                    report,
-                    api_job_id=request.job_id,
-                    job_root=job_root,
-                    secrets=secrets,
-                ),
+                "report": report_payload,
                 "outputs": output_names,
+                "data": _sanitize_result_data(result_data, replacements),
             },
         )
     except Exception as exc:
@@ -1318,6 +1556,7 @@ class WorkerProcess:
         outcome.status = WorkerJobStatus.CRASHED
         outcome.report = None
         outcome.output_names = []
+        outcome.result_data = {}
         outcome.error = "Worker process tree exit could not be verified"
         outcome.http_status = 500
         outcome.probe = {}
@@ -1345,7 +1584,12 @@ class WorkerProcess:
         if kind == "result":
             raw_report = payload.get("report")
             raw_outputs = payload.get("outputs")
-            if not isinstance(raw_report, dict) or not isinstance(raw_outputs, list):
+            raw_data = payload.get("data", {})
+            if (
+                not isinstance(raw_report, dict)
+                or not isinstance(raw_outputs, list)
+                or not isinstance(raw_data, dict)
+            ):
                 raise ValueError("Worker sent malformed result IPC")
             report = ConversionReport.model_validate(raw_report)
             if report.job_id != self.request.job_id:
@@ -1364,6 +1608,7 @@ class WorkerProcess:
                 output_names=output_names,
                 http_status=201,
                 containment=containment,
+                result_data=raw_data,
             )
         if kind == "failure":
             status = payload.get("http_status", 422)
@@ -1434,10 +1679,11 @@ class WorkerProcess:
         containment = _base_containment(self.settings.strict_offline)
         outcome: WorkerOutcome | None = None
         try:
-            process.start()
+            _start_worker_process(process)
             self._pid = process.pid
             send_connection.close()
             ready = None
+            boot_seen = False
             ready_deadline = time.monotonic() + _WORKER_START_TIMEOUT_SECONDS
             while ready is None and time.monotonic() < ready_deadline:
                 if cancel_requested.is_set():
@@ -1450,10 +1696,17 @@ class WorkerProcess:
                     )
                     return outcome
                 try:
-                    ready = _receive_message(
+                    startup_message = _receive_message(
                         receive_connection,
                         min(0.05, max(0.0, ready_deadline - time.monotonic())),
                     )
+                    if startup_message is not None and startup_message.get("kind") == "boot":
+                        if startup_message.get("stdio") != "silenced":
+                            raise ValueError("Worker startup protocol failed")
+                        boot_seen = True
+                        containment["worker_stdio"] = "silenced_before_setup"
+                    else:
+                        ready = startup_message
                 except ValueError:
                     self.terminate()
                     status = (
@@ -1486,7 +1739,11 @@ class WorkerProcess:
                     return outcome
                 outcome = WorkerOutcome(
                     status=WorkerJobStatus.CRASHED,
-                    error="Worker did not become ready",
+                    error=(
+                        "Worker did not become ready after stdio isolation"
+                        if boot_seen
+                        else "Worker did not reach stdio isolation"
+                    ),
                     containment=containment,
                 )
                 return outcome

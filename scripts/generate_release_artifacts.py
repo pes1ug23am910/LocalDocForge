@@ -24,8 +24,7 @@ REPORT_PATH = ROOT / "docs" / "ADVISORY_REPORT.json"
 UV_LOCK_PATH = ROOT / "uv.lock"
 PROFILES = ("lite", "standard", "full")
 PROFILE_LOCK_PATHS = {
-    profile: ROOT / "requirements" / "locks" / f"{profile}.txt"
-    for profile in PROFILES
+    profile: ROOT / "requirements" / "locks" / f"{profile}.txt" for profile in PROFILES
 }
 PROFILE_SBOM_PATHS = {
     profile: ROOT / "docs" / f"SBOM.{profile}.cdx.json" for profile in PROFILES
@@ -67,6 +66,7 @@ SPDX_EXPRESSIONS = {
     "Apache-2.0 OR BSD-3-Clause",
     "Apache-2.0 OR MIT",
     "Apache-2.0 OR BSD-2-Clause",
+    "BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1",
     "FTL OR GPL-2.0-or-later",
     "MIT AND Apache-2.0",
     "MIT OR Apache-2.0",
@@ -473,11 +473,35 @@ def load_report(path: Path) -> dict[str, Any]:
     if report.get("amendedDate") != "2026-08-10":
         raise ValueError("advisory report amended date must be 2026-08-10")
     components = report.get("components")
-    if not isinstance(components, list) or len(components) != 95:
-        raise ValueError("advisory report must contain 95 versioned review records")
+    if not isinstance(components, list) or len(components) != 108:
+        raise ValueError("advisory report must contain 108 versioned review records")
+    if sum(component.get("kind") == "runtime-python" for component in components) != 56:
+        raise ValueError("advisory report must contain 56 runtime Python records")
+    if sum(component.get("kind") == "bundled-native" for component in components) != 52:
+        raise ValueError("advisory report must contain 52 bundled-native records")
+    scope = report.get("scope", {})
+    if scope.get("runtimePythonComponentsByProfile") != {
+        "lite": 54,
+        "standard": 55,
+        "full": 56,
+    }:
+        raise ValueError("advisory report profile counts are stale")
+    if report.get("summary", {}).get("dispositionCounts") != {
+        "affected": 2,
+        "contains-affected-component": 3,
+        "contains-unknown-component": 2,
+        "no-known-applicable-advisory": 100,
+        "unknown": 1,
+    }:
+        raise ValueError("advisory report disposition counts are stale")
+    verification_runs = report.get("verificationRuns")
+    if not isinstance(verification_runs, list) or len(verification_runs) != 6:
+        raise ValueError("advisory report must retain all 6 verification runs")
     unversioned = report.get("unversionedNestedComponents")
     if not isinstance(unversioned, list) or len(unversioned) != 19:
-        raise ValueError("advisory report must enumerate 19 unversioned native children")
+        raise ValueError(
+            "advisory report must enumerate 19 unversioned native children"
+        )
     return report
 
 
@@ -715,9 +739,7 @@ def unversioned_native_component(
         "localdocforge:advisoryApplicability": policy["applicability"],
         "localdocforge:advisoryDisposition": reviewed["advisoryDisposition"],
         "localdocforge:advisoryRemediation": policy["remediation"],
-        "localdocforge:advisoryReviewDate": reviewed.get(
-            "reviewDate", "2026-07-19"
-        ),
+        "localdocforge:advisoryReviewDate": reviewed.get("reviewDate", "2026-07-19"),
         "localdocforge:bundledBy": reviewed["parentBomRef"],
         "localdocforge:componentKind": "bundled-native-unversioned",
         "localdocforge:evidencePlatform": reviewed["evidencePlatform"],
@@ -770,9 +792,7 @@ def build_dependencies(
             "pkg:generic/microsoft-visual-cpp-runtime@14.44.35211.0",
         },
         "pkg:pypi/pypdfium2@5.12.1": {"pkg:generic/pdfium@152.0.7947.0"},
-        "pkg:pypi/pillow@12.3.0": {
-            "pkg:generic/pillow%20codec%20bundle@12.3.0"
-        },
+        "pkg:pypi/pillow@12.3.0": {"pkg:generic/pillow%20codec%20bundle@12.3.0"},
         "pkg:pypi/pi-heif@1.4.0": {"pkg:generic/libheif@1.23.0"},
         "pkg:pypi/uharfbuzz@0.55.0": {"pkg:generic/harfbuzz@14.2.1"},
         # libde265 ships as its own DLL in the pi-heif wheel but is loaded
@@ -854,8 +874,7 @@ def build_vulnerabilities(indexed: dict[str, dict[str, Any]]) -> list[dict[str, 
                     "detail": component["security"]["applicability"],
                 },
                 "affects": [
-                    {"ref": reference}
-                    for reference in sorted(affects[advisory_id])
+                    {"ref": reference} for reference in sorted(affects[advisory_id])
                 ],
                 "recommendation": component["security"]["remediation"],
             }
@@ -884,8 +903,7 @@ def build_sbom(
         if component["kind"] == "bundled-native" and profile in component["profiles"]
     ]
     native_components = [
-        native_component(component, profile)
-        for component in native_records
+        native_component(component, profile) for component in native_records
     ]
     native_components.sort(key=lambda item: item["bom-ref"])
     unversioned_records = [
@@ -1033,6 +1051,9 @@ def build_profile_notices(
     runtime.sort(key=lambda item: canonicalize(item["name"]))
     native.sort(key=lambda item: canonicalize(item["name"]))
     unversioned.sort(key=lambda item: item["bomRef"])
+    has_rpds = any(
+        canonicalize(component["name"]) == "rpds-py" for component in runtime
+    )
     lines = [
         f"# Third-Party Notices — {profile.title()} profile",
         "",
@@ -1208,9 +1229,20 @@ def build_profile_notices(
             f"- The CycloneDX composition is explicitly `incomplete`: {len(native)} "
             f"native records have versions, {len(unversioned)} known children do "
             "not, and additional static or platform-specific children may exist.",
-            "- The pre-existing pydantic-core 2.46.4 embedded Cargo SBOM is not "
+            "- The pydantic-core 2.46.4 embedded Cargo SBOM is not "
             "flattened into this inventory. Its supplier records remain a disclosed "
-            "gap; the S5 review does not represent them as absent or cleared.",
+            "gap; this inventory does not represent them as absent or cleared.",
+            *(
+                [
+                    "- The rpds-py 2026.6.3 supplier SBOM records 15 required and "
+                    "two excluded Cargo children. Those identities are reviewed but "
+                    "not flattened, and the wheel supplies no child copyright/license "
+                    "texts; retain the supplier SBOM and do not represent CycloneDX "
+                    "composition or redistribution notices as complete."
+                ]
+                if has_rpds
+                else []
+            ),
             "- Typst 0.15.1 is an enabled, separately installed subprocess engine for "
             "Markdown-to-PDF, but it is not distributed by any Python profile and "
             "remains outside this report's component inventory. qpdf CLI, Tesseract, "
@@ -1238,6 +1270,11 @@ def build_combined_notices(report: dict[str, Any]) -> str:
         1 for component in report["components"] if component["kind"] == "bundled-native"
     )
     unversioned_count = len(report["unversionedNestedComponents"])
+    has_rpds = any(
+        component["kind"] == "runtime-python"
+        and canonicalize(component["name"]) == "rpds-py"
+        for component in report["components"]
+    )
     lines = [
         "# Third-Party Notices",
         "",
@@ -1273,8 +1310,18 @@ def build_combined_notices(report: dict[str, Any]) -> str:
             f"{unversioned_count} known unversioned "
             "PDFium, libavif, and libffi children remain advisory-unknown, and each SBOM's "
             "CycloneDX composition is `incomplete`.",
-            "The pre-existing pydantic-core 2.46.4 embedded Cargo SBOM remains "
+            "The pydantic-core 2.46.4 embedded Cargo SBOM remains "
             "unflattened and is an explicit inventory gap, not an absence claim.",
+            *(
+                [
+                    "The rpds-py 2026.6.3 supplier SBOM retains 15 required and two "
+                    "excluded Cargo children. Their identities are reviewed but "
+                    "unflattened, and missing child copyright/license texts keep "
+                    "composition and redistribution notice coverage incomplete."
+                ]
+                if has_rpds
+                else []
+            ),
             "",
             "These summaries are not legal advice. Redistributors must retain the full "
             "upstream license and notice texts shipped in wheel metadata.",

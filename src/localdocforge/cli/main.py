@@ -377,6 +377,30 @@ def agent_brief_cmd() -> None:
         typer.echo(render_markdown(brief))
 
 
+# --------------------------------------------------------------------------- MCP
+
+
+@app.command("mcp")
+def mcp_cmd() -> None:
+    """Serve registry-derived LocalDocForge tools over MCP stdio."""
+    # MCP owns stdin for protocol frames. Global password mechanisms are CLI
+    # conveniences for one-shot commands; MCP passwords are per-tool fields and
+    # must never be retained in the long-lived Typer state.
+    _clear_password_state()
+    from localdocforge.mcp.server import run_mcp_server
+
+    try:
+        run_mcp_server(settings=get_settings())
+    except KeyboardInterrupt:
+        raise typer.Exit(EXIT_CANCELLED) from None
+    except Exception:
+        # Never interpolate an exception: parser failures can contain document
+        # paths or password-shaped request values. Protocol errors are emitted
+        # by the server itself; this is only a safe process-level diagnostic.
+        typer.secho("Error: MCP server stopped unexpectedly", fg=typer.colors.RED, err=True)
+        raise typer.Exit(EXIT_FAILED) from None
+
+
 # --------------------------------------------------------------------------- doctor
 
 
