@@ -1,8 +1,8 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio external-review
-remediation and clean final gate complete; independent delta re-review is
-pending).
+Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio remediation, clean
+final gate, and independent approve-with-nits delta re-review complete;
+merge is pending).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -756,8 +756,11 @@ result applies only to the recorded OS, architecture, and interpreter.
   `8ceada03c3cf2e95efc37195226a3d4abcf0a6485e439409a4afac1c68f0296c`,
   records `release_manifest_verified: true`,
   `source_install_syntax_tested: true`, and
-  `source.working_tree_changes: false`, and names revision `673eb0f`. The
-  required independent delta verdict remains pending and is not claimed.
+  `source.working_tree_changes: false`, and names revision `673eb0f`. An
+  independent delta review reproduced both suite
+  modes, the supply-chain checks, and the adversarial MCP probes, then returned
+  `approve-with-nits`. All F1–F7 findings are resolved; the retained nits are
+  explicitly non-blocking. Merge still requires the user's go-ahead.
 
 ## Implemented hardening
 

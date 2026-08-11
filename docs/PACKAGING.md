@@ -558,6 +558,13 @@ records `release_manifest_verified: true`,
 `source_install_syntax_tested: true`, source revision `673eb0f`, and
 `source.working_tree_changes: false`.
 
+The required independent delta re-review independently reproduced both
+819-outcome suite modes, all lock/artifact checks, the package-source and lock
+hashes, and the real-process collision, short-password, stdout-purity,
+containment, strict-offline, and disconnect probes. Its final verdict is
+`approve-with-nits`; all F1–F7 findings are resolved and no further remediation
+round is required before the user's merge decision.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source
