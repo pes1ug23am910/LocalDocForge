@@ -1,8 +1,8 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio remediation, clean
-final gate, and independent approve-with-nits delta re-review complete;
-merge is pending).
+Last updated: 2026-08-12 (S8 local-agent MCP stdio merged after its clean final
+gate and independent approve-with-nits delta re-review; client
+registration docs updated).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -760,7 +760,10 @@ result applies only to the recorded OS, architecture, and interpreter.
   independent delta review reproduced both suite
   modes, the supply-chain checks, and the adversarial MCP probes, then returned
   `approve-with-nits`. All F1–F7 findings are resolved; the retained nits are
-  explicitly non-blocking. Merge still requires the user's go-ahead.
+  explicitly non-blocking. `main`
+  fast-forwarded through S8 tip `27b7ff2` on 2026-08-12. The CLI reference
+  carries the exact `ldf mcp` registration recipe and trust
+  boundary.
 
 ## Implemented hardening
 
