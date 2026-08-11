@@ -16,7 +16,15 @@ from mcp.shared.exceptions import McpError
 from localdocforge.api import worker as worker_module
 from localdocforge.api.worker import WorkerJobStatus, WorkerOutcome
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ConversionReport
+from localdocforge.domain.models import (
+    ConversionReport,
+    FidelityWarning,
+    OutputArtifact,
+    ReportStatus,
+    SecurityWarning,
+    ValidationCheck,
+    ValidationResult,
+)
 from localdocforge.mcp import runner as runner_module
 from localdocforge.mcp import server as server_module
 from localdocforge.mcp.runner import ToolRunResult
@@ -188,3 +196,57 @@ def test_large_success_reports_are_summarized_without_becoming_errors() -> None:
     assert response.root.isError is False
     assert response.root.structuredContent is not None
     assert response.root.structuredContent["mcp_response"]["server_truncated"] is True
+
+
+def test_mcp_report_preserves_typed_output_path_but_redacts_content_values(
+    tmp_path: Path,
+) -> None:
+    password = "e"
+    output = (tmp_path / "merged-here.pdf").resolve()
+    report = ConversionReport(
+        operation="merge",
+        status=ReportStatus.SUCCESS,
+        job_id="private-worker-job",
+        outputs=[
+            OutputArtifact(
+                path=output,
+                media_type="application/pdf",
+                size_bytes=1,
+            )
+        ],
+        security_warnings=[
+            SecurityWarning(code="secret-warning", message=f"before-{password}-after")
+        ],
+        fidelity_warnings=[
+            FidelityWarning(code="secret-fidelity", message=f"before-{password}-after")
+        ],
+        errors=[f"before-{password}-after"],
+        validation=ValidationResult(
+            passed=False,
+            checks=[
+                ValidationCheck(
+                    name="secret-check",
+                    passed=False,
+                    detail=f"before-{password}-after",
+                )
+            ],
+        ),
+        details={"metadata": {"title": f"before-{password}-after"}},
+    )
+
+    payload = worker_module._sanitized_report(
+        report,
+        api_job_id="public-job",
+        job_root=tmp_path / "private-workspace",
+        secrets=(password,),
+        preserve_paths=True,
+        preserve_output_paths_exact=True,
+    )
+
+    redacted = f"before-{password}-after".replace(password, "<redacted>")
+    assert payload["outputs"][0]["path"] == str(output)
+    assert payload["security_warnings"][0]["message"] == redacted
+    assert payload["fidelity_warnings"][0]["message"] == redacted
+    assert payload["errors"] == [redacted]
+    assert payload["validation"]["checks"][0]["detail"] == redacted
+    assert payload["details"]["metadata"]["title"] == redacted

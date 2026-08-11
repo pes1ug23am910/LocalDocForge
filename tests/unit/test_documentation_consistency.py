@@ -95,6 +95,97 @@ def test_ocr_slice_is_documented_consistently() -> None:
     assert "S7" in status and "OCR" in status
 
 
+def test_mcp_slice_is_documented_consistently() -> None:
+    paths = {
+        name: (ROOT / relative).read_text(encoding="utf-8")
+        for name, relative in {
+            "readme": "README.md",
+            "cli": "docs/CLI.md",
+            "feature": "docs/FEATURE_MATRIX.md",
+            "threat": "docs/THREAT_MODEL.md",
+            "status": "docs/STATUS.md",
+            "technical": "docs/TECHNICAL_REFERENCE.md",
+            "architecture": "docs/ARCHITECTURE.md",
+        }.items()
+    }
+    flat = {name: " ".join(value.split()) for name, value in paths.items()}
+
+    assert "ldf mcp" in paths["readme"]
+    assert "MCP 2025-11-25 over stdio" in paths["readme"]
+    assert "Calls are serialized" in paths["readme"]
+    assert "synchronously without progress streaming" in flat["readme"]
+    assert "absolute local paths supplied by that trusted client" in flat["readme"]
+    assert "worker-isolation controls still apply" in flat["readme"]
+
+    cli = paths["cli"]
+    cli_flat = flat["cli"]
+    for phrase in (
+        "official MCP Python SDK",
+        "MCP **2025-11-25** compatibility profile",
+        "strict UTF-8 JSON-RPC object per newline",
+        "Server stdout contains protocol frames only",
+        "implemented=True` in `CAPABILITY_SPECS",
+        "same typed operation parameter model",
+        "MCP callers provide absolute input and destination paths",
+        "serializes tool calls in v1",
+        "there is no MCP progress streaming",
+        "has no bearer token",
+    ):
+        assert phrase in cli_flat, phrase
+    assert (
+        r"`C:\path\to\LocalDocForge\.venv\Scripts\ldf.exe mcp`"
+    ) in cli
+    assert "[mcp_servers.localdocforge]" in cli
+    assert (
+        r"command = 'C:\path\to\LocalDocForge\.venv\Scripts\ldf.exe'"
+        in cli
+    )
+    assert 'args = ["mcp"]' in cli
+
+    feature_row = next(
+        line
+        for line in paths["feature"].splitlines()
+        if line.startswith("| Local-agent MCP stdio")
+    )
+    for phrase in (
+        "✅",
+        "official MCP Python SDK + spawned workers",
+        "generated from implemented `CAPABILITY_SPECS`",
+        "serialized calls and no progress streaming in v1",
+        "no token auth",
+        "inherited local process pipes are the trust boundary",
+    ):
+        assert phrase in feature_row, phrase
+
+    threat = flat["threat"]
+    for phrase in (
+        "Its inherited stdio pipes are a local process boundary, not an authentication boundary",
+        "It has no bearer token",
+        "HTTP API's token is needed for a different browser/request boundary",
+        "Tool names and ordering are generated from implemented `CAPABILITY_SPECS`",
+        "Calls are serialized in v1 and return only a final synchronous result",
+        "Client disconnect cancels the active call, kills the contained worker tree",
+    ):
+        assert phrase in threat, phrase
+
+    status = flat["status"]
+    assert "post-S7 local-agent MCP stdio, S8" in status
+    assert "synchronous MCP 2025-11-25 compatibility-profile server" in status
+    assert "Calls serialize in v1 with no progress streaming" in status
+    assert "Stdout contains protocol frames only" in status
+    assert "MCP has no token; the HTTP API retains its separate bearer-token" in status
+
+    for name in ("technical", "architecture"):
+        document = flat[name]
+        assert "base MCP SDK closure includes HTTP-capable" in document
+        assert "makes no outbound requests during document processing" in document
+        assert "Standard-minus-Lite dependency delta is FastAPI alone" in document
+    assert "enables only the SDK's inherited-stdio transport" in flat["technical"]
+    assert "enables only the inherited-stdio MCP transport" in flat["architecture"]
+    assert "no outbound network client" not in paths["technical"].lower()
+    assert "no shipped outbound network client" not in paths["architecture"].lower()
+
+
 def test_implementation_plan_records_shipped_api_and_pending_react_ui() -> None:
     plan = (ROOT / "docs" / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
 

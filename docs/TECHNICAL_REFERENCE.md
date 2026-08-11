@@ -29,13 +29,16 @@ Contents: [1 Stack](#1-system-identity-and-stack) · [2 Layout](#2-package-layou
 | Renderer/text engine | pypdfium2 5.12.1 (PDFium 152.0.7947.0) | validation renders, PDF→images, compress pixel-compare, PDF→Markdown/text/JSONL, inspect text coverage |
 | Imaging | Pillow 12.x | image decode/encode, images→PDF, decompression-bomb guard |
 | Diagnostic PDF lib | pypdf (Full profile) | probed, used in tests; deliberately **not** an operation engine |
-| API service | FastAPI + Uvicorn + python-multipart (Standard profile) | loopback by default |
+| API service | FastAPI (Standard-only application layer) + Uvicorn/python-multipart (already present in the base MCP SDK closure) | loopback by default |
 | Build backend | setuptools==83.0.0, hash-pinned, isolated | see §14 |
 | Resolver/locks | uv 0.11.26 (pinned), SHA-256 marker-aware exports | see §14 |
 
-The shipped package contains **no outbound network client, telemetry, update
-check, or remote browser asset** — verified by source inspection and
-socket-denial test runs (`docs/THREAT_MODEL.md` §T6).
+The base MCP SDK closure includes HTTP-capable client and ASGI/SSE libraries,
+including HTTPX, Starlette, Uvicorn, and sse-starlette. LocalDocForge enables
+only the SDK's inherited-stdio transport for `ldf mcp` and makes no outbound
+requests during document processing. It ships no telemetry, update check, or
+remote browser asset; socket-denial test runs verify the application behavior
+(`docs/THREAT_MODEL.md` §T6).
 
 ## 2. Package layout
 
@@ -431,10 +434,13 @@ design; conversion-report JSON never does.
 
 Authoritative: `docs/PACKAGING.md`. In brief:
 
-- **Profiles**: default/`lite` (core+CLI), `standard` (+FastAPI service),
-  `full` (+pypdf), `dev` (+test/lint/type/build tools) — real dependency
-  sets with marker-aware SHA-256 locks under `requirements/locks/`, exported
-  from the pinned-uv (`0.11.26`) universal `uv.lock` with a dated cutoff.
+- **Profiles**: default/`lite` (core+CLI+MCP stdio and its SDK closure),
+  `standard` (+FastAPI application layer), `full` (+pypdf), `dev`
+  (+test/lint/type/build tools) — real dependency sets with marker-aware
+  SHA-256 locks under `requirements/locks/`, exported from the pinned-uv
+  (`0.11.26`) universal `uv.lock` with a dated cutoff. The MCP SDK's base
+  closure already supplies Uvicorn and python-multipart, so the resolved
+  Standard-minus-Lite dependency delta is FastAPI alone.
   Audited installs: hash-locked deps first, then the package with
   `--no-deps`.
 - **Build**: PEP 517 with `setuptools==83.0.0` only; the exact wheel is
@@ -491,7 +497,7 @@ Authoritative: `docs/PACKAGING.md`. In brief:
 | API execution | one fresh spawned worker per job; Windows Job Object (kill-on-close, memory, CPU, process count) established before document bytes; verified-empty tree exit or fail-closed |
 | Filesystem | per-job private workspaces; atomic no-clobber publication; alias refusal; Windows path-form/reparse/device/ADS rejection; optional output jail |
 | Secrets | CLI password values come from stdin, an explicit environment variable, or a hidden prompt; API values are form-only; never in argv/reports/logs/IPC returns; reports carry no document text |
-| Network | no outbound client in the package; loopback-only API by default; token auth; strict-offline = app policy + Python socket guards — **not** an OS firewall |
+| Network | HTTP-capable libraries exist in the MCP SDK closure, but LocalDocForge enables only MCP stdio and makes no outbound document-processing requests; loopback-only API by default; token auth; strict-offline = app policy + Python socket guards — **not** an OS firewall |
 | Not provided | OS sandboxing of parsers, forensic erasure, crash-transactional multi-output publish, cross-platform execution evidence beyond Windows 11 x64 |
 
 Open release blockers and the sensitive-document FAIL decision:

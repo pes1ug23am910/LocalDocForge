@@ -2845,7 +2845,7 @@
       "reviewDate": "2026-08-10",
       "profiles": ["lite", "standard", "full"],
       "platformMarker": "sys_platform == 'win32'",
-      "role": "Windows API bridge used directly by LocalDocForge's MCP stdio transport to redirect inherited standard handles while preserving the private protocol descriptor; also required by SDK Windows helpers.",
+      "role": "Windows API bridge declared directly for LocalDocForge's MCP stdio transport and shared worker-spawn isolation; also required by SDK Windows helpers.",
       "license": {
         "concluded": "BSD-3-Clause AND HPND AND LGPL-2.1-or-later AND MIT AND Python-2.0.1",
         "status": "verified-exact-tag-and-installed-wheel-bundle",
@@ -2859,7 +2859,7 @@
         "affectedVersionRanges": [],
         "sourceRefs": ["osv-pypi-exact-s8-2026-08-10", "github-reviewed-pip-exact-s8-2026-08-10"],
         "upstream": "https://github.com/mhammond/pywin32/security/advisories",
-        "applicability": "Every Windows `ldf mcp` session reaches fixed GetStdHandle/SetStdHandle calls; attacker-controlled frame bytes are not passed as Win32 API arguments.",
+        "applicability": "Windows MCP startup reaches fixed GetStdHandle/SetStdHandle calls, and every isolated worker spawn temporarily duplicates and redirects inherited standard handles under a process-global lock; attacker-controlled frame bytes are not passed as Win32 API arguments.",
         "remediation": "Preserve the complete wheel license bundle and re-review the exact platform wheel on every pywin32 or MCP update.",
         "residualRisk": "Handle-redirection defects could compromise framing or availability, and the wheel exposes many broader native Windows APIs outside the supported server path."
       }

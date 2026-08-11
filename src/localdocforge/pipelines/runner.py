@@ -420,6 +420,10 @@ def run_pipeline(
         report.status = ReportStatus.CANCELLED
         report.errors.append(str(exc))
         raise PipelineError(str(exc), report) from exc
+    except OutputCollisionError as exc:
+        message = str(exc)
+        report.errors.append(message)
+        raise PipelineError(message, report) from exc
     except PipelineError as exc:
         if exc.report is None:
             exc.report = report

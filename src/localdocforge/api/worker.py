@@ -580,13 +580,24 @@ def _sanitized_report(
     job_root: Path,
     secrets: tuple[str, ...],
     preserve_paths: bool = False,
+    preserve_output_paths_exact: bool = False,
 ) -> dict[str, Any]:
+    """Build a public report while redacting only content-bearing values.
+
+    MCP output artifact paths are typed, validated publication results that the
+    caller must receive byte-for-byte.  They therefore bypass substring secret
+    replacement when explicitly requested; warning, error, validation, detail,
+    and metadata values continue through the recursive redactor.
+    """
     payload = report.model_dump(mode="json")
     payload["job_id"] = api_job_id
     replacements = (str(job_root), job_root.as_posix(), *secrets)
     for collection in ("inputs", "outputs"):
         for artifact in payload.get(collection, []):
             raw_path = str(artifact.get("path", ""))
+            if preserve_output_paths_exact and collection == "outputs":
+                artifact["path"] = raw_path
+                continue
             if not preserve_paths:
                 raw_path = Path(raw_path).name
             artifact["path"] = _sanitize_value(raw_path, replacements)
@@ -1361,6 +1372,7 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
             job_root=job_root,
             secrets=secrets,
             preserve_paths=is_mcp and request.operation != "inspect",
+            preserve_output_paths_exact=is_mcp and request.operation != "inspect",
         )
         if is_mcp:
             report_payload, response_summary = _compact_mcp_report(report_payload)

@@ -1,7 +1,8 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio implementation and
-Windows-AMD64 gate complete; required external delta review is pending).
+Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio external-review
+remediation suite and manifest complete; clean final gate and independent delta
+re-review are pending).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -740,19 +741,15 @@ result applies only to the recorded OS, architecture, and interpreter.
 - The inherited same-user pipe is the trust boundary, so MCP has no
   token; the HTTP API retains its separate bearer-token control. Strict-offline
   policy, configured output roots, and password redaction remain in force.
-- The post-rebase direct suite collected 814 outcomes: 810 passed, four
-  expected platform skips, and zero failed in 109.18 seconds. The subsequent
-  638.6-second verify-mode release gate reran all 814 outcomes normally and
-  with network access blocked, passed native/Linux/Darwin mypy, reproduced the
-  source/wheel/sdist identity, and passed clean Base/Lite/Standard/Full source
-  and wheel installs plus the isolated Full test profile. Its disposable
-  evidence records `release_manifest_verified: true`,
-  `source_install_syntax_tested: true`, and `full_tests.status: passed`; the
-  evidence SHA-256 is
-  `c53b702cdfa081fcc0b560a6bdc5a433800219e3983de00d82c93525d5f47dce`.
-  The branch was intentionally uncommitted during the executor gate, so the
-  evidence honestly records `source.working_tree_changes: true`; external
-  cross-model delta review and merge approval remain pending.
+- The pre-review direct suite and 638.6-second gate ran 814 outcomes, but an independent
+  review correctly found that two final profile-regression cases made committed tip
+  `da9138c` collect 816. That gate is retained as superseded chronology, not
+  evidence for the delivered tree. After remediating F1–F7, the tree collects
+  819 tests and the corrected complete suite passed 815 with four expected
+  platform skips and zero failures in 109.87 seconds. The package manifest is
+  now source `096f8e31…`, wheel `c3e883f7…`, and sdist `5ad21d6e…`. A clean
+  committed verify-mode gate and independent delta verdict follow; neither
+  is claimed at this point.
 
 ## Implemented hardening
 

@@ -66,6 +66,9 @@ EXPECTED_BASE_DEPENDENCIES = frozenset(
         "pi-heif",
     }
 )
+EXPECTED_PLATFORM_DEPENDENCIES = frozenset(
+    {("pywin32", ">=311", 'sys_platform == "win32"')}
+)
 
 
 def _run(
@@ -341,13 +344,25 @@ def _validate_metadata(wheel: Path) -> None:
     if base != EXPECTED_BASE_DEPENDENCIES:
         raise RuntimeError(f"wheel base dependency drift: {sorted(base)}")
 
+    platform_dependencies = {
+        (item.name.lower(), str(item.specifier), str(item.marker))
+        for item in requirements
+        if item.marker is not None and "extra" not in str(item.marker)
+    }
+    if platform_dependencies != EXPECTED_PLATFORM_DEPENDENCIES:
+        raise RuntimeError(
+            f"wheel platform dependency drift: {sorted(platform_dependencies)}"
+        )
+
     by_extra: dict[str, set[str]] = {name: set() for name in ("lite", "standard", "full", "dev")}
     for extra in by_extra:
         environment = {"extra": extra}
         by_extra[extra] = {
             item.name.lower()
             for item in requirements
-            if item.marker is not None and item.marker.evaluate(environment)
+            if item.marker is not None
+            and "extra" in str(item.marker)
+            and item.marker.evaluate(environment)
         }
     if by_extra["lite"]:
         raise RuntimeError("lite extra must remain an explicit alias for the base dependency set")

@@ -31,7 +31,10 @@ The reviewed SDK supports protocol versions `2024-11-05`, `2025-03-26`,
 `2025-06-18`, and `2025-11-25`, with `2025-11-25` as its latest generation.
 LocalDocForge constrains the SDK to `>=1.28.1,<2`; an SDK major, cutoff, or
 supported-protocol change requires a fresh compatibility, closure, advisory,
-and framing review.
+and framing review. It also declares `pywin32>=311; sys_platform == 'win32'`
+directly because first-party MCP stdio and shared worker-spawn code import
+those bindings; runtime correctness must not rely only on the SDK's transitive
+platform marker.
 
 The ten new universal-lock nodes and their compatible CPython 3.14 / Windows
 x86-64 wheel sizes are:

@@ -54,10 +54,12 @@ are synchronous and serialized in v1, with no progress streaming. The SDK's
 mandatory HTTP/SSE/JWT dependencies are installed but are not enabled as MCP
 transports or authentication surfaces. On Windows, the stdio transport uses
 pywin32 to preserve a private protocol descriptor while redirecting inherited
-standard handles; the platform marker omits pywin32 elsewhere. Because that
-mandatory closure already includes Uvicorn and python-multipart, the resolved
-Standard-minus-Lite delta is FastAPI alone even though the Standard extra
-declares all three API dependencies explicitly.
+standard handles; LocalDocForge also declares pywin32 directly on Windows
+because first-party stdio and shared worker-spawn code imports its bindings.
+The platform marker omits pywin32 elsewhere. Because the SDK's mandatory
+closure already includes Uvicorn and python-multipart, the resolved Standard-
+minus-Lite delta is FastAPI alone even though the Standard extra declares all
+three API dependencies explicitly.
 
 The Windows-primary reproducible Standard install is:
 
@@ -513,6 +515,39 @@ Full test profile. Its disposable evidence records
 It also honestly records `source.working_tree_changes: true` because this was
 the executor's pre-review branch gate. The evidence remained disposable under
 the §1.8 rule; retained `packaging-evidence/` was not modified.
+
+The independent review later established that this pre-review gate preceded two final
+profile-regression cases: committed review tip `da9138c` collected 816 tests,
+not 814. The checkpoint remains implementation chronology, but it is not final
+evidence for the delivered tree and is superseded by the remediation identity
+and clean committed gate below.
+
+### 2026-08-11 S8 external-review remediation identity
+
+After the independent review, S8 preserved actionable collision failures, kept typed
+successful MCP destination paths exact under short-password redaction, added a
+dedicated MCP documentation contract, corrected stale network-client claims,
+and declared its direct Windows pywin32 imports explicitly. The dependency
+closure and locked versions did not move. A 21.2-second build-only gate used a
+fresh system-temporary directory, reproduced both direct builds and the
+sdist-to-wheel build, passed Twine/member/metadata checks, and refreshed only
+the live Windows-AMD64 manifest. Retained `dist/` and `packaging-evidence/`
+records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `096f8e316704bd84188e4cd96aee82bcf4ec67527f030e06a6f1a127d30184e7` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `c3e883f78ec0f08506bd0750b7c2c73f93dcb8ceeea66d4bafd66f930cecf12b` | 184,048 |
+| `localdocforge-0.1.0.tar.gz` | `5ad21d6e946a03913cf7f3c6ff200060e9f9124fdff9c01d669fb684053a26e7` | 165,604 |
+
+The remediation tree collects 819 tests. Its first complete run retained one
+documentation-consistency failure because this newly generated source identity
+had not yet been embedded here; all other 814 tests passed and four expected
+platform tests skipped. The corrected complete-suite and clean committed-gate
+results follow after rerun rather than relabelling that failed attempt. The
+complete rerun then passed 815 tests with the same four expected skips and zero
+failures in 109.87 seconds. The clean committed verify-mode gate is recorded
+after it completes; it is not inferred from this direct run.
 
 ## Clean profile/full-test matrices
 

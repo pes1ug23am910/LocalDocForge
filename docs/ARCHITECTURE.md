@@ -290,10 +290,14 @@ exception values, private paths, document fragments, or parser details.
   limits crashes and denial of service but is not a restricted-token,
   filesystem, or kernel sandbox. Optional executable probes and future
   pipelines must use the allowlisted subprocess runner.
-- The package has no shipped outbound network client, telemetry, update check,
-  or remote browser asset. Strict mode adds application-level rejection of
-  recognizable network filesystem paths and non-loopback serving; it is not an
-  OS network sandbox.
+- The base MCP SDK closure includes HTTP-capable client and ASGI/SSE libraries,
+  but LocalDocForge enables only the inherited-stdio MCP transport and makes no
+  outbound requests during document processing. It ships no telemetry, update
+  check, or remote browser asset. The base/Lite closure already contains
+  Uvicorn and python-multipart, so the resolved Standard-minus-Lite dependency
+  delta is FastAPI alone. Strict mode adds application-level rejection of
+  recognizable network filesystem paths and non-loopback serving; it is not
+  an OS network sandbox.
 - Windows 11 x64 is the only locally executed release-hardening platform for
   the 2026-07-20 checkpoint. Portable/POSIX code and CI configuration do not
   establish Linux or macOS support without their own retained runner evidence.

@@ -33,6 +33,9 @@ dependencies = [
     # Official MCP SDK. 1.28.1 is the reviewed pre-v2 stdio generation;
     # v2 is a breaking protocol/API generation outside this release cutoff.
     "mcp>=1.28.1,<2",
+    # First-party Windows stdio/worker isolation imports these bindings
+    # directly; do not rely on the SDK's transitive platform edge.
+    "pywin32>=311; sys_platform == 'win32'",
     # Direct hostile-input parser floor: 4.1 fixed quadratic token joins; 4.2
     # is the first reviewed/locked release used by the Markdown-to-PDF surface.
     "markdown-it-py>=4.2",

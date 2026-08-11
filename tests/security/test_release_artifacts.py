@@ -32,6 +32,7 @@ BASE_DIRECT = {
     "pkg:pypi/pydantic@2.13.4",
     "pkg:pypi/pydantic-settings@2.14.2",
     "pkg:pypi/pypdfium2@5.12.1",
+    "pkg:pypi/pywin32@312",
     "pkg:pypi/typer@0.27.0",
 }
 STANDARD_DIRECT = BASE_DIRECT | {

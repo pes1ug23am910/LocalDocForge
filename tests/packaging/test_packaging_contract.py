@@ -53,13 +53,28 @@ def test_published_profiles_match_shipped_capabilities():
     metadata = project["project"]
     assert metadata["requires-python"] == ">=3.12,<3.15"
     assert project["build-system"]["requires"] == ["setuptools==83.0.0"]
+    requirements = [
+        release_gate.Requirement(requirement) for requirement in metadata["dependencies"]
+    ]
     declared_base = frozenset(
-        release_gate.Requirement(requirement).name.lower()
-        for requirement in metadata["dependencies"]
+        requirement.name.lower()
+        for requirement in requirements
+        if requirement.marker is None
+    )
+    declared_platform = frozenset(
+        (
+            requirement.name.lower(),
+            str(requirement.specifier),
+            str(requirement.marker),
+        )
+        for requirement in requirements
+        if requirement.marker is not None
     )
     assert release_gate.EXPECTED_BASE_DEPENDENCIES == declared_base
+    assert release_gate.EXPECTED_PLATFORM_DEPENDENCIES == declared_platform
     assert "pi-heif" in release_gate.EXPECTED_BASE_DEPENDENCIES
     assert "mcp" in release_gate.EXPECTED_BASE_DEPENDENCIES
+    assert "pywin32>=311; sys_platform == 'win32'" in metadata["dependencies"]
     assert "Operating System :: Microsoft :: Windows :: Windows 11" in metadata[
         "classifiers"
     ]

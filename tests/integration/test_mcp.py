@@ -292,7 +292,7 @@ def test_real_stdio_handshake_registry_merge_errors_and_purity(
         assert successful_password_job["result"]["isError"] is False
         assert password not in json.dumps(successful_password_job, ensure_ascii=False)
 
-        short_password = "a"
+        short_password = "e"
         short_password_input = tmp_path / "short-password.pdf"
         with pikepdf.open(fixtures_dir / "simple-3page.pdf") as pdf:
             pdf.docinfo[f"/{short_password}"] = short_password
@@ -327,6 +327,31 @@ def test_real_stdio_handshake_registry_merge_errors_and_purity(
         assert short_structured["inspection"]["docinfo"]["/<redacted>"] == (
             "<redacted>"
         )
+
+        short_password_output = (tmp_path / "merged-here.pdf").resolve()
+        short_password_merge = client.request(
+            92,
+            "tools/call",
+            {
+                "name": "merge",
+                "arguments": {
+                    "inputs": [
+                        str((fixtures_dir / "simple-3page.pdf").resolve()),
+                        str((fixtures_dir / "second-2page.pdf").resolve()),
+                    ],
+                    "output": str(short_password_output),
+                    "password": short_password,
+                },
+            },
+        )
+        responses.append(short_password_merge)
+        assert short_password_merge["result"]["isError"] is False
+        short_merge_structured = short_password_merge["result"]["structuredContent"]
+        assert short_merge_structured["outputs"] == [str(short_password_output)]
+        assert [
+            artifact["path"] for artifact in short_merge_structured["report"]["outputs"]
+        ] == [str(short_password_output)]
+        assert short_password_output.is_file()
 
         cropped_output = tmp_path / "warning-crop.pdf"
         cropped = client.request(

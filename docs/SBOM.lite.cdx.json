@@ -3733,7 +3733,7 @@
       "properties": [
         {
           "name": "localdocforge:advisoryApplicability",
-          "value": "Every Windows `ldf mcp` session reaches fixed GetStdHandle/SetStdHandle calls; attacker-controlled frame bytes are not passed as Win32 API arguments."
+          "value": "Windows MCP startup reaches fixed GetStdHandle/SetStdHandle calls, and every isolated worker spawn temporarily duplicates and redirects inherited standard handles under a process-global lock; attacker-controlled frame bytes are not passed as Win32 API arguments."
         },
         {
           "name": "localdocforge:advisoryDisposition",
@@ -3789,7 +3789,7 @@
         },
         {
           "name": "localdocforge:role",
-          "value": "Windows API bridge used directly by LocalDocForge's MCP stdio transport to redirect inherited standard handles while preserving the private protocol descriptor; also required by SDK Windows helpers."
+          "value": "Windows API bridge declared directly for LocalDocForge's MCP stdio transport and shared worker-spawn isolation; also required by SDK Windows helpers."
         }
       ],
       "purl": "pkg:pypi/pywin32@312",
@@ -10593,6 +10593,7 @@
         "pkg:pypi/pydantic-settings@2.14.2",
         "pkg:pypi/pydantic@2.13.4",
         "pkg:pypi/pypdfium2@5.12.1",
+        "pkg:pypi/pywin32@312",
         "pkg:pypi/typer@0.27.0"
       ],
       "ref": "pkg:pypi/localdocforge@0.1.0"
@@ -10923,7 +10924,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "49b7a35946c1ea69ec18da773228eaaa03a0088b18427fae4d57eabe5747f2b2"
+        "value": "fafd092580d614f0296e97dae2a5af85c4635d8ac5dd5db36d5e8622d729737a"
       },
       {
         "name": "localdocforge:advisoryReview",
