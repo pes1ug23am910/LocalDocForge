@@ -284,6 +284,11 @@ without publishing; partial skips remain a critical-warning success so callers
 can inspect the affected pages. A genuinely blank scan with no skip marker is
 still valid.
 
+The sidecar preserves literal form-feed (`U+000C`) page separators.
+An intentionally skipped record may be the exact `[OCR skipped on page(s) N]`
+(or contiguous `N-M` range); exact `[skipped page]` is the engine-failure control
+record. Neither marker is recognized document text.
+
 The operation uses one OCRmyPDF worker, PDF output (not PDF/A), optimization
 level 0, private neutral filenames and HOME/USERPROFILE/TEMP directories, the configured
 image-pixel/temporary/output/page ceilings, and the remaining job wall

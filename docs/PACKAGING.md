@@ -418,13 +418,36 @@ modified.
 | `localdocforge-0.1.0.tar.gz` | `41fb64892c817f70030f2ab400d4ba683c064996716da45777ef443fcc81c56a` | 148,040 |
 
 The post-delta 520.3-second verify-mode full gate reproduced this identity,
-passed both 787-outcome suite modes and every source/wheel profile, and
+passed both 786-outcome suite modes and every source/wheel profile, and
 recorded `release_manifest_verified: true`,
 `source_install_syntax_tested: true`, and `full_tests.status: passed`.
 Disposable evidence SHA-256 was
 `b7b4bc51ea6d0d8addee1212540ac25856e105c1efe296b2800419f5ddeddc85`;
 the pre-review run honestly recorded `source.working_tree_changes: true`.
 Temporary output was removed and retained artifacts/evidence stayed untouched.
+
+#### 2026-08-11 S7 review-remediation identity
+
+The F2/F3 review remediation changed packaged OCR failure mapping and README
+sidecar guidance. A supported 27.2-second build-only gate used disposable
+system-temporary artifacts, reproduced direct and sdist-derived wheels, and
+refreshed only the live Windows manifest below. Retained `dist/` and
+`packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `f32525313ca360ae413564365d5fe6e1afb72824b1590fff8efb2f2e678f6199` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `eae5787b0a8011454e87269a77a635639b9033648be6c6ec709fff75edf20c83` | 162,870 |
+| `localdocforge-0.1.0.tar.gz` | `d0f608450bad0f854f61e7328ac1e546d3168d94d826cff6152af9dba3438221` | 148,364 |
+
+The direct post-remediation suite collected 787 outcomes: 783 passed, four
+expected platform skips, and zero failed. The final 560.5-second verify-mode
+gate reproduced this identity, passed both suite modes and every source/wheel
+profile, and recorded `release_manifest_verified: true`,
+`source_install_syntax_tested: true`, and `full_tests.status: passed`.
+Disposable evidence SHA-256 is
+`d7ab4f3a059ec418e29c232c5f4c969c94d7a07f0406eb1c42c9630e2ad13924`;
+the pre-commit run honestly records `source.working_tree_changes: true`.
 
 ## Clean profile/full-test matrices
 
@@ -548,9 +571,10 @@ MongoDB/PyMongo Apache-2.0 SASLprep attribution/terms, plus CFFI's omitted
 libffi notice—is recorded in the report's 2026-08-10 verification run. Empty
 advisory results remain time-bounded findings, not safety guarantees.
 
-Also on 2026-08-10, S7 added OCRmyPDF 17.8.1 and six newly introduced
-transitive Python distributions to every profile. Exact OSV and GitHub reviewed
-advisory queries returned no records for those seven versions. Exact-tag and
+Also on 2026-08-10, S7 added OCRmyPDF 17.8.1 plus five transitive distributions
+new to `uv.lock`; pluggy 1.6.0 was already dev-locked but was newly promoted
+into every shipped runtime profile. Exact OSV and GitHub reviewed advisory
+queries returned no records for those seven versions. Exact-tag and
 installed-wheel evidence establishes OCRmyPDF's composite
 `Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib` conclusion, fpdf2's
 LGPL-3.0-only terms, img2pdf's LGPL-3.0-or-later terms, FontTools' composite

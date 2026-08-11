@@ -109,6 +109,9 @@ PDF or `force_ocr=True` only when rasterizing and re-encoding every page is
 acceptable; those flags are mutually exclusive. The PDF and optional strict-
 UTF-8/LF sidecar validate and publish atomically. `EngineUnavailableError`
 identifies a missing OCRmyPDF/Tesseract/Ghostscript probe or language pack.
+Sidecars preserve form-feed (`U+000C`) page separators; skipped records may be
+the exact `[OCR skipped on page(s) N]` or `[skipped page]` OCRmyPDF control
+markers rather than document text.
 
 ### Images ↔ PDF and image → image (`operations.images`)
 

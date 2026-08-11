@@ -34,6 +34,9 @@ def test_ocr_slice_is_documented_consistently() -> None:
     assert "ldf ocr scan.pdf -o searchable.pdf" in readme
     assert OCR_TEXT_APPROXIMATE in readme
     assert OCR_FORCE_RASTERIZED in readme
+    assert "form-feed (`U+000C`)" in readme
+    assert "[OCR skipped on page(s) N]" in readme
+    assert "[skipped page]" in readme
 
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
     assert "ldf ocr INPUT.pdf -o OUTPUT.pdf" in cli
@@ -45,6 +48,9 @@ def test_ocr_slice_is_documented_consistently() -> None:
         OCR_ENGINE_PAGE_SKIPPED,
     ):
         assert code in cli
+    assert "form-feed (`U+000C`)" in cli
+    assert "[OCR skipped on page(s) N]" in cli
+    assert "[skipped page]" in cli
 
     feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
     row = next(line for line in feature.splitlines() if line.startswith("| OCR PDF"))
@@ -66,6 +72,9 @@ def test_ocr_slice_is_documented_consistently() -> None:
         assert code in section
     assert "sampled tokens" in section
     assert "extractable from the candidate text layer" in section
+    assert "form-feed (`U+000C`)" in section
+    assert "[OCR skipped on page(s) N]" in section
+    assert "[skipped page]" in section
 
     decisions = (ROOT / "docs" / "ENGINE_DECISIONS.md").read_text(encoding="utf-8")
     assert "OCRmyPDF / Tesseract / Ghostscript boundary" in decisions

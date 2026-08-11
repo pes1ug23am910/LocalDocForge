@@ -644,8 +644,10 @@ result applies only to the recorded OS, architecture, and interpreter.
   any page already has a text layer, including whitespace-only text.
   `--skip-text` permits mixed documents and `--force-ocr` rasterizes/re-encodes
   every page with critical `ocr-force-rasterized`. Every successful output has
-  `ocr-text-approximate`; sidecars are strict UTF-8/LF and mixed-document
-  sidecars warn that pre-existing skipped-page text is omitted.
+  `ocr-text-approximate`; sidecars are strict UTF-8/LF, preserve form-feed
+  (`U+000C`) page separators, and may contain exact
+  `[OCR skipped on page(s) N]` or `[skipped page]` engine control records.
+  Mixed-document sidecars warn that pre-existing skipped-page text is omitted.
 - OCRmyPDF is launched with one job, ordinary PDF output, optimization 0,
   neutral private paths/HOME/USERPROFILE/TEMP, bounded diagnostics, configured page/pixel/
   temporary/output limits, a remaining-job timeout, and an elapsed 900-second
@@ -684,9 +686,11 @@ result applies only to the recorded OS, architecture, and interpreter.
   finds the locked OCRmyPDF console
   script even when Scripts is absent from PATH. Narrow HKLM vendor discovery
   finds Tesseract/Ghostscript without trusting the document working directory.
-- The dependency ritual adds OCRmyPDF 17.8.1 plus six new transitive Python
-  distributions to all profiles while leaving protected cryptography 50.0.0
-  and pdfminer.six 20260107 unchanged. The audited wheel closure includes
+- The dependency ritual adds OCRmyPDF 17.8.1 plus five transitive Python
+  distributions new to `uv.lock`; pluggy 1.6.0 was already dev-locked and is
+  newly promoted into every shipped runtime profile. Protected cryptography
+  50.0.0 and pdfminer.six 20260107 remain unchanged. The audited wheel closure
+  includes
   OCRmyPDF's MPL/OFL/Apache/Zlib assets, fpdf2 LGPL-3.0-only, img2pdf
   LGPL-3.0-or-later, composite FontTools, and uharfbuzz's edge to the already
   inventoried HarfBuzz 14.2.1. The resulting inventory is 34/42/43 Python
@@ -694,12 +698,24 @@ result applies only to the recorded OS, architecture, and interpreter.
   version-unknown children: 95 versioned records at the Full ceiling, with
   profile totals 105/113/114. Advisory disposition remains not-cleared for the
   pre-existing native findings.
-- The complete 90-test OCR module passes, including the installed-engine
-  PDFium marker check and byte-deterministic two-run sidecar integration. The
-  final repository-wide suite collected 787 outcomes (783 passed, four expected
-  platform skips, zero failed), and the 520.3-second post-delta full release gate passed
-  the same suite under ordinary and blocked-network modes, all profiles, and
-  reproducible-build verification with `release_manifest_verified: true`.
+- At reviewed handoff commit `9e88af8`, the complete 90-test OCR module passed,
+  including the installed-engine PDFium marker check and byte-deterministic
+  two-run sidecar integration. The reproducible committed tree collected 786
+  outcomes (782 passed, four expected platform skips, zero failed); this
+  corrects the pre-review transcription of 787/783. Its 520.3-second full gate
+  passed ordinary/blocked-network tests, all profiles, reproducible builds, and
+  manifest verification.
+- The F2/F3 review remediation adds a 91st OCR test for actionable, redacted
+  `max_image_pixels` failures and documents sidecar framing/control records.
+  Its direct full run collected 787 outcomes (783 passed, four expected skips,
+  zero failed). A 27.2-second disposable reproducibility build refreshed the
+  Windows identity to source `f3252531…`, wheel `eae5787b…`, and sdist
+  `d0f60845…`; retained archives and platform evidence remain untouched.
+- The final 560.5-second remediation gate passed both 787-outcome suite modes,
+  native/Linux/macOS mypy, reproducible direct/sdist builds, and every clean
+  source/wheel profile. Disposable evidence records
+  `release_manifest_verified: true`, `source_install_syntax_tested: true`, and
+  `full_tests.status: passed`; SHA-256 is `d7ab4f3a…13924`.
 
 ## Implemented hardening
 

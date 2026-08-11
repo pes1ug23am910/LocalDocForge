@@ -691,8 +691,27 @@ def _ocr_pdf_validator(
     return ValidationResult.combine([*standard.checks, render_resource, semantic])
 
 
-def _tool_failure(result: ToolResult) -> OcrToolFailure:
+def _tool_failure(
+    result: ToolResult,
+    *,
+    max_image_pixels: int | None = None,
+) -> OcrToolFailure:
     code = result.returncode
+    compact_diagnostic = re.sub(r"\s+", "", result.output.casefold())
+    if (
+        code == 15
+        and max_image_pixels is not None
+        and "decompressionbomberror" in compact_diagnostic
+        and ("pixel" in compact_diagnostic or "imagesize" in compact_diagnostic)
+    ):
+        pixel_unit = "pixel" if max_image_pixels == 1 else "pixels"
+        return OcrToolFailure(
+            code,
+            1,
+            "OCR input exceeds the configured max_image_pixels safety limit "
+            f"({max_image_pixels:,} {pixel_unit}); reduce scan resolution or raise the limit "
+            "only after reviewing memory risk",
+        )
     if code == 3:
         return OcrToolFailure(
             code,
@@ -884,7 +903,10 @@ def ocr_pdf(
         if result.returncode == 130:
             raise JobCancelled("OCRmyPDF was cancelled")
         if result.returncode != 0:
-            failure = _tool_failure(result)
+            failure = _tool_failure(
+                result,
+                max_image_pixels=context.limits.max_image_pixels,
+            )
             raise PipelineError(str(failure)) from failure
         context.check_cancelled()
         # A compromised external engine must not make us follow links out of

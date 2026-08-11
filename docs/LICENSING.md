@@ -85,8 +85,9 @@ versioned bundled-native queries returned one match, OpenJPEG 2.5.4 /
 `OSV-2025-219`. Later runs cover the HEIF, Markdown, and S5 table-parser closures.
 The 2026-08-10 run records cryptography's fixed 50.0.0 floor, its supplier-required
 Cargo/OpenSSL inventory, and the advisory-unknown libffi child. The later S7 run covers
-OCRmyPDF 17.8.1 and six newly introduced transitive Python distributions, binds
-uharfbuzz's compiled extension to the existing HarfBuzz 14.2.1 native record, and
+OCRmyPDF 17.8.1 plus five transitive distributions new to `uv.lock`, promotes the
+already dev-locked pluggy 1.6.0 into shipped runtime profiles, binds uharfbuzz's
+compiled extension to the existing HarfBuzz 14.2.1 native record, and
 records the unchanged cryptography 50.0.0 and pdfminer.six 20260107 pins. Exact endpoints,
 versions, conclusions, and dispositions are retained under `verificationRuns` in the
 machine-readable report; empty results are never a safety guarantee.

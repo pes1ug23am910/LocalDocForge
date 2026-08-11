@@ -181,8 +181,11 @@ documents to OCR only image-only pages, or `--force-ocr` to rasterize and
 re-OCR every page; force mode carries the critical `ocr-force-rasterized`
 warning because it re-encodes page content. Every successful result carries
 `ocr-text-approximate`. Requested sidecars are strict UTF-8/LF; under
-`--skip-text` they contain newly recognized text only, not text copied from
-skipped pages. All PDF pages are reopened and rendered, and sampled sidecar
+`--skip-text` they omit text copied from skipped pages.
+Literal form-feed (`U+000C`) characters separate page records; a record may be
+exactly `[OCR skipped on page(s) N]`, while exact `[skipped page]` marks an
+engine page failure and carries a critical warning.
+All PDF pages are reopened and rendered, and sampled sidecar
 tokens must also be extractable through PDFium before either output publishes.
 
 `md-to-pdf` accepts strict UTF-8 `.md`/`.markdown` files and renders a bounded

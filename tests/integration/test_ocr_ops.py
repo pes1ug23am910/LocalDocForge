@@ -672,6 +672,38 @@ def test_ocrmypdf_exit_codes_map_to_stable_ldf_codes(engine_code: int, ldf_code:
     assert "private" not in str(failure)
 
 
+def test_ocrmypdf_image_limit_diagnostic_maps_to_actionable_safe_error() -> None:
+    diagnostic = (
+        "PRIVATE-PATH/input.pdf: PIL.Image.DecompressionBombError: "
+        "Image size (6760000 pixels) exceeds limit of 2000000 pixels"
+    )
+
+    failure = ocr_ops._tool_failure(
+        ToolResult(returncode=15, output=diagnostic),
+        max_image_pixels=1_000_000,
+    )
+
+    assert failure.returncode == 15
+    assert failure.ldf_exit_code == 1
+    assert "max_image_pixels" in str(failure)
+    assert "1,000,000 pixels" in str(failure)
+    assert "PRIVATE-PATH" not in str(failure)
+    assert "6760000" not in str(failure)
+
+    unrelated = ocr_ops._tool_failure(
+        ToolResult(
+            returncode=15,
+            output=(
+                "PRIVATE-PATH: DecompressionBombWarning: Image size 150 pixels; "
+                "unrelated child failure"
+            ),
+        ),
+        max_image_pixels=1,
+    )
+    assert str(unrelated) == "OCRmyPDF failed safely (engine exit 15)"
+    assert "PRIVATE-PATH" not in str(unrelated)
+
+
 @pytest.mark.parametrize("engine_code", [3, 4, 6, 10, 15])
 def test_nonzero_engine_exit_withholds_diagnostics_and_publishes_nothing(
     fixtures_dir: Path,

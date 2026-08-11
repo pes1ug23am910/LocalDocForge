@@ -272,8 +272,7 @@ Mode fidelity is deliberately explicit:
   including a whitespace-only layer. This avoids silently duplicating or
   replacing text in a document that may already be searchable.
 - `--skip-text` OCRs only image-only pages. Existing page content is retained,
-  but an optional sidecar contains only newly recognized OCR text; it does not
-  copy text from skipped pages. That case carries
+  but an optional sidecar omits text copied from skipped pages. That case carries
   `ocr-sidecar-omits-existing-text`.
 - `--force-ocr` rasterizes and re-OCRs every page. Vector graphics, selectable
   text, annotations as rendered, and image compression can be flattened or
@@ -289,6 +288,11 @@ the operation fails rather than misreporting an image-only result as searchable;
 partial skips may publish only with that critical warning. A truly blank scan
 without a skip marker remains valid. Missing language packs and engine failures
 are hard errors, not fidelity warnings.
+
+Sidecars preserve literal form-feed (`U+000C`) page separators. An intentionally
+skipped record may be the exact `[OCR skipped on page(s) N]` control marker (or
+a contiguous `N-M` range); exact `[skipped page]` is the engine-failure control
+record. Neither marker is recognized document text.
 
 An OCRmyPDF zero exit is only a candidate. LocalDocForge reopens the PDF,
 rejects syntax damage, checks the expected page count, renders every page with
