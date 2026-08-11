@@ -1,8 +1,8 @@
 # STATUS — LocalDocForge
 
 Last updated: 2026-08-11 (post-S7 S8 local-agent MCP stdio external-review
-remediation suite and manifest complete; clean final gate and independent delta
-re-review are pending).
+remediation and clean final gate complete; independent delta re-review is
+pending).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -747,9 +747,17 @@ result applies only to the recorded OS, architecture, and interpreter.
   evidence for the delivered tree. After remediating F1–F7, the tree collects
   819 tests and the corrected complete suite passed 815 with four expected
   platform skips and zero failures in 109.87 seconds. The package manifest is
-  now source `096f8e31…`, wheel `c3e883f7…`, and sdist `5ad21d6e…`. A clean
-  committed verify-mode gate and independent delta verdict follow; neither
-  is claimed at this point.
+  now source `096f8e31…`, wheel `c3e883f7…`, and sdist `5ad21d6e…`. The
+  definitive 572.8-second verify-mode gate ran from clean commit `673eb0f`,
+  passed both 819-outcome suite modes (815 passed and four expected platform
+  skips each), Ruff, three-platform mypy, lock/artifact drift, reproducible
+  builds, and every Base/Lite/Standard/Full source-and-wheel profile. Its
+  Windows 11 x64 / CPython 3.14.4 evidence has SHA-256
+  `8ceada03c3cf2e95efc37195226a3d4abcf0a6485e439409a4afac1c68f0296c`,
+  records `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, and
+  `source.working_tree_changes: false`, and names revision `673eb0f`. The
+  required independent delta verdict remains pending and is not claimed.
 
 ## Implemented hardening
 

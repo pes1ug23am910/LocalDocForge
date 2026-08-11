@@ -546,8 +546,17 @@ had not yet been embedded here; all other 814 tests passed and four expected
 platform tests skipped. The corrected complete-suite and clean committed-gate
 results follow after rerun rather than relabelling that failed attempt. The
 complete rerun then passed 815 tests with the same four expected skips and zero
-failures in 109.87 seconds. The clean committed verify-mode gate is recorded
-after it completes; it is not inferred from this direct run.
+failures in 109.87 seconds. The definitive 572.8-second verify-mode gate then
+ran from clean commit `673eb0fa13117d0ba38e6a97119a93c249cfeda8`. Both the
+ordinary and blocked-network 819-outcome suites passed 815 tests with four
+expected platform skips; Ruff, native/Linux/Darwin mypy over 44 files,
+lock/artifact drift, `pip check`, reproducible builds, and every
+Base/Lite/Standard/Full source-and-wheel profile also passed. The disposable
+Windows 11 x64 / CPython 3.14.4 evidence has SHA-256
+`8ceada03c3cf2e95efc37195226a3d4abcf0a6485e439409a4afac1c68f0296c` and
+records `release_manifest_verified: true`,
+`source_install_syntax_tested: true`, source revision `673eb0f`, and
+`source.working_tree_changes: false`.
 
 ## Clean profile/full-test matrices
 
@@ -576,9 +585,8 @@ uninstall, wheel install, `pip check`, `ldf doctor` plus focused core smoke, and
 wheel uninstall. In the retained pre-S8 evidence, the additional fresh Dev
 venv ran Ruff, mypy, the then-complete collected suite (639 outcomes at the S8
 kickoff), the same suite with Python DNS/non-loopback sockets denied, and
-generated-artifact drift. Current S8 evidence is recorded only after its final
-gate completes; the post-S7 S8 gate and its disposable evidence identity are
-recorded in the preceding section.
+generated-artifact drift. Current S8 evidence is the clean committed gate and
+disposable evidence identity recorded in the preceding section.
 
 ## SBOMs, notices, and the complete gate
 
