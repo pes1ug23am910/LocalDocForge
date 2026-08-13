@@ -857,6 +857,64 @@ def test_non_object_typst_dependency_manifest_is_controlled(tmp_path: Path) -> N
         )
 
 
+def test_relative_typst_dependency_manifest_is_anchored_to_workspace(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    source = workspace / "document.typ"
+    source.write_text("= test", encoding="utf-8")
+    candidate = workspace / "candidate.pdf"
+    candidate.write_bytes(b"synthetic candidate")
+    dependency_manifest = workspace / "deps.json"
+    dependency_manifest.write_text(
+        json.dumps({"inputs": [source.name], "outputs": [candidate.name]}),
+        encoding="utf-8",
+    )
+
+    markdown_ops._audit_typst_dependencies(
+        dependency_manifest,
+        workspace=workspace,
+        expected_inputs=[source],
+        expected_output=candidate,
+    )
+
+
+@pytest.mark.parametrize(
+    ("escaped_field", "message"),
+    [
+        ("inputs", "dependency outside its regular workspace"),
+        ("outputs", "output outside its regular workspace"),
+    ],
+)
+def test_relative_typst_dependency_manifest_cannot_escape_workspace(
+    tmp_path: Path,
+    escaped_field: str,
+    message: str,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    source = workspace / "document.typ"
+    source.write_text("= test", encoding="utf-8")
+    candidate = workspace / "candidate.pdf"
+    candidate.write_bytes(b"synthetic candidate")
+    outside = tmp_path / ("outside.typ" if escaped_field == "inputs" else "outside.pdf")
+    outside.write_bytes(b"synthetic outside file")
+    payload = {"inputs": [source.name], "outputs": [candidate.name]}
+    payload[escaped_field] = [f"../{outside.name}"]
+    dependency_manifest = workspace / "deps.json"
+    dependency_manifest.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PipelineError, match=message):
+        markdown_ops._audit_typst_dependencies(
+            dependency_manifest,
+            workspace=workspace,
+            expected_inputs=[source],
+            expected_output=candidate,
+        )
+
+
 def test_typst_timeout_is_cancelled_without_output_or_text_leak(
     tmp_path: Path,
     typst_info,

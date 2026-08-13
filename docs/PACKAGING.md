@@ -383,12 +383,17 @@ compiler in both GitHub Actions jobs, makes ANSI-coloured help assertions
 semantic, and removes stale development-plan wording from the packaged agent
 brief. The documented manifest-refresh path reproduced both direct builds and
 the sdist-to-wheel build before updating the live Windows-AMD64 identity.
+The follow-up Linux gate established that Typst reports relative dependency
+paths on that platform; these are now anchored to the private compile workspace
+before the same containment and exact input/output checks run. CI evidence
+uploads are also scoped to the current runner's JSON record, so a failed runner
+cannot publish unrelated retained records under its artifact name.
 
 | Identity | SHA-256 | Bytes |
 |---|---|---:|
-| package source inputs | `c4cfc078caec9d8a4d3438be68f6b759efaeef1d0f284e58e2e7e7bb728547d7` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `46f81ec929c7cf948ffbf7524310d03825eee96f5e4d14e41c82a63f401e0ee1` | 145,425 |
-| `localdocforge-0.1.0.tar.gz` | `47e952827fc7495d3a40f8b073f00fe894855df1b41ff790c0a0463d6b8ae21f` | 132,159 |
+| package source inputs | `161c290f452a9f8334ea0c4bd7eef75a858baec434569fa8c8d21675a87d49f8` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `bae9a1b9a9bf8992af913002f232a6e4e794f2098a842cf85f7411f828c8cf8b` | 145,515 |
+| `localdocforge-0.1.0.tar.gz` | `8f5362a202dae7b239b0d47c77f98d14b975b0118d43cae8f3c9b4d215fb7954` | 132,231 |
 
 The history rewrite preserves the prior release records as historical facts;
 this table is the current manifest identity for the remediated public source.
