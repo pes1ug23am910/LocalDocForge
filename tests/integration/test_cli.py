@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pikepdf
 import pytest
+from click.utils import strip_ansi
 from typer.testing import CliRunner
 
 import localdocforge.cli.main as cli_main
@@ -180,8 +181,9 @@ class TestVersionAndHelp:
         assert "LocalDocForge" in result.output
 
     def test_help_lists_commands(self):
-        result = runner.invoke(app, ["--help"])
+        result = runner.invoke(app, ["--help"], env={"FORCE_COLOR": "1"})
         assert result.exit_code == 0
+        help_output = strip_ansi(result.output)
         for command in (
             "merge",
             "split",
@@ -192,9 +194,9 @@ class TestVersionAndHelp:
             "inspect",
             "agent-brief",
         ):
-            assert command in result.output
-        assert "--password-stdin" in result.output
-        assert "LDF_PASSWORD" in result.output
+            assert command in help_output
+        assert "--password-stdin" in help_output
+        assert "LDF_PASSWORD" in help_output
 
     def test_password_stdin_does_not_consume_subcommand_help(self, monkeypatch):
         def unexpected_read():
@@ -213,11 +215,16 @@ class TestVersionAndHelp:
         assert cli_main._state["password_stdin_requested"] is False
 
     def test_md_to_pdf_help_lists_options(self):
-        result = runner.invoke(app, ["md-to-pdf", "--help"])
+        result = runner.invoke(
+            app,
+            ["md-to-pdf", "--help"],
+            env={"FORCE_COLOR": "1"},
+        )
 
         assert result.exit_code == 0, combined_output(result)
+        help_output = strip_ansi(result.output)
         for option in ("--output", "--paper", "--margin", "--toc"):
-            assert option in result.output
+            assert option in help_output
 
     def test_strict_offline_refuses_explicit_nonlocal_web_bind(self):
         result = runner.invoke(

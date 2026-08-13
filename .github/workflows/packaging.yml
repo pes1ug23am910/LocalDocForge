@@ -37,6 +37,11 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
+      - name: Set up pinned Typst
+        uses: typst-community/setup-typst@40d32bb6ccb235bd7f5164cb47cfd40a5ea3a314 # v5.2.0
+        with:
+          typst-version: "0.15.1"
+
       - name: Install the hash-locked development set
         run: |
           # --seed installs pip into the venv: the release gate runs
@@ -116,6 +121,11 @@ jobs:
           version: "0.11.26"
           enable-cache: true
           cache-dependency-glob: uv.lock
+
+      - name: Set up pinned Typst
+        uses: typst-community/setup-typst@40d32bb6ccb235bd7f5164cb47cfd40a5ea3a314 # v5.2.0
+        with:
+          typst-version: "0.15.1"
 
       - name: Download the audited wheel and sdist
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
