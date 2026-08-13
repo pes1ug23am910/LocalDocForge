@@ -401,7 +401,7 @@ Notes:
   `--keep-metadata` retains EXIF and emits a `location-metadata-retained`
   warning when GPS data is kept. `--preset llm` is shorthand for JPEG at
   quality 85 with the long edge bounded to 1568 px — the largest size current
-  Compatible AI systems ingest without
+  AI assistants ingest without
   server-side downscaling. Explicit flags override preset values; images are
   never upscaled.
 - Crop sets the PDF CropBox. Hidden content remains; it is not redaction.
