@@ -644,6 +644,19 @@ def test_bootstrap_scripts_have_expected_headers_lf_and_no_patch_debris():
     assert "*.ps1 text eol=lf" in attributes
 
 
+def test_workflow_uploads_only_the_current_runner_evidence():
+    workflow = (ROOT / ".github" / "workflows" / "packaging.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "path: packaging-evidence/\n" not in workflow
+    assert "path: packaging-evidence/linux-3.14-source.json" in workflow
+    assert (
+        "path: packaging-evidence/${{ matrix.os }}-py${{ matrix.python }}.json"
+        in workflow
+    )
+
+
 def test_powershell_bootstrap_makes_native_failures_terminating():
     bootstrap = (ROOT / "scripts" / "bootstrap.ps1").read_text(encoding="utf-8")
     preference = "$PSNativeCommandUseErrorActionPreference = $true"

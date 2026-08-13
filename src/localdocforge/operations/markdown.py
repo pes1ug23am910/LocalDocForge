@@ -934,6 +934,12 @@ def _typst_manifest_path(value: str) -> Path:
     return Path(value)
 
 
+def _typst_manifest_workspace_path(value: str, workspace: Path) -> Path:
+    """Anchor a relative Typst manifest path at the compile workspace."""
+    path = _typst_manifest_path(value)
+    return path if path.is_absolute() else workspace / path
+
+
 def _audit_typst_dependencies(
     dependency_manifest: Path,
     *,
@@ -967,7 +973,9 @@ def _audit_typst_dependencies(
     for raw_path in raw_inputs:
         try:
             dependency = ensure_contained(
-                _typst_manifest_path(raw_path), workspace, what="Typst dependency"
+                _typst_manifest_workspace_path(raw_path, workspace),
+                workspace,
+                what="Typst dependency",
             )
             dependency = validate_path_before_access(dependency, what="Typst dependency")
             if not dependency.is_file():
@@ -995,10 +1003,17 @@ def _audit_typst_dependencies(
     if unmatched:
         raise PipelineError("Typst read an unexpected dependency; generated output was refused")
 
-    outputs = [
-        ensure_contained(_typst_manifest_path(raw), workspace, what="Typst output")
-        for raw in raw_outputs
-    ]
+    try:
+        outputs = [
+            ensure_contained(
+                _typst_manifest_workspace_path(raw, workspace),
+                workspace,
+                what="Typst output",
+            )
+            for raw in raw_outputs
+        ]
+    except (OSError, PathSecurityError) as exc:
+        raise PipelineError("Typst reported an output outside its regular workspace") from exc
     if len(outputs) != 1 or not _same_existing_file(outputs[0], expected_output):
         raise PipelineError("Typst reported an unexpected output path")
 
