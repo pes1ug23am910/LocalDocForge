@@ -376,6 +376,23 @@ Disposable evidence SHA-256 was
 `9c4e25226330d3e8ff8206d7067edc744f82291d8c8bc45b5d2ab68b4553596b`;
 temporary output was removed and retained artifacts/evidence stayed untouched.
 
+### 2026-08-14 public CI and history-remediation identity
+
+The public-snapshot remediation installs the separately required Typst 0.15.1
+compiler in both GitHub Actions jobs, makes ANSI-coloured help assertions
+semantic, and removes stale development-plan wording from the packaged agent
+brief. The documented manifest-refresh path reproduced both direct builds and
+the sdist-to-wheel build before updating the live Windows-AMD64 identity.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `c4cfc078caec9d8a4d3438be68f6b759efaeef1d0f284e58e2e7e7bb728547d7` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `46f81ec929c7cf948ffbf7524310d03825eee96f5e4d14e41c82a63f401e0ee1` | 145,425 |
+| `localdocforge-0.1.0.tar.gz` | `47e952827fc7495d3a40f8b073f00fe894855df1b41ff790c0a0463d6b8ae21f` | 132,159 |
+
+The history rewrite preserves the prior release records as historical facts;
+this table is the current manifest identity for the remediated public source.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source
