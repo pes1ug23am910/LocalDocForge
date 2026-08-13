@@ -26,7 +26,7 @@ and friction feed the roadmap.
 ### YYYY-MM-DD — <agent, model> — <ok | unsatisfactory | failed | fell back>
 - Task: <what the user needed>
 - Command: <exact ldf invocation>
-- Version: 0.1.0 @ <output of: git -C E:\Sem-VI-Break\Pdf-Conversion-Tool rev-parse --short HEAD>
+- Version: 0.1.0 @ <output of: git rev-parse --short HEAD>
 - Observed: <exit code, warning codes from the JSON report, what verification showed>
 - Fallback: <what you did instead, or "none">
 - Suggestion: <what would have made the tool succeed, or a feature request>
@@ -61,3 +61,19 @@ and friction feed the roadmap.
 - Observed: The sandboxed launcher attempt was denied before LocalDocForge started; the approved read-only rerun exited 0 with valid registry-derived JSON and reported `pdf-to-markdown` implemented and available with `ldf pdf-to-md` usage.
 - Fallback: none; the same command succeeded with permission to access the venv's external Python interpreter.
 - Suggestion: none for `ldf`; the initial denial was an agent sandbox boundary rather than a product failure.
+
+### 2026-08-14 — Codex, GPT-5.6 Sol — fell back
+- Task: Extract plain text from the one-page `Decide-Vote-rs-2nd-Attempt.pdf` without modifying the source.
+- Command: `ldf --json pdf-to-md Decide-Vote-rs-2nd-Attempt.pdf -o <temporary-output.txt> --format txt --collision overwrite`
+- Version: 0.1.0 @ 7b37d5e
+- Observed: Exit 1 before extraction because validation reported 6 structural syntax warnings; no output was created and the warning arrays were empty.
+- Fallback: Read-only pdfplumber extraction succeeded.
+- Suggestion: Support a deliberate best-effort extraction mode for readable PDFs with structural warnings, report those warnings, and never mutate the source.
+
+### 2026-08-14 — Codex, GPT-5.6 Sol — fell back
+- Task: Extract plain text from the four-page `Section-A micro-raft.pdf` without modifying the source.
+- Command: `ldf --json pdf-to-md "Section-A micro-raft.pdf" -o <temporary-output.txt> --format txt --collision overwrite`
+- Version: 0.1.0 @ 7b37d5e
+- Observed: Exit 1 before extraction because validation reported 24 structural syntax warnings; no output was created and the warning arrays were empty.
+- Fallback: Read-only pdfplumber extraction succeeded.
+- Suggestion: Support a deliberate best-effort extraction mode for readable PDFs with structural warnings, report those warnings, and never mutate the source.
