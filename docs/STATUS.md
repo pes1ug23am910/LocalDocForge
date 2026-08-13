@@ -379,7 +379,7 @@ result applies only to the recorded OS, architecture, and interpreter.
 - S3 rebased onto `main` `6b8f40b` after S2 merged as `6481fb7`. Shared CLI,
   test, and documentation surfaces retain both features; main's S1/S2 DONE
   ledger rows and full audit trail remain intact, while S3 remains IN-REVIEW
-  for a pending independent verification.
+  pending independent delta verification.
 - Review nit F1 is addressed: the registry-keyed `pdf-to-images` usage
   template now includes `[--preset llm]`, with the existing template-coverage
   test extended in place. Explicit numeric collection confirms exactly 504
@@ -464,7 +464,7 @@ result applies only to the recorded OS, architecture, and interpreter.
 
 ### Review remediation — F1/N1
 
-- After an independent review returned `approve-with-nits`, both
+- After the independent review returned `approve-with-nits`, the maintainer requested both
   non-blocking findings be resolved on S4. Inspect now skips per-fragment font-
   size/angle sampling because its count-only result consumes neither style nor
   extraction warning codes. `pdf-to-md` retains sampling in every output format

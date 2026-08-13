@@ -1021,7 +1021,7 @@ def convert_images_cmd(
         typer.Option(
             "--preset",
             help="'llm' = JPEG quality 85, long edge ≤ 1568 px, metadata "
-            "stripped — sized for compatible AI image inputs. "
+            "stripped — sized for AI assistants. "
             "Explicit flags override preset values.",
         ),
     ] = None,
