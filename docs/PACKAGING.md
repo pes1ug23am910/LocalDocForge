@@ -424,9 +424,9 @@ These values mirror the live Windows-AMD64 entry in
 
 | Identity | SHA-256 | Bytes |
 |---|---|---:|
-| package source inputs | `b296238f4ad33414a7fcc95d41454611b715c65cb942bdb228d02c4f96c0c92f` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `b7633092b629eba6924dc8015b934293354f8a8d7f10bdca143d6f162a29f615` | 195,606 |
-| `localdocforge-0.1.0.tar.gz` | `ab4c4e63e3e94a1940b2ae4073f93ff1b8d0a5b52ec3be8048346773b60cede8` | 184,118 |
+| package source inputs | `818f4685d61e7cb18288a4a84f25bb93900d53542a0f0b03db6fd4dac8a12cf0` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `43bc8446430b051d656664c876ee10d9eed6fb2daec04cd8ec50c6e9e6d3b5ce` | 195,606 |
+| `localdocforge-0.1.0.tar.gz` | `1f1c6b12d038b69eaca97196cc4ee8daa248e5daa5b83c0b640e745378780c45` | 184,123 |
 
 Refresh this manifest only after intentional package-source changes pass the
 focused checks and a reproducible build. Never update it merely to hide drift.
