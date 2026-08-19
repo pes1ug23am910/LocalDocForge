@@ -33,15 +33,29 @@ Every operation returns a `localdocforge.domain.models.ConversionReport`:
 | `status` | `"success"` — anything else arrives via exception, not return |
 | `job_id` | hex job id (also used in report filenames) |
 | `engine`, `engine_version` | what actually executed, e.g. `pikepdf 10.10.0` |
-| `inputs` / `outputs` | artifacts with `path`, `size_bytes`, `page_count`, `media_type` |
+| `inputs` / `outputs` | artifacts with `path`, `size_bytes`, `page_count`, `media_type`; outputs repeat the conservative run-level `fidelity_status` |
 | `input_bytes` / `output_bytes`, `input_page_count` / `output_page_count` | totals |
 | `security_warnings` | e.g. `crop-is-not-redaction`, `input-encryption-removed` (codes: `docs/CONVERSION_FIDELITY.md`) |
-| `fidelity_warnings` | e.g. `outlines-dropped`, `compress-no-reduction` |
+| `fidelity_warnings` | stable `code`, `basis`, `impact`, optional `remedy`, and message/page fields |
+| `fidelity_coverage` | assessor coverage: `none`, `partial`, or `complete` |
+| `fidelity_status` | derived worst-case verdict: `unassessed`, `no-known-loss`, `review-required`, or `known-loss` |
 | `validation` | the pre-publication check results (`passed`, per-check details) |
 | `details` | operation-specific data (e.g. compression statistics or bounded text coverage) |
 
 `report.to_human()` renders the CLI's summary; `report.model_dump_json()` is
 the CLI's `--json` payload (it is a Pydantic v2 model).
+An empty warning list is not a clean verdict unless coverage is `complete`;
+`no-known-loss` is scoped to the operation's declared assessor and is not a
+claim of byte identity or perfect visual equivalence. Warning `severity`
+describes urgency, while `impact` alone participates in the derived verdict.
+Fidelity warning basis/impact, the report's assessment tuple, and finalized
+output verdicts are immutable. Pipeline authors attach evidence through
+`report.set_fidelity_assessment(...)` before publication and attach published
+artifacts through `report.finalize_outputs(...)`; both keep serialized status
+derived and prevent post-publication evidence from producing a stale verdict.
+`outputs` and `fidelity_warnings` are finalized tuples rather than mutable
+lists; library consumers should iterate or index them and must not append or
+replace their members in place.
 
 ## Operations
 
@@ -123,6 +137,13 @@ from localdocforge.operations.images import (
 
 images_to_pdf([photo1, photo2], out_dir / "album.pdf",
               options=ImagesToPdfOptions(page_size="A4", fit="fit"))
+
+# Avoid fixed-paper resizing for a tall screenshot. The image is still
+# re-encoded, so this does not make the operation lossless.
+native = images_to_pdf([tall_capture], out_dir / "native.pdf",
+                       options=ImagesToPdfOptions(page_size="image"))
+placement = native.details["placement_analysis"]
+assert placement["coverage"] == "complete"
 
 report = pdf_to_images(merged_pdf, out_dir / "pages",
                        options=PdfToImagesOptions(image_format="png", dpi=72))
@@ -258,6 +279,10 @@ For a valid zero-page PDF, `page_text_stats` is `[]`; `text_coverage` reports
 zero page counters and `None` for character-count min/median/max. Pass
 `settings=Settings(...)` to override the configured page, decompressed-text,
 or memory limits; inspection refuses text statistics that exceed them.
+The pipeline-backed `operations.inspect.inspect_pdf_to_json` wrapper used by
+local transports declares complete coverage for the narrow, non-mutating
+inventory contract; it performs no document conversion, so strict-fidelity
+mode can still use read-only inspection.
 
 ## Error handling
 
@@ -306,6 +331,12 @@ compress_pdf(big_pdf, out, options=OrganizeOptions(settings=tight))
 (`docs/GETTING_STARTED_WINDOWS.md` §6 lists the knobs); constructor arguments
 outrank the environment. `strict_offline=True` enables the documented
 application-level path/network policy — not an OS firewall.
+`strict_fidelity=True` is a separate publication policy: after candidate
+safety/limit/collision preflight, it permits publication only for a complete
+assessment whose derived status is `no-known-loss`. A refusal raises
+`StrictFidelityRefused` (a `PipelineError`) before content validation or any
+destination write, with the failed `ConversionReport` attached as
+`error.report`.
 
 ## Capability discovery (what `ldf doctor` uses)
 

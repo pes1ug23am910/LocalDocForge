@@ -135,6 +135,23 @@ class TestJobFlow:
         with pikepdf.open(io.BytesIO(content)) as pdf:
             assert int(pdf.pages[0].obj.get("/Rotate", 0)) == 90
 
+    def test_strict_fidelity_accepts_completed_rotate_assessment(
+        self,
+        client,
+        fixtures_dir,
+    ):
+        response = client.post(
+            "/api/jobs/rotate",
+            headers=auth(),
+            files=[upload(fixtures_dir / "simple-3page.pdf")],
+            data={"degrees": "90", "strict_fidelity": "true"},
+        )
+
+        assert response.status_code == 201, response.text
+        report = response.json()["report"]
+        assert report["fidelity_coverage"] == "complete"
+        assert report["fidelity_status"] == "no-known-loss"
+
     def test_pdf_to_images_multiple_outputs(self, client, fixtures_dir):
         response = client.post(
             "/api/jobs/pdf-to-images",
@@ -417,6 +434,7 @@ class TestOcrApiContracts:
                 "sidecar": "true",
                 "skip_text": "true",
                 "force_ocr": "false",
+                "strict_fidelity": "true",
                 "password": "synthetic-password",
             },
             Settings(jobs_root=tmp_path / "jobs"),
@@ -430,6 +448,7 @@ class TestOcrApiContracts:
         assert options.sidecar == output_dir / "document.txt"
         assert options.skip_text is True
         assert options.force_ocr is False
+        assert options.settings.strict_fidelity is True
         assert options.password == "synthetic-password"
 
     @pytest.mark.parametrize(
@@ -653,6 +672,31 @@ class TestJobErrors:
             "dpi": 72,
             "jpeg_quality": 41,
         } == details
+
+    def test_image_api_strict_fidelity_refusal_preserves_structured_report(
+        self,
+        client,
+        fixtures_dir,
+    ):
+        response = client.post(
+            "/api/jobs/images-to-pdf",
+            headers=auth(),
+            files=[upload(fixtures_dir / "images" / "diagram.png")],
+            data={"strict_fidelity": "true"},
+        )
+
+        assert response.status_code == 422, response.text
+        payload = response.json()
+        report = payload["report"]
+        assert report["status"] == "failed"
+        assert report["fidelity_status"] == "known-loss"
+        assert report["fidelity_coverage"] == "partial"
+        assert report["outputs"] == []
+        assert report["validation"] is None
+        assert payload["detail"].startswith("Strict fidelity requires ")
+        assert "images-reencoded" in {
+            warning["code"] for warning in report["fidelity_warnings"]
+        }
 
     def test_pdf_image_api_honors_webp_quality(self, client, fixtures_dir):
         outputs = []

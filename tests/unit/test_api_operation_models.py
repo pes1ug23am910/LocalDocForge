@@ -4,21 +4,26 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from localdocforge.api.operations import (
     OPERATION_MODELS,
     OPERATION_PARAMS,
     OPERATIONS,
+    CompressParams,
     CropParams,
     MergeParams,
     OcrHttpParams,
     PdfToMdParams,
     _ApiError,
+    _effective_settings,
     parse_operation_params,
 )
+from localdocforge.config.settings import Settings
 
 _EXPECTED_OPERATIONS = {
     "merge",
@@ -100,6 +105,47 @@ def test_http_boolean_strings_remain_strict() -> None:
     with pytest.raises(_ApiError, match="'tables' must be true or false") as caught:
         parse_operation_params("pdf-to-md", {"tables": "1"})
     assert caught.value.status == 422
+
+
+def test_strict_fidelity_is_shared_strict_and_optional() -> None:
+    assert all(
+        model.model_json_schema()["properties"]["strict_fidelity"]["default"] is False
+        for model in OPERATION_MODELS.values()
+    )
+    assert parse_operation_params("compress", {}).strict_fidelity is False
+    assert parse_operation_params(
+        "compress", {"strict_fidelity": "true"}
+    ).strict_fidelity is True
+    assert parse_operation_params(
+        "compress", {"strict_fidelity": "false"}
+    ).strict_fidelity is False
+
+    for invalid in ("1", "yes", 1, None):
+        with pytest.raises(_ApiError, match="'strict_fidelity' must be true or false"):
+            parse_operation_params("compress", {"strict_fidelity": invalid})
+
+
+@pytest.mark.parametrize(("configured", "requested"), [(False, True), (True, False)])
+def test_effective_settings_reconstruction_never_weakens_server_policy(
+    configured: bool,
+    requested: bool,
+) -> None:
+    settings = Settings(strict_fidelity=configured)
+    params = CompressParams(strict_fidelity=requested)
+
+    effective = _effective_settings(settings, params)
+
+    assert effective is not settings
+    assert settings.strict_fidelity is configured
+    assert effective.strict_fidelity is (configured or requested)
+
+
+def test_effective_settings_revalidates_the_complete_settings_model() -> None:
+    settings = Settings(jobs_root=Path(r"\\remote-host\private-share\ldf-jobs"))
+    settings.strict_offline = True
+
+    with pytest.raises(ValidationError, match="UNC or mapped network-drive path"):
+        _effective_settings(settings, CompressParams(strict_fidelity=True))
 
 
 def test_shared_ocr_http_model_enforces_language_modes_and_strict_booleans() -> None:

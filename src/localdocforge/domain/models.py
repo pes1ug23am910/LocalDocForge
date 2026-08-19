@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import copy
 import math
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -24,6 +25,39 @@ class WarningSeverity(StrEnum):
     CRITICAL = "critical"
 
 
+class FidelityBasis(StrEnum):
+    """Provenance of a fidelity observation."""
+
+    DECLARED = "declared"
+    STRUCTURAL = "structural"
+    HEURISTIC = "heuristic"
+
+
+class FidelityImpact(StrEnum):
+    """How a fidelity observation affects the machine-readable verdict."""
+
+    ADVISORY = "advisory"
+    REVIEW = "review"
+    KNOWN_LOSS = "known-loss"
+
+
+class FidelityCoverage(StrEnum):
+    """How completely an operation assessed its own fidelity contract."""
+
+    NONE = "none"
+    PARTIAL = "partial"
+    COMPLETE = "complete"
+
+
+class FidelityStatus(StrEnum):
+    """Conservative run-level fidelity verdict."""
+
+    UNASSESSED = "unassessed"
+    NO_KNOWN_LOSS = "no-known-loss"
+    REVIEW_REQUIRED = "review-required"
+    KNOWN_LOSS = "known-loss"
+
+
 class SecurityWarning(BaseModel):
     """A security-relevant observation attached to a report (never document text)."""
 
@@ -35,10 +69,39 @@ class SecurityWarning(BaseModel):
 class FidelityWarning(BaseModel):
     """A fidelity-relevant observation (lost feature, substitution, degradation)."""
 
+    model_config = ConfigDict(frozen=True)
+
     code: str
     message: str
     severity: WarningSeverity = WarningSeverity.WARNING
     page: int | None = None
+    # Defaults preserve validation of reports written before the S10 schema.
+    # In-tree producers classify every warning explicitly.
+    basis: FidelityBasis = Field(default=FidelityBasis.DECLARED, frozen=True)
+    impact: FidelityImpact = Field(default=FidelityImpact.REVIEW, frozen=True)
+    remedy: str | None = None
+
+    @model_validator(mode="after")
+    def heuristic_cannot_claim_known_loss(self) -> FidelityWarning:
+        if self.basis is FidelityBasis.HEURISTIC and self.impact is FidelityImpact.KNOWN_LOSS:
+            raise ValueError("heuristic fidelity warnings cannot claim known loss")
+        return self
+
+
+def derive_fidelity_status(
+    coverage: FidelityCoverage,
+    warnings: Sequence[FidelityWarning],
+) -> FidelityStatus:
+    """Return the conservative worst-case verdict for one completed assessment."""
+
+    impacts = {warning.impact for warning in warnings}
+    if FidelityImpact.KNOWN_LOSS in impacts:
+        return FidelityStatus.KNOWN_LOSS
+    if FidelityImpact.REVIEW in impacts:
+        return FidelityStatus.REVIEW_REQUIRED
+    if coverage is FidelityCoverage.COMPLETE:
+        return FidelityStatus.NO_KNOWN_LOSS
+    return FidelityStatus.UNASSESSED
 
 
 class ResourceLimits(BaseModel):
@@ -106,12 +169,17 @@ class InputArtifact(BaseModel):
 class OutputArtifact(BaseModel):
     """A generated file that passed validation and was atomically moved into place."""
 
+    model_config = ConfigDict(frozen=True)
+
     path: Path
     media_type: str
     size_bytes: int
     kind: ArtifactKind = ArtifactKind.PRIMARY
     page_count: int | None = None
     sha256: str | None = None
+    # Conservative run-level aggregate until an operation supplies a narrower
+    # per-candidate assessor. It is never more optimistic than the report.
+    fidelity_status: FidelityStatus = Field(default=FidelityStatus.UNASSESSED, frozen=True)
 
 
 class ValidationCheck(BaseModel):
@@ -189,6 +257,8 @@ class ConversionReport(BaseModel):
     """Machine-readable record of one operation. Never contains document text,
     passwords, or redacted content."""
 
+    model_config = ConfigDict(validate_assignment=True)
+
     operation: str
     status: ReportStatus
     job_id: str
@@ -196,7 +266,7 @@ class ConversionReport(BaseModel):
     engine_version: str | None = None
     fallback_engine: str | None = None
     inputs: list[InputArtifact] = Field(default_factory=list)
-    outputs: list[OutputArtifact] = Field(default_factory=list)
+    outputs: tuple[OutputArtifact, ...] = Field(default_factory=tuple, frozen=True)
     input_page_count: int | None = None
     output_page_count: int | None = None
     input_bytes: int | None = None
@@ -205,14 +275,118 @@ class ConversionReport(BaseModel):
     finished_at: datetime | None = None
     elapsed_seconds: float | None = None
     security_warnings: list[SecurityWarning] = Field(default_factory=list)
-    fidelity_warnings: list[FidelityWarning] = Field(default_factory=list)
+    fidelity_warnings: tuple[FidelityWarning, ...] = Field(default_factory=tuple, frozen=True)
+    fidelity_coverage: FidelityCoverage = Field(default=FidelityCoverage.NONE, frozen=True)
+    fidelity_status: FidelityStatus = Field(default=FidelityStatus.UNASSESSED, frozen=True)
     errors: list[str] = Field(default_factory=list)
     validation: ValidationResult | None = None
     details: dict[str, Any] = Field(default_factory=dict)
 
+    @model_validator(mode="after")
+    def enforce_derived_fidelity_status(self) -> ConversionReport:
+        # Detach finalized evidence from caller-owned model instances. These
+        # child models are frozen, but a private/internal object.__setattr__ on
+        # an aliased instance must not be able to rewrite a published report.
+        normalized_warnings = tuple(
+            FidelityWarning.model_validate(
+                warning.model_dump(mode="python", round_trip=True)
+            )
+            for warning in self.fidelity_warnings
+        )
+        normalized_outputs = tuple(
+            (
+                OutputArtifact.model_validate(
+                    output.model_dump(mode="python", round_trip=True)
+                ),
+                "fidelity_status" in output.model_fields_set,
+            )
+            for output in self.outputs
+        )
+        object.__setattr__(self, "fidelity_warnings", normalized_warnings)
+        expected = derive_fidelity_status(
+            self.fidelity_coverage,
+            normalized_warnings,
+        )
+        if "fidelity_status" in self.model_fields_set and self.fidelity_status is not expected:
+            raise ValueError("fidelity_status must be derived from fidelity_coverage and warnings")
+        finalized_outputs: list[OutputArtifact] = []
+        for output, supplied_status in normalized_outputs:
+            if supplied_status and output.fidelity_status is not expected:
+                raise ValueError("output fidelity_status must match the conversion report")
+            object.__setattr__(output, "fidelity_status", expected)
+            output.__pydantic_fields_set__.add("fidelity_status")
+            finalized_outputs.append(output)
+        object.__setattr__(self, "outputs", tuple(finalized_outputs))
+        object.__setattr__(self, "fidelity_status", expected)
+        return self
+
+    def model_copy(
+        self,
+        *,
+        update: Mapping[str, Any] | None = None,
+        deep: bool = False,
+    ) -> Self:
+        """Copy and revalidate so updates cannot bypass fidelity invariants."""
+
+        data = self.model_dump(mode="python", round_trip=True)
+        if deep:
+            data = copy.deepcopy(data)
+        if update:
+            data.update(update)
+        return type(self).model_validate(data)
+
+    def set_fidelity_assessment(
+        self,
+        *,
+        coverage: FidelityCoverage,
+        warnings: Sequence[FidelityWarning],
+    ) -> None:
+        """Attach one internally produced assessment before outputs are finalized."""
+
+        if self.outputs:
+            raise ValueError("fidelity assessment is immutable after outputs are finalized")
+        normalized_coverage = FidelityCoverage(coverage)
+        normalized_warnings = tuple(
+            FidelityWarning.model_validate(
+                warning.model_dump(mode="python", round_trip=True)
+            )
+            for warning in warnings
+        )
+        object.__setattr__(self, "fidelity_coverage", normalized_coverage)
+        object.__setattr__(self, "fidelity_warnings", normalized_warnings)
+        object.__setattr__(
+            self,
+            "fidelity_status",
+            derive_fidelity_status(normalized_coverage, normalized_warnings),
+        )
+        self.__pydantic_fields_set__.update(
+            {"fidelity_coverage", "fidelity_warnings", "fidelity_status"}
+        )
+
+    def finalize_outputs(self, outputs: Sequence[OutputArtifact]) -> None:
+        """Attach published artifacts while preserving the run-level verdict."""
+
+        normalized: list[OutputArtifact] = []
+        for original in outputs:
+            supplied_status = "fidelity_status" in original.model_fields_set
+            output = OutputArtifact.model_validate(
+                original.model_dump(mode="python", round_trip=True)
+            )
+            if supplied_status and output.fidelity_status is not self.fidelity_status:
+                raise ValueError("output fidelity_status must match the conversion report")
+            object.__setattr__(output, "fidelity_status", self.fidelity_status)
+            output.__pydantic_fields_set__.add("fidelity_status")
+            normalized.append(output)
+        object.__setattr__(self, "outputs", tuple(normalized))
+        self.__pydantic_fields_set__.add("outputs")
+
     def to_human(self) -> str:
         """Render a compact human-readable summary."""
-        lines = [f"Operation : {self.operation}", f"Status    : {self.status.value}"]
+        lines = [
+            f"Operation : {self.operation}",
+            f"Status    : {self.status.value}",
+            f"Fidelity  : {self.fidelity_status.value} ({self.fidelity_coverage.value} coverage)",
+        ]
         if self.engine:
             version = f" {self.engine_version}" if self.engine_version else ""
             lines.append(f"Engine    : {self.engine}{version}")
@@ -231,7 +405,12 @@ class ConversionReport(BaseModel):
             lines.append(f"Security  : [{warning.severity.value}] {warning.message}")
         for warning in self.fidelity_warnings:
             page = f" (page {warning.page})" if warning.page else ""
-            lines.append(f"Fidelity  : [{warning.severity.value}] {warning.message}{page}")
+            lines.append(
+                f"Fidelity  : [{warning.severity.value}/{warning.impact.value}] "
+                f"{warning.message}{page}"
+            )
+            if warning.remedy:
+                lines.append(f"Remedy    : {warning.remedy}")
         for error in self.errors:
             lines.append(f"Error     : {error}")
         return "\n".join(lines)

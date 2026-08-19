@@ -1,8 +1,7 @@
 # STATUS — LocalDocForge
 
-Last updated: 2026-08-12 (S8 local-agent MCP stdio merged after its clean final
-gate and independent approve-with-nits delta re-review; client
-registration docs updated).
+Last updated: 2026-08-19 (fidelity-contract local verification refreshed;
+release decision unchanged).
 
 **Release decision: FAIL / NOT CLEARED for sensitive documents.** Windows 11
 x64 is the primary and only platform with executed local release evidence in
@@ -834,6 +833,39 @@ result applies only to the recorded OS, architecture, and interpreter.
   returned no matches for 29 exact PyPI queries and one match among 16 versioned
   native queries: OpenJPEG 2.5.4 / `OSV-2025-219`. Empty results are not safety
   guarantees.
+
+## Executed evidence — 2026-08-19 (fidelity contract)
+
+- The S10 candidate adds explicit fidelity coverage/status, classified warning
+  basis/impact/remedies, a shared strict pre-publication policy across CLI/API/
+  MCP, bounded image-placement diagnostics, native-page discoverability, and
+  fail-closed signature/transport handling. It adds no dependency, engine,
+  outbound-network surface, or release-policy exception.
+- Signature assessment treats either defined AcroForm signature flag as
+  confirmed evidence. Reserved, negative, oversized, non-integer, and present
+  non-dictionary AcroForm values produce conservative uncertainty; strict mode
+  refuses known-loss or review-required rewrites before validation/publication.
+- The definitive local gate passed in 663.6 seconds on Windows-AMD64 /
+  CPython 3.14.4. Both ordinary and blocked-network 899-outcome suites passed
+  895 tests with four expected platform skips and zero failures. Locks,
+  generated artifacts, Ruff, native/Linux/Darwin mypy over 44 source files,
+  `pip check`, reproducible builds, Twine/metadata/member checks, Base/Lite/
+  Standard/Full source-and-wheel profiles, and the isolated Full test profile
+  all passed.
+- Disposable evidence SHA-256:
+  `06697396827e469cf69ea4c4c16bb76fe9c7392ab224390c375486aff68b2ff1`.
+  It records `release_manifest_verified: true`,
+  `source_install_syntax_tested: true`, all four profiles `passed`, and
+  `full_tests.status: passed`. It honestly records base revision `7b37d5e` and
+  `source.working_tree_changes: true`; no retained evidence was overwritten.
+- Windows-AMD64 package identity: source
+  `960fdcf1a6017416c854e7e429dac366bf29081fa8cb8d18b90a32787c1221cd`;
+  wheel `b2a7adf62e5a036323accd19f369e65a0b7249283f2de5211da845c153533a48`
+  (195,757 bytes); sdist
+  `1a340009f69fd33fb903e4e2ab23f0cbdcca485cbd36759d6fb1188162f4c8a9`
+  (184,150 bytes).
+
+This local evidence does not change the release decision below.
 
 ## Release posture and remaining blockers
 

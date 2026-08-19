@@ -4,6 +4,12 @@ import json
 from pathlib import Path
 
 from localdocforge.cli.agent_brief import USAGE_BY_CAPABILITY_ID
+from localdocforge.domain.models import (
+    FidelityBasis,
+    FidelityCoverage,
+    FidelityImpact,
+    FidelityStatus,
+)
 from localdocforge.engines.adapters import OP_MD_TO_PDF, OP_OCR, OP_PDF_TO_MD
 from localdocforge.engines.registry import CAPABILITY_SPECS
 from localdocforge.operations.markdown import (
@@ -19,6 +25,92 @@ from localdocforge.operations.ocr import (
 from localdocforge.operations.text import WARNING_CODE_ORDER
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_s10_fidelity_contract_is_documented_consistently() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
+    fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
+        encoding="utf-8"
+    )
+    architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(
+        encoding="utf-8"
+    )
+    technical = (ROOT / "docs" / "TECHNICAL_REFERENCE.md").read_text(
+        encoding="utf-8"
+    )
+    feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
+    library = (ROOT / "docs" / "LIBRARY_API.md").read_text(encoding="utf-8")
+    windows = (ROOT / "docs" / "GETTING_STARTED_WINDOWS.md").read_text(
+        encoding="utf-8"
+    )
+
+    for value in (
+        *(item.value for item in FidelityBasis),
+        *(item.value for item in FidelityImpact),
+        *(item.value for item in FidelityCoverage),
+        *(item.value for item in FidelityStatus),
+    ):
+        assert f"`{value}`" in fidelity
+
+    synopsis = cli[: cli.index("## Exit codes")]
+    synopsis_flat = " ".join(synopsis.split())
+    assert "--strict-fidelity" in synopsis
+    assert "path containment" in synopsis_flat
+    assert "before content validation and before publication" in synopsis_flat
+    assert "fidelity_status" in readme
+    assert "fidelity_coverage" in readme
+    assert "not a clean verdict" in readme.lower()
+
+    image_section = fidelity[
+        fidelity.index("## images-to-pdf") : fidelity.index("## pdf-to-images")
+    ]
+    for fragment in (
+        "image-fit-downscaled",
+        "image-aspect-distorted",
+        "--page-size image",
+        "`0.5`",
+        "`1.01`",
+        "frames_total",
+        "frames_reported",
+        "truncated",
+        "details.placement_analysis.coverage",
+    ):
+        assert fragment in image_section
+
+    for code in (
+        "docinfo-not-copied",
+        "tagged-structure-dropped",
+        "named-destinations-dropped",
+        "internal-links-may-break",
+        "signature-presence-uncertain",
+    ):
+        assert code in fidelity
+
+    architecture_flat = " ".join(architecture.split())
+    technical_flat = " ".join(technical.split())
+    assert "Strict-fidelity policy" in architecture
+    assert "Candidate safety and limit preflight" in technical
+    assert "before content validation" in architecture_flat
+    assert "before content validation/publication" in technical_flat
+
+    for field in ("fidelity_status", "fidelity_coverage", "strict_fidelity"):
+        assert field in library
+    assert "finalized output verdicts are immutable" in " ".join(library.split())
+    assert "complete success envelope" in " ".join(cli.split())
+    assert "LDF_STRICT_FIDELITY" in windows
+
+    image_row = next(
+        line for line in feature.splitlines() if line.startswith("| Images → PDF")
+    )
+    assert "coverage is `partial`" in image_row
+    assert "coverage=complete" in image_row
+    mcp_row = next(
+        line
+        for line in feature.splitlines()
+        if line.startswith("| Local-agent MCP stdio")
+    )
+    assert "no token auth" in mcp_row.lower()
 
 
 def test_ocr_slice_is_documented_consistently() -> None:

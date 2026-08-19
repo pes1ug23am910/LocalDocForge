@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from localdocforge.config.settings import Settings
+from localdocforge.config.settings import Settings, with_policy_overrides
 from localdocforge.domain.models import ConversionReport, ProgressCallback
 from localdocforge.domain.pages import PageRange
 from localdocforge.operations import images as image_ops
@@ -99,6 +99,10 @@ def execute_tool(
 ) -> McpExecutionResult:
     """Validate again in the spawned child, then invoke one standard pipeline."""
     args = validate_tool_arguments(tool_name, arguments)
+    settings = with_policy_overrides(
+        settings,
+        strict_fidelity=settings.strict_fidelity or args.strict_fidelity,
+    )
 
     if isinstance(args, MergeToolParams):
         ranges = None if args.pages is None else [_range(value) for value in args.pages]

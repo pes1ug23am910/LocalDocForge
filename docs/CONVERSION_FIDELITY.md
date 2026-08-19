@@ -3,29 +3,118 @@
 LocalDocForge never advertises "perfect conversion" or "zero quality loss".
 This file records what each implemented operation preserves, what it loses,
 and how losses are reported. Reports carry `fidelity_warnings` with stable
-codes; nothing is dropped silently.
+codes and an explicit assessment envelope. Warning silence is not treated as a
+clean verdict outside that envelope.
+
+## Machine-readable fidelity contract
+
+Every conversion report carries both coverage and a derived status:
+
+- `fidelity_coverage` is `none`, `partial`, or `complete`. It states how much of
+  the operation's implemented fidelity contract was assessed, not how “good”
+  the output is.
+- `fidelity_status` is `unassessed`, `no-known-loss`, `review-required`, or
+  `known-loss`. It is derived from coverage and warning impacts rather than
+  supplied independently.
+
+Derivation is deliberately worst-case and deterministic:
+
+1. Any `known-loss` warning impact derives `known-loss`.
+2. Otherwise, any `review` impact derives `review-required`.
+3. Otherwise, `complete` coverage derives `no-known-loss` (advisories may still
+   be present).
+4. Otherwise, the result is `unassessed`.
+
+Consequently, an empty `fidelity_warnings` array under `none` or `partial`
+coverage does **not** mean no loss. `no-known-loss` means only that the declared
+contract was completely assessed and no review/known-loss observation was
+found; it does not claim perfect conversion, exact equivalence, or fitness for
+every use. Each published `OutputArtifact` repeats the conservative run-level
+status until an operation provides a narrower per-artifact assessor.
+
+Every fidelity warning contains:
+
+- stable `code` and human `message`;
+- `severity` (`info`, `warning`, or `critical`) for presentation and urgency;
+- `basis`: `declared` for behavior guaranteed by the operation design,
+  `structural` for an observed source/output structure, or `heuristic` for an
+  inference;
+- `impact`: `advisory`, `review`, or `known-loss`, which drives the run-level
+  status; and
+- optional `page` and actionable `remedy` fields.
+
+Severity and impact are intentionally separate. A security-urgent condition is
+not automatically proof of fidelity loss, and a known transform can prove loss
+without being a security event. Heuristic evidence may require review but
+cannot claim `known-loss`; that verdict requires a declared or structural
+basis. Legacy reports missing the new classification fields remain readable,
+but every in-tree warning producer now supplies its classification explicitly.
+
+Current coverage declarations are conservative. `rotate` and `crop` completely
+assess their implemented contracts. Pipeline-backed API/MCP `inspect` is
+complete/no-known-loss within the explicit scope “non-mutating structural
+inventory; no document conversion,” so server-wide strict fidelity does not
+disable it. Direct CLI `inspect` is read-only and has no publication step.
+Page-moving operations and `compress` are partial. `images-to-pdf` is partial at
+run level but completely measures its placement sub-contract for every decoded
+frame. Other operations default to none until a broader assessor is implemented;
+their warning impacts still derive `review-required` or `known-loss` when
+applicable.
+
+### Strict fidelity publication policy
+
+Use global `--strict-fidelity` before a CLI command, or set
+`LDF_STRICT_FIDELITY=true`, when every result other than
+complete/no-known-loss must be refused:
+
+```powershell
+ldf --strict-fidelity rotate input.pdf --degrees 90 -o output.pdf
+```
+
+The operation may create a private candidate first. The pipeline then performs
+candidate path containment, alias, duplicate-destination, collision, and total
+size safety checks so strict policy cannot mask an unsafe candidate. It next
+applies the fidelity gate, before content validation and publication. A refusal
+publishes nothing and returns the failed report with `validation: null`: CLI
+exit 4, HTTP API 422, or an MCP tool error whose structured content retains the
+bounded report and a decisive warning.
+
+API and MCP operation schemas also expose strict boolean
+`strict_fidelity=true`. Per-call false or omission cannot weaken a process-wide
+setting inherited from `LDF_STRICT_FIDELITY=true` or global
+`--strict-fidelity`.
 
 ## Structural operations (merge, split, remove, extract, organize)
 
 Preserved:
 - Page content streams, resources, fonts, images — byte-faithful via pikepdf.
-- Page-level annotations and links (they live in the page tree).
+- Page-level annotation objects are copied with their pages. Internal link
+  targets may cease to resolve after pages move and are reported separately.
 - Document info dictionary (title/author/…): copied from the (first) source.
 - Page boxes and rotation flags.
 
 Not yet preserved when pages move between documents (reported per input):
+- `docinfo-not-copied` — copying the selected document-information dictionary
+  failed.
 - `outlines-dropped` — bookmarks/outline trees.
 - `form-fields-detached` — AcroForm field tree (widget appearances remain on
   pages; interactivity is lost).
 - `attachments-dropped` — document-level embedded files.
 - `xmp-metadata-dropped` — document-level XMP metadata.
 - `page-labels-dropped` — roman/appendix numbering is not rebuilt.
+- `tagged-structure-dropped` — tagged-PDF structure is not rebuilt.
+- `named-destinations-dropped` — document-level named destinations are not
+  rebuilt.
 - `document-actions-dropped` — document-level open/additional actions and
   JavaScript name trees are not carried into page-moving outputs.
 - `signature-semantics-dropped` — signature fields cannot remain valid after
   page copying. This is a **critical** warning.
+- `internal-links-may-break` — copied internal link annotations may reference
+  pages/destinations that moved or were omitted. This is a structural review
+  warning with a link-verification remedy rather than an unconditional loss
+  claim.
 - `form-field-name-conflict` — merge detects identically named fields across
-  inputs and warns what that would mean.
+  inputs and marks the result for review.
 
 `remove-pages` refuses a document when this build cannot safely rewrite page
 references held by outlines, forms/signatures, page labels, open actions,
@@ -35,8 +124,14 @@ policy prevents a successful-looking PDF with stale references.
 `rotate` and `crop` operate on the original document object model in memory,
 so outlines/forms/attachments and active content remain. Saving a modified
 PDF nevertheless invalidates cryptographic signatures and does not retain
-input password protection. Reports use the critical `signature-invalidated`
-and `input-encryption-removed` security warning codes when applicable.
+input password protection. `signature-invalidated` is reported both as a
+critical security warning and as a structural/known-loss fidelity warning with
+a re-signing remedy. `input-encryption-removed` remains a critical security
+warning when applicable. Signature inspection covers catalog permissions,
+AcroForm field/kid trees, widget parents, and page annotations. If malformed
+signature-related structures prevent a complete determination,
+`signature-presence-uncertain` is heuristic/review with a source-inspection
+remedy; strict fidelity refuses that uncertainty instead of failing open.
 
 ## rotate
 Sets `/Rotate` relative to the page's existing rotation without re-encoding
@@ -67,26 +162,61 @@ compared pages and maximum channel delta, which is 0 on success).
 Codes:
 - `compress-no-reduction` (info) — the output is not smaller; the input was
   already tightly compressed. Reported, never hidden.
-- `resource-cleanup-skipped` (info) — qpdf could not analyze resource usage
-  safely, so unused-resource pruning was skipped for that document.
+- `resource-cleanup-skipped` (info; structural/advisory) — qpdf could not
+  analyze resource usage safely, so unused-resource pruning was skipped for
+  that document.
 - `signature-invalidated` / `input-encryption-removed` — same critical
   semantics as rotate/crop: the rewrite invalidates cryptographic signatures
-  and the output is not password protected.
+  and the output is not password protected. Signature invalidation also carries
+  a structural/known-loss fidelity warning; encryption removal is a security
+  warning.
 
 Lossy presets (`balanced`, `aggressive`, `archival`) do not exist in this
 build and are refused; nothing labelled "compress" silently degrades images.
 
 ## images-to-pdf
+
 - EXIF orientation honored; multipage TIFF expands to one page per frame.
 - Pages composed on a raster canvas at the configured `--dpi` (default 200),
-  so images are re-encoded (`images-reencoded` info warning); photographs go
-  through one JPEG generation at quality 95 by default.
-- `--page-size image` keeps the source pixel grid (no canvas compositing) but
-  still re-encodes through Pillow's PDF writer.
+  and every page is re-encoded through Pillow's PDF writer. The declared,
+  known-loss `images-reencoded` warning is therefore always present;
+  photographs go through one JPEG generation at quality 95 by default.
+- `--page-size image` keeps the source pixel dimensions and avoids fixed-canvas
+  resizing, but still performs that re-encode. Native page size is the remedy
+  for unintended fit downscaling, not a lossless-copy mode.
 - Alpha channels are flattened onto the background color (PDF pages here are
   opaque RGB), including `--page-size image`.
 - Margins that leave no drawable area and canvases exceeding the pixel limit
   are refused before allocation/publication.
+
+Run-level `fidelity_coverage` is `partial`: placement is exhaustively measured,
+but this release does not yet inventory every source-image metadata/profile
+transform. Because the declared re-encode is known loss, run-level status is
+always `known-loss`; strict fidelity therefore refuses publication. The nested
+`details.placement_analysis.coverage` is independently `complete`.
+
+Placement analysis measures every decoded frame in the explicitly DPI-sensitive
+space `output-raster-pixels/source-pixels`. The ratio describes retained raster
+sample dimensions, not physical print scale: raising output DPI can retain more
+source pixels and can change the measurement. `linear_scale` is the smaller of
+the placed width/source width and placed height/source height ratios.
+
+- `image-fit-downscaled` is structural/known-loss when a fixed-page frame's
+  `linear_scale` is strictly below `0.5`; exactly `0.5` is not warned. Its
+  remedy is `--page-size image` or a higher `--dpi` within resource limits.
+- `image-aspect-distorted` is structural/known-loss when `--fit stretch`
+  changes aspect ratio beyond `1.01`. Its remedy is `--fit fit` or
+  `--fit center`.
+
+The report records source/placed dimensions, axis/linear scales, aspect-ratio
+distortion, one-based input index, and frame index without paths or image text.
+Thresholds use the same six-decimal metric values exposed in the report, and
+`aspect_distortion_warning_scope="stretch-only"` distinguishes stretch warnings
+from harmless integer quantization under aspect-preserving fits. Detailed frame
+entries are deterministically capped at 256. `frames_total`,
+`severe_downscale_frames`, `aspect_distorted_frames`, and placement coverage
+still include every frame; `frames_reported` and `truncated` disclose the bounded
+detail list.
 
 ## pdf-to-images
 - Rasterization at the requested DPI; vector content and text become pixels
@@ -97,7 +227,8 @@ build and are refused; nothing labelled "compress" silently degrades images.
   Each page is rendered at up to the ordinary 150-DPI default, then only pages
   that would exceed the bound receive a lower per-page scale; smaller pages
   are not enlarged to fill the bound. A capped job carries `image-downscaled`
-  (info). Explicit `--format`/`--quality` values replace those preset values;
+  (info severity; structural/known-loss impact) with a higher-resolution/no-cap
+  remedy. Explicit `--format`/`--quality` values replace those preset values;
   explicit `--dpi` requests fixed-DPI output and disables the pixel cap.
 - Report details record the resolved format, configured quality, and applied
   quality (`null` for lossless PNG/TIFF) plus an ordered `dimensions` entry for
@@ -191,9 +322,9 @@ Stable codes (at most one aggregate `fidelity_warnings` entry per code):
 - `table-fidelity-best-effort` — one or more accepted explicit-line grids were
   emitted as GFM. Verify the inferred header, cell order, and spanning-cell
   fidelity.
-- `tables-flattened` — table output was disabled, or a candidate was emitted as
-  flowed text because confidence, geometry, parser, or resource checks refused
-  a rectangular GFM table.
+- `tables-flattened` (heuristic/review) — table output was disabled, or a
+  candidate was emitted as flowed text because confidence, geometry, parser,
+  or resource checks refused a rectangular GFM table.
 
 For non-table codes, the aggregate warning message reports how many selected
 occurrences were affected. The two table codes instead count emitted tables or
@@ -311,9 +442,10 @@ Real-engine fixtures additionally require known rendered marker strings to be
 extractable. No PDF or sidecar is published unless every validation passes.
 
 OCR rewrites the document and invalidates existing cryptographic signatures;
-the critical `signature-invalidated` security warning is emitted when a
-signature field is found. Passwords only unlock input. Output is unencrypted
-and carries critical `input-encryption-removed` when applicable.
+both the critical security warning and structural/known-loss fidelity warning
+`signature-invalidated` are emitted when a signature field is found. Passwords
+only unlock input. Output is unencrypted and carries critical
+`input-encryption-removed` when applicable.
 
 ## convert-images
 
@@ -338,10 +470,11 @@ Intentionally not preserved (defaults chosen for sharing, each reported):
   with or without `--keep-metadata`.
 - `alpha-flattened` (info) — JPEG output composites transparency onto the
   chosen background color.
-- `image-downscaled` (info) — `convert-images --max-dimension`, either
-  operation's `llm` preset, or the PDF per-page render cap shrank at least one
-  image/render relative to its ordinary size; preset processing never
-  upscales.
+- `image-downscaled` (info severity; structural/known-loss impact) —
+  `convert-images --max-dimension`, either operation's `llm` preset, or the PDF
+  per-page render cap shrank at least one image/render relative to its ordinary
+  size; preset processing never upscales. Increase/omit the cap or choose a
+  higher-resolution preset within resource limits when those pixels matter.
 - `color-profile-converted` (info) — the sRGB conversion above happened.
 - `color-profile-retained` (info) — a profile could not be parsed or
   converted, so it was kept in the output rather than silently dropped.
@@ -434,14 +567,24 @@ inspect `warnings[]` uses that term as shorthand for the real conversion-report
 arrays, `security_warnings[]` and `fidelity_warnings[]`, whose entries carry
 stable `code` values.
 
+The generated brief currently has seven gotchas: encrypted inputs;
+command-level `--collision` placement after the subcommand; glob expansion;
+warning/status interpretation; output fitness; strict fidelity; and the local
+MCP surface. Its low-cost visual-review suggestion is a 110 DPI PNG spot-check.
+It places global `--strict-fidelity` before the command, exposes
+`--page-size A4|image` and command-level collision choices in usage, and points
+agents to synchronous `ldf mcp`. Its warning guidance requires status and
+coverage first, then stable warning code, basis, impact, and optional remedy.
+
 ## Validation floor for every operation
 
-Every generated PDF is reopened with pikepdf/libqpdf, parser syntax warnings
-are rejected, expected page counts are checked, and pages are rendered through
-PDFium (all pages for high-risk/small outputs, a documented sample for routine
-large outputs). Zero-page and render failures block publication. Blank pages
-are reported and may be legitimate; only callers that explicitly forbid an
-all-blank result make blankness a hard failure. These checks do not establish
-PDF/A or PDF/UA conformance. Generated images must decode. Generated
-Markdown/TXT/JSONL follows the strict UTF-8, anchor/record-cardinality,
-exact-schema, and coverage-consistency validator described above.
+Every generated PDF permitted past the optional strict-fidelity gate is reopened
+with pikepdf/libqpdf, parser syntax warnings are rejected, expected page counts
+are checked, and pages are rendered through PDFium (all pages for high-risk or
+small outputs, a documented sample for routine large outputs). Zero-page and
+render failures block publication. Blank pages are reported and may be
+legitimate; only callers that explicitly forbid an all-blank result make
+blankness a hard failure. These checks do not establish PDF/A or PDF/UA
+conformance. Generated images must decode. Generated Markdown/TXT/JSONL follows
+the strict UTF-8, anchor/record-cardinality, exact-schema, and coverage-
+consistency validator described above.

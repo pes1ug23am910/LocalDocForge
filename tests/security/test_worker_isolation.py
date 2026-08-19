@@ -27,6 +27,7 @@ from starlette.datastructures import FormData, Headers, UploadFile
 
 import localdocforge.api.app as api_module
 import localdocforge.api.worker as worker_module
+import localdocforge.mcp.executor as mcp_executor_module
 from localdocforge.api.app import create_app
 from localdocforge.api.worker import (
     AdmissionError,
@@ -40,6 +41,7 @@ from localdocforge.api.worker import (
 from localdocforge.config.settings import Settings
 from localdocforge.domain.models import (
     ConversionReport,
+    InputArtifact,
     JobCancelled,
     ReportStatus,
     ResourceLimits,
@@ -279,6 +281,75 @@ def test_worker_maps_typed_ocr_failure_to_safe_message_and_status(
     assert "WORKER-OCR-PASSWORD-SECRET" not in serialized
     assert failure["report"]["errors"] == [public_message]
     assert failure["report"]["validation"]["checks"][0]["detail"] == "failed"
+
+
+def test_failed_mcp_inspect_sanitizes_paths_like_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = uuid.uuid4().hex
+    job_root = tmp_path / job_id
+    for name in ("in", "out", "work"):
+        (job_root / name).mkdir(parents=True, exist_ok=name != "in")
+    source = (tmp_path / "caller-private" / "sensitive-input.pdf").resolve()
+    settings = Settings(
+        jobs_root=tmp_path / "parent-jobs",
+        limits=_limits(max_output_bytes=None),
+    )
+    request = WorkerRequest(
+        job_id=job_id,
+        operation="inspect",
+        job_root=str(job_root),
+        input_names=(),
+        params={},
+        settings_json=settings.model_dump_json(),
+        mcp_arguments_json=json.dumps({"input": str(source)}),
+    )
+
+    def fail_inspect(*_args, **_kwargs):
+        report = ConversionReport(
+            operation="inspect",
+            status=ReportStatus.FAILED,
+            job_id="private-worker-id",
+            inputs=[
+                InputArtifact(
+                    path=source,
+                    media_type="application/pdf",
+                    size_bytes=1,
+                )
+            ],
+            errors=["synthetic inspection failure"],
+        )
+        raise PipelineError("synthetic inspection failure", report)
+
+    monkeypatch.setattr(mcp_executor_module, "execute_tool", fail_inspect)
+    monkeypatch.setattr(worker_module, "_prepare_posix", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_base_containment", lambda *_args: {})
+    monkeypatch.setattr(worker_module, "_scrub_worker_environment", lambda *_args: None)
+    monkeypatch.setattr(worker_module, "_silence_worker_output", lambda: None)
+
+    class StartGate:
+        @staticmethod
+        def wait(_timeout: float) -> bool:
+            return True
+
+    class CapturingConnection:
+        def __init__(self) -> None:
+            self.messages: list[dict[str, object]] = []
+
+        def send_bytes(self, encoded: bytes) -> None:
+            self.messages.append(json.loads(encoded))
+
+        @staticmethod
+        def close() -> None:
+            return None
+
+    connection = CapturingConnection()
+    worker_module._worker_process_entry(request, StartGate(), connection)
+
+    failure = next(item for item in connection.messages if item["kind"] == "failure")
+    assert failure["report"]["inputs"][0]["path"] == source.name
+    assert str(source) not in json.dumps(failure)
 
 
 def test_nested_tool_timeout_maps_worker_and_sync_api_to_timed_out_408(

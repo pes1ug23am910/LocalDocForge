@@ -22,6 +22,8 @@ from typing import Any, TextIO
 from localdocforge.config.settings import Settings
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityBasis,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobContext,
@@ -53,12 +55,8 @@ _MEDIA_TYPES = {
 }
 _MD_ANCHOR = re.compile(r"(?m)^<!-- ldf:page ([1-9]\d*) -->$")
 _TXT_ANCHOR = re.compile(r"(?m)^--- ldf:page ([1-9]\d*) ---$")
-_SOURCE_MD_ANCHOR = re.compile(
-    r"(?m)^([ \t]*)<!--[ \t]*ldf:page[ \t]+\d+[ \t]*-->[ \t]*$"
-)
-_SOURCE_TXT_ANCHOR = re.compile(
-    r"(?m)^([ \t]*)---[ \t]*ldf:page[ \t]+\d+[ \t]*---[ \t]*$"
-)
+_SOURCE_MD_ANCHOR = re.compile(r"(?m)^([ \t]*)<!--[ \t]*ldf:page[ \t]+\d+[ \t]*-->[ \t]*$")
+_SOURCE_TXT_ANCHOR = re.compile(r"(?m)^([ \t]*)---[ \t]*ldf:page[ \t]+\d+[ \t]*---[ \t]*$")
 _INLINE_SPACE = re.compile(r"[^\S\n]+")
 
 NO_TEXT_LAYER = "no-text-layer"
@@ -194,9 +192,7 @@ def _normalize_fragment(value: str) -> str:
 
 def _nonspace_signature(value: str) -> Counter[str]:
     return Counter(
-        character
-        for character in unicodedata.normalize("NFC", value)
-        if not character.isspace()
+        character for character in unicodedata.normalize("NFC", value) if not character.isspace()
     )
 
 
@@ -324,8 +320,7 @@ def _lines_from_fragments(
         if len(group) >= 3:
             starts = tuple(fragment.left for fragment in group[:16])
             if all(
-                second - first >= 24.0
-                for first, second in zip(starts, starts[1:], strict=False)
+                second - first >= 24.0 for first, second in zip(starts, starts[1:], strict=False)
             ):
                 pattern = tuple(round(start / 6.0) for start in starts)
                 aligned_row_patterns[pattern] = aligned_row_patterns.get(pattern, 0) + 1
@@ -405,13 +400,8 @@ def _heading_levels(lines: list[_Line]) -> dict[int, int]:
     if not candidates:
         return {}
     ranked_sizes = sorted({round(size, 2) for size in candidates.values()}, reverse=True)
-    level_by_size = {
-        size: min(6, index + 1) for index, size in enumerate(ranked_sizes)
-    }
-    return {
-        index: level_by_size[round(size, 2)]
-        for index, size in candidates.items()
-    }
+    level_by_size = {size: min(6, index + 1) for index, size in enumerate(ranked_sizes)}
+    return {index: level_by_size[round(size, 2)] for index, size in candidates.items()}
 
 
 def _render_plain(lines: list[_Line]) -> str:
@@ -765,9 +755,7 @@ def _extract_markdown_tables(
             flattened_candidates=int(fallback_evidence), plumber_bbox=plumber_bbox
         )
     if len(raw_tables) > _MAX_TABLES_PER_PAGE:
-        return _TableExtraction(
-            flattened_candidates=len(raw_tables), plumber_bbox=plumber_bbox
-        )
+        return _TableExtraction(flattened_candidates=len(raw_tables), plumber_bbox=plumber_bbox)
     try:
         plumber_chars = list(table_page.chars)
     except Exception:
@@ -848,15 +836,10 @@ def _extract_markdown_tables(
                 str(character.get("text", ""))
                 for character in plumber_chars
                 if bbox[0]
-                <= (float(character.get("x0", 0.0)) + float(character.get("x1", 0.0)))
-                / 2
+                <= (float(character.get("x0", 0.0)) + float(character.get("x1", 0.0))) / 2
                 <= bbox[2]
                 and bbox[1]
-                <= (
-                    float(character.get("top", 0.0))
-                    + float(character.get("bottom", 0.0))
-                )
-                / 2
+                <= (float(character.get("top", 0.0)) + float(character.get("bottom", 0.0))) / 2
                 <= bbox[3]
             )
         except (AttributeError, TypeError, ValueError, OverflowError):
@@ -875,8 +858,7 @@ def _extract_markdown_tables(
             rejected += 1
             continue
         rendered_rows = [
-            "| " + " | ".join(_escape_gfm_cell(cell) for cell in row) + " |"
-            for row in normalized
+            "| " + " | ".join(_escape_gfm_cell(cell) for cell in row) + " |" for row in normalized
         ]
         rendered_rows.insert(1, "| " + " | ".join("---" for _ in normalized[0]) + " |")
         provisional.append(
@@ -894,9 +876,7 @@ def _extract_markdown_tables(
         for second_index in range(first_index + 1, len(provisional)):
             if _table_bboxes_overlap(first, provisional[second_index]):
                 overlapping.update((first_index, second_index))
-    accepted = tuple(
-        table for index, table in enumerate(provisional) if index not in overlapping
-    )
+    accepted = tuple(table for index, table in enumerate(provisional) if index not in overlapping)
     rejected += len(overlapping)
     if not accepted and (raw_tables or fallback_evidence):
         rejected = max(1, rejected)
@@ -958,10 +938,7 @@ def _scan_page_objects(
             check_cancelled()
         if page_object.type == pdfium_c.FPDF_PAGEOBJ_TEXT:
             has_text_object = True
-        if (
-            page_object.type == pdfium_c.FPDF_PAGEOBJ_FORM
-            and page_object.level >= 14
-        ):
+        if page_object.type == pdfium_c.FPDF_PAGEOBJ_FORM and page_object.level >= 14:
             # pypdfium2 stops before children below the fifteenth level. Treat
             # a terminal form as incomplete evidence so a raw-zero page cannot
             # be mislabeled as lacking a text layer.
@@ -980,24 +957,14 @@ def _scan_page_objects(
             if table_path_segments > _MAX_TABLE_PATH_SEGMENTS_PER_PAGE:
                 table_analysis_safe = False
         try:
-            left, bottom, right, top = (
-                float(value) for value in page_object.get_bounds()
-            )
+            left, bottom, right, top = (float(value) for value in page_object.get_bounds())
         except (RuntimeError, TypeError, ValueError, OSError):
             continue
         width, height = abs(right - left), abs(top - bottom)
         bounds = (min(left, right), min(bottom, top), max(left, right), max(bottom, top))
-        if (
-            len(horizontal) < 512
-            and width >= 24.0
-            and height <= max(3.0, width * 0.03)
-        ):
+        if len(horizontal) < 512 and width >= 24.0 and height <= max(3.0, width * 0.03):
             horizontal.append(bounds)
-        if (
-            len(vertical) < 512
-            and height >= 24.0
-            and width <= max(3.0, height * 0.03)
-        ):
+        if len(vertical) < 512 and height >= 24.0 and width <= max(3.0, height * 0.03):
             vertical.append(bounds)
     return _ObjectScan(
         has_text_object=has_text_object,
@@ -1060,9 +1027,7 @@ def _extract_page(
                 f"{_MAX_PAGE_OBJECTS_PER_PAGE:,} objects; refusing to guess whether a text "
                 "layer is absent"
             )
-        working_byte_limits = [
-            limit for limit in (decoded_byte_limit,) if limit is not None
-        ]
+        working_byte_limits = [limit for limit in (decoded_byte_limit,) if limit is not None]
         if raw_char_count > _MIN_OUTPUT_PREFLIGHT_CHARS and output_byte_limit is not None:
             working_byte_limits.append(output_byte_limit)
         working_byte_limit = min(working_byte_limits) if working_byte_limits else None
@@ -1085,9 +1050,7 @@ def _extract_page(
                 working_byte_limit is not None
                 and len(bounded.encode("utf-8", errors="strict")) > working_byte_limit
             ):
-                raise PipelineError(
-                    "PDFium page text exceeds the configured extraction byte limit"
-                )
+                raise PipelineError("PDFium page text exceeds the configured extraction byte limit")
             if bounded:
                 fallback_used = True
                 fallback_lines = bounded.split("\n")
@@ -1157,9 +1120,7 @@ def _extract_page(
         else:
             plain_text = _normalize_text(_render_plain(lines))
             markdown_text = (
-                _normalize_text(_render_markdown(lines, heading_levels))
-                if markdown
-                else plain_text
+                _normalize_text(_render_markdown(lines, heading_levels)) if markdown else plain_text
             )
         angled = any(abs(fragment.angle) > 0.01 for fragment in fragments)
         uncertain = (
@@ -1180,10 +1141,7 @@ def _extract_page(
             present.add(READING_ORDER_UNCERTAIN)
         if table_extraction.tables:
             present.add(TABLE_FIDELITY_BEST_EFFORT)
-        if (
-            table_extraction.flattened_candidates
-            or (table_detected and not tables_requested)
-        ):
+        if table_extraction.flattened_candidates or (table_detected and not tables_requested):
             present.add(TABLES_FLATTENED)
         return _PageText(
             plain_text=plain_text,
@@ -1192,9 +1150,7 @@ def _extract_page(
             warning_codes=tuple(code for code in WARNING_CODE_ORDER if code in present),
             emitted_tables=len(table_extraction.tables),
             flattened_table_candidates=(
-                table_extraction.flattened_candidates
-                if tables_requested
-                else int(table_detected)
+                table_extraction.flattened_candidates if tables_requested else int(table_detected)
             ),
         )
     finally:
@@ -1204,12 +1160,8 @@ def _extract_page(
 def _sanitize_reserved_markers(value: str) -> str:
     """Keep source marker lookalikes visibly textual, never structural."""
 
-    value = _SOURCE_MD_ANCHOR.sub(
-        lambda match: match.group(0).replace("<!--", "&lt;!--", 1), value
-    )
-    return _SOURCE_TXT_ANCHOR.sub(
-        lambda match: match.group(0).replace("---", "--\\-", 1), value
-    )
+    value = _SOURCE_MD_ANCHOR.sub(lambda match: match.group(0).replace("<!--", "&lt;!--", 1), value)
+    return _SOURCE_TXT_ANCHOR.sub(lambda match: match.group(0).replace("---", "--\\-", 1), value)
 
 
 def _write_counted(
@@ -1381,14 +1333,11 @@ def _text_validator(
                             or type(record["has_text_layer"]) is not bool
                             or not isinstance(coverage_record, dict)
                             or record["char_count"] != coverage_record.get("char_count")
-                            or record["has_text_layer"]
-                            != coverage_record.get("has_text_layer")
+                            or record["has_text_layer"] != coverage_record.get("has_text_layer")
                         ):
                             jsonl_valid = False
         except (UnicodeError, OSError) as exc:
-            checks.append(
-                ValidationCheck(name="utf-8-decodes", passed=False, detail=str(exc))
-            )
+            checks.append(ValidationCheck(name="utf-8-decodes", passed=False, detail=str(exc)))
             return ValidationResult.combine(checks)
         checks.append(
             ValidationCheck(
@@ -1423,9 +1372,7 @@ def _text_validator(
             )
         elif output_format == "txt":
             expected = selection if page_anchors else ()
-            separators_valid = (
-                form_feeds == 0 if page_anchors else form_feeds == len(selection) - 1
-            )
+            separators_valid = form_feeds == 0 if page_anchors else form_feeds == len(selection) - 1
             checks.extend(
                 [
                     ValidationCheck(
@@ -1491,13 +1438,49 @@ def _aggregate_warnings(
             "GFM table."
         ),
     }
+    classifications = {
+        NO_TEXT_LAYER: (
+            FidelityBasis.STRUCTURAL,
+            FidelityImpact.KNOWN_LOSS,
+            (
+                "Use `ldf pdf-to-images --preset llm` for a visual fallback, or `ldf ocr` "
+                "when its OCRmyPDF, Tesseract, and Ghostscript probes are available."
+            ),
+        ),
+        HEADINGS_INFERRED: (
+            FidelityBasis.HEURISTIC,
+            FidelityImpact.REVIEW,
+            "Verify the inferred Markdown heading structure.",
+        ),
+        READING_ORDER_UNCERTAIN: (
+            FidelityBasis.HEURISTIC,
+            FidelityImpact.REVIEW,
+            None,
+        ),
+        TABLE_FIDELITY_BEST_EFFORT: (
+            FidelityBasis.HEURISTIC,
+            FidelityImpact.REVIEW,
+            "Verify headers, cell order, and spanning-cell fidelity.",
+        ),
+        TABLES_FLATTENED: (
+            FidelityBasis.HEURISTIC,
+            FidelityImpact.REVIEW,
+            None,
+        ),
+    }
     counts = dict(affected)
     if emitted_tables:
         counts[TABLE_FIDELITY_BEST_EFFORT] = emitted_tables
     if flattened_table_candidates:
         counts[TABLES_FLATTENED] = flattened_table_candidates
     return [
-        FidelityWarning(code=code, message=f"{counts[code]} {messages[code]}")
+        FidelityWarning(
+            code=code,
+            message=f"{counts[code]} {messages[code]}",
+            basis=classifications[code][0],
+            impact=classifications[code][1],
+            remedy=classifications[code][2],
+        )
         for code in WARNING_CODE_ORDER
         if affected[code]
     ]
@@ -1604,9 +1587,7 @@ def pdf_to_md(
                         options.password,
                         selection,
                     )
-                    table_pages = {
-                        int(item.page_number): item for item in table_document.pages
-                    }
+                    table_pages = {int(item.page_number): item for item in table_document.pages}
                 except Exception:
                     table_engine_status = "fallback"
                     _close_pdfplumber_resource(table_document)
@@ -1633,9 +1614,7 @@ def pdf_to_md(
                             else max(0, decompressed_limit - extracted_bytes)
                         )
                         remaining_output = (
-                            None
-                            if output_limit is None
-                            else max(0, output_limit - written_bytes)
+                            None if output_limit is None else max(0, output_limit - written_bytes)
                         )
                         page_text = _extract_page(
                             page,
@@ -1669,16 +1648,19 @@ def pdf_to_md(
                     )
 
                     if output_format == "jsonl":
-                        chunk = json.dumps(
-                            {
-                                "page": page_number,
-                                "text": page_text.plain_text,
-                                "char_count": page_text.char_count,
-                                "has_text_layer": page_text.has_text_layer,
-                            },
-                            ensure_ascii=False,
-                            separators=(",", ":"),
-                        ) + "\n"
+                        chunk = (
+                            json.dumps(
+                                {
+                                    "page": page_number,
+                                    "text": page_text.plain_text,
+                                    "char_count": page_text.char_count,
+                                    "has_text_layer": page_text.has_text_layer,
+                                },
+                                ensure_ascii=False,
+                                separators=(",", ":"),
+                            )
+                            + "\n"
+                        )
                     else:
                         content = (
                             page_text.markdown_text
@@ -1701,9 +1683,7 @@ def pdf_to_md(
                             separator = "\n\n" if order else ""
                         else:
                             separator = (
-                                ("\n\n" if output_format == "md" else "\n\f\n")
-                                if order
-                                else ""
+                                ("\n\n" if output_format == "md" else "\n\f\n") if order else ""
                             )
                         chunk = separator + content
                     written_bytes = _write_counted(
@@ -1790,8 +1770,7 @@ def inspect_page_text_stats(
         page_count = len(pdf)
         if limits.max_pages is not None and page_count > limits.max_pages:
             raise PipelineError(
-                f"Input has {page_count} pages, over the configured limit "
-                f"of {limits.max_pages}"
+                f"Input has {page_count} pages, over the configured limit of {limits.max_pages}"
             )
         for index in range(page_count):
             decoded_limit = (

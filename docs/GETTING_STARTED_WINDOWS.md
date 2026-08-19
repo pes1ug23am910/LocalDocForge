@@ -67,7 +67,14 @@ probes.
 ## 3. Everyday recipes
 
 Global flags go **before** the command: `ldf [--json] [--quiet]
-[--password-stdin] [--strict-offline] [--report-dir DIR] <command> …`.
+[--password-stdin] [--strict-offline] [--strict-fidelity]
+[--report-dir DIR] <command> …`.
+
+`--strict-fidelity` is a conservative publication policy. It publishes only a
+result whose operation-specific assessment is complete and derives
+`no-known-loss`; warning silence with `none` or `partial` coverage is refused.
+For example, `ldf --strict-fidelity rotate input.pdf --degrees 90 -o out.pdf`
+can pass, while images-to-PDF is refused because it re-encodes source pixels.
 
 ### Combine and reorganize PDFs
 
@@ -330,6 +337,7 @@ Sources in precedence order: CLI flags → `LDF_`-prefixed environment variables
 
 ```powershell
 $env:LDF_STRICT_OFFLINE = 'true'          # same as passing --strict-offline
+$env:LDF_STRICT_FIDELITY = 'true'         # require complete/no-known-loss publication
 $env:LDF_COLLISION = 'rename'             # default collision policy
 $env:LDF_JOBS_ROOT = 'D:\ldf-scratch'     # per-job scratch location (default: system temp)
 $env:LDF_BIND_PORT = '9000'               # ldf web default port

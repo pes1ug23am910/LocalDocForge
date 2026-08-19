@@ -86,6 +86,7 @@ def _run_ocr(paths, output_dir, params, settings, progress=None):
         progress,
     )
 
+
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
 _TOKEN_HEADER = "X-LDF-Token"  # noqa: S105 - header name, not a credential
 _TOKEN_COOKIE = "ldf_token"  # noqa: S105 - cookie name, not a credential
@@ -696,6 +697,7 @@ printed when the server started. This page never runs remote code.</p>
             "status": "ok",
             "version": __version__,
             "strict_offline": state.settings.strict_offline,
+            "strict_fidelity": state.settings.strict_fidelity,
             "loopback_only": not state.allow_nonlocal,
             "workers": workers,
         }

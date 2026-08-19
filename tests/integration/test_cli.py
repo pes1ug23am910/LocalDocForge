@@ -20,6 +20,7 @@ from localdocforge.cli.main import (
     EXIT_FAILED,
     EXIT_NO_ENGINE,
     EXIT_USAGE,
+    EXIT_VALIDATION,
     app,
 )
 from localdocforge.domain.models import (
@@ -63,6 +64,7 @@ class TestDoctor:
         assert result.exit_code == 0
         payload = json.loads(result.output)
         assert payload["strict_offline"] is False
+        assert payload["strict_fidelity"] is False
         assert payload["outbound_network_client"] is False
         engines = {e["name"]: e for e in payload["engines"]}
         assert engines["pikepdf"]["available"] is True
@@ -77,6 +79,32 @@ class TestDoctor:
         result = runner.invoke(app, ["--strict-offline", "doctor"])
         assert result.exit_code == 0
         assert "Strict-offline mode is enabled" in result.output
+
+    def test_doctor_reports_strict_fidelity_state(self):
+        result = runner.invoke(app, ["--strict-fidelity", "doctor"])
+        assert result.exit_code == 0
+        assert "strict-fidelity publication refusal is enabled" in result.output
+
+    def test_strict_offline_revalidates_remote_environment_jobs_root_before_command(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def forbidden_call(*_args, **_kwargs):
+            raise AssertionError("command setup must not run after settings refusal")
+
+        monkeypatch.setattr(cli_main, "cleanup_stale_workspaces", forbidden_call)
+        result = runner.invoke(
+            app,
+            ["--strict-offline", "doctor"],
+            env={
+                "LDF_JOBS_ROOT": r"\\remote-host\private-share\ldf-jobs",
+                "LDF_STRICT_OFFLINE": None,
+            },
+        )
+
+        assert result.exit_code == EXIT_USAGE
+        rendered = " ".join(combined_output(result).replace("│", " ").split())
+        assert "UNC or mapped network-drive path" in rendered
 
 
 class TestAgentBrief:
@@ -137,9 +165,7 @@ class TestAgentBrief:
             "review",
         ]
 
-    def test_global_options_preserve_metadata_command_boundaries(
-        self, tmp_path, monkeypatch
-    ):
+    def test_global_options_preserve_metadata_command_boundaries(self, tmp_path, monkeypatch):
         def forbidden_call(*_args, **_kwargs):
             raise AssertionError("agent-brief must not read a password or sweep workspaces")
 
@@ -207,6 +233,7 @@ class TestVersionAndHelp:
         ):
             assert command in help_output
         assert "--password-stdin" in help_output
+        assert "--strict-fidelity" in help_output
         assert "LDF_PASSWORD" in help_output
 
     def test_password_stdin_does_not_consume_subcommand_help(self, monkeypatch):
@@ -512,9 +539,7 @@ class TestPasswordSources:
         assert_secret_absent(result, wrong_password)
         assert not out.exists()
 
-    def test_empty_environment_password_counts_as_supplied(
-        self, fixtures_dir, monkeypatch
-    ):
+    def test_empty_environment_password_counts_as_supplied(self, fixtures_dir, monkeypatch):
         monkeypatch.setattr(cli_main, "_stdin_is_tty", lambda: True)
 
         def unexpected_prompt(*_args, **_kwargs):
@@ -530,9 +555,7 @@ class TestPasswordSources:
         assert "is encrypted" in result.stderr
         assert "One password is used for all encrypted inputs" in result.stderr
 
-    def test_inspect_honors_password_stdin(
-        self, fixtures_dir, unicode_fixture_password
-    ):
+    def test_inspect_honors_password_stdin(self, fixtures_dir, unicode_fixture_password):
         result = runner.invoke(
             app,
             [
@@ -766,28 +789,66 @@ class TestSplitAndOrganizeCommands:
         assert len(list(out_dir.glob("*.pdf"))) == 3
 
     def test_missing_input_is_usage_error(self, out_dir):
-        result = runner.invoke(
-            app, ["split", str(out_dir / "ghost.pdf"), "-d", str(out_dir)]
-        )
+        result = runner.invoke(app, ["split", str(out_dir / "ghost.pdf"), "-d", str(out_dir)])
         assert result.exit_code == EXIT_USAGE
 
     def test_rotate_via_cli(self, fixtures_dir, out_dir):
         out = out_dir / "cli-rotated.pdf"
         result = runner.invoke(
             app,
-            ["rotate", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out),
-             "--degrees", "180", "--pages", "1"],
+            [
+                "rotate",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out),
+                "--degrees",
+                "180",
+                "--pages",
+                "1",
+            ],
         )
         assert result.exit_code == 0, result.output
         with pikepdf.open(out) as pdf:
             assert int(pdf.pages[0].obj.get("/Rotate", 0)) == 180
 
+    def test_strict_fidelity_accepts_completed_rotate_assessment(
+        self,
+        fixtures_dir,
+        out_dir,
+    ):
+        out = out_dir / "strict-cli-rotated.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "--strict-fidelity",
+                "rotate",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out),
+                "--degrees",
+                "90",
+            ],
+        )
+
+        assert result.exit_code == 0, combined_output(result)
+        payload = json.loads(result.stdout)
+        assert payload["fidelity_coverage"] == "complete"
+        assert payload["fidelity_status"] == "no-known-loss"
+        assert out.is_file()
+
     def test_crop_warns_not_redaction(self, fixtures_dir, out_dir):
         out = out_dir / "cli-cropped.pdf"
         result = runner.invoke(
             app,
-            ["crop", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out),
-             "--box", "50,50,400,500"],
+            [
+                "crop",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out),
+                "--box",
+                "50,50,400,500",
+            ],
         )
         assert result.exit_code == 0, result.output
         assert "not" in combined_output(result).lower()
@@ -796,8 +857,14 @@ class TestSplitAndOrganizeCommands:
     def test_crop_bad_box_is_usage_error(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["crop", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out_dir / "n.pdf"),
-             "--box", "1,2,3"],
+            [
+                "crop",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "n.pdf"),
+                "--box",
+                "1,2,3",
+            ],
         )
         assert result.exit_code == EXIT_USAGE
 
@@ -816,12 +883,38 @@ class TestImageCommands:
         out = out_dir / "cli-heic.pdf"
         result = runner.invoke(
             app,
-            ["images-to-pdf", str(fixtures_dir / "images" / "photo.heic"),
-             "-o", str(out)],
+            ["images-to-pdf", str(fixtures_dir / "images" / "photo.heic"), "-o", str(out)],
         )
         assert result.exit_code == 0, result.output
         with pikepdf.open(out) as pdf:
             assert len(pdf.pages) == 1
+
+    def test_strict_fidelity_refusal_is_json_exit_4_and_writes_nothing(
+        self,
+        fixtures_dir,
+        out_dir,
+    ):
+        output = out_dir / "strict-refused.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "--strict-fidelity",
+                "images-to-pdf",
+                str(fixtures_dir / "images" / "photo.jpg"),
+                "-o",
+                str(output),
+            ],
+        )
+
+        assert result.exit_code == EXIT_VALIDATION, combined_output(result)
+        payload = json.loads(result.stdout)
+        assert payload["status"] == "failed"
+        assert payload["fidelity_status"] == "known-loss"
+        assert payload["fidelity_coverage"] == "partial"
+        assert payload["validation"] is None
+        assert "images-reencoded" in {warning["code"] for warning in payload["fidelity_warnings"]}
+        assert not output.exists()
 
     def test_images_to_pdf_no_glob_match(self, out_dir):
         result = runner.invoke(
@@ -832,8 +925,18 @@ class TestImageCommands:
     def test_pdf_to_images_cli(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["pdf-to-images", str(fixtures_dir / "simple-3page.pdf"), "-d", str(out_dir),
-             "--format", "jpeg", "--dpi", "72", "--pages", "1"],
+            [
+                "pdf-to-images",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-d",
+                str(out_dir),
+                "--format",
+                "jpeg",
+                "--dpi",
+                "72",
+                "--pages",
+                "1",
+            ],
         )
         assert result.exit_code == 0, result.output
         assert len(list(out_dir.glob("*.jpg"))) == 1
@@ -861,9 +964,7 @@ class TestImageCommands:
         assert payload["details"]["dimensions"][0]["height"] == 1568
         assert len(list(out_dir.glob("*.jpg"))) == 1
 
-    def test_pdf_to_images_unknown_preset_is_usage_error(
-        self, fixtures_dir, out_dir
-    ):
+    def test_pdf_to_images_unknown_preset_is_usage_error(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
             [
@@ -917,13 +1018,10 @@ class TestPdfToMdCommand:
         records = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
         assert [record["page"] for record in records] == [3, 1]
         assert all(
-            list(record) == ["page", "text", "char_count", "has_text_layer"]
-            for record in records
+            list(record) == ["page", "text", "char_count", "has_text_layer"] for record in records
         )
 
-    def test_tables_flag_emits_gfm_and_reports_best_effort(
-        self, fixtures_dir, out_dir
-    ):
+    def test_tables_flag_emits_gfm_and_reports_best_effort(self, fixtures_dir, out_dir):
         output = out_dir / "table.md"
         result = runner.invoke(
             app,
@@ -992,9 +1090,7 @@ class TestPdfToMdCommand:
         sys.platform != "win32",
         reason="Exercises the real Windows process and console encoding boundary",
     )
-    def test_windows_real_process_writes_unicode_as_utf8_nfc(
-        self, fixtures_dir, tmp_path
-    ):
+    def test_windows_real_process_writes_unicode_as_utf8_nfc(self, fixtures_dir, tmp_path):
         environment = os.environ.copy()
         environment.pop("LDF_PASSWORD", None)
         environment["LDF_JOBS_ROOT"] = str(tmp_path / "jobs")
@@ -1064,11 +1160,15 @@ class TestMdToPdfCommand:
         assert report["status"] == "success"
         assert report["operation"] == "md-to-pdf"
         assert report["engine"] == "typst"
-        assert report["details"] | {
-            "paper": "Letter",
-            "margin_mm": 15.5,
-            "toc": True,
-        } == report["details"]
+        assert (
+            report["details"]
+            | {
+                "paper": "Letter",
+                "margin_mm": 15.5,
+                "toc": True,
+            }
+            == report["details"]
+        )
         with pikepdf.open(output) as pdf:
             assert len(pdf.pages) >= 1
 
@@ -1130,8 +1230,16 @@ class TestConvertImagesCommand:
     def test_format_and_max_dimension_flags(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
-             "-d", str(out_dir), "--format", "png", "--max-dimension", "200"],
+            [
+                "convert-images",
+                str(fixtures_dir / "images" / "photo.jpg"),
+                "-d",
+                str(out_dir),
+                "--format",
+                "png",
+                "--max-dimension",
+                "200",
+            ],
         )
         assert result.exit_code == 0, combined_output(result)
         assert (out_dir / "photo.png").is_file()
@@ -1139,8 +1247,14 @@ class TestConvertImagesCommand:
     def test_unknown_preset_is_usage_error(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
-             "-d", str(out_dir), "--preset", "tiny"],
+            [
+                "convert-images",
+                str(fixtures_dir / "images" / "photo.jpg"),
+                "-d",
+                str(out_dir),
+                "--preset",
+                "tiny",
+            ],
         )
         assert result.exit_code == EXIT_USAGE
         assert "llm" in combined_output(result)
@@ -1148,8 +1262,14 @@ class TestConvertImagesCommand:
     def test_unknown_format_is_usage_error(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
-             "-d", str(out_dir), "--format", "gif"],
+            [
+                "convert-images",
+                str(fixtures_dir / "images" / "photo.jpg"),
+                "-d",
+                str(out_dir),
+                "--format",
+                "gif",
+            ],
         )
         assert result.exit_code == EXIT_USAGE
 
@@ -1164,8 +1284,7 @@ class TestConvertImagesCommand:
         (out_dir / "photo.jpg").write_bytes(b"occupied")
         result = runner.invoke(
             app,
-            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"),
-             "-d", str(out_dir)],
+            ["convert-images", str(fixtures_dir / "images" / "photo.jpg"), "-d", str(out_dir)],
         )
         assert result.exit_code == EXIT_COLLISION
         assert (out_dir / "photo.jpg").read_bytes() == b"occupied"
@@ -1185,8 +1304,14 @@ class TestCompressCommand:
     def test_compress_unavailable_preset_is_usage_error(self, fixtures_dir, out_dir):
         result = runner.invoke(
             app,
-            ["compress", str(fixtures_dir / "simple-3page.pdf"), "-o", str(out_dir / "n.pdf"),
-             "--preset", "balanced"],
+            [
+                "compress",
+                str(fixtures_dir / "simple-3page.pdf"),
+                "-o",
+                str(out_dir / "n.pdf"),
+                "--preset",
+                "balanced",
+            ],
         )
         assert result.exit_code == EXIT_USAGE
         assert "not available in this build" in result.output
@@ -1444,17 +1569,13 @@ class TestOcrCommand:
 
         assert result.exit_code == 0, combined_output(result)
         payload = json.loads(result.stdout)
-        assert [item["message"] for item in payload["fidelity_warnings"]] == [
-            critical_message
-        ]
+        assert [item["message"] for item in payload["fidelity_warnings"]] == [critical_message]
         assert result.stderr.count(critical_message) == 1
 
 
 class TestInspectCommand:
     def test_inspect_json(self, fixtures_dir):
-        result = runner.invoke(
-            app, ["--json", "inspect", str(fixtures_dir / "simple-3page.pdf")]
-        )
+        result = runner.invoke(app, ["--json", "inspect", str(fixtures_dir / "simple-3page.pdf")])
         assert result.exit_code == 0, result.output
         payload = json.loads(result.output)
         assert payload["page_count"] == 3
@@ -1481,9 +1602,7 @@ class TestInspectCommand:
         assert "MARKER-ALPHA-PAGE" not in serialized
         assert "This is synthetic fixture text" not in serialized
 
-    def test_inspect_maps_missing_pdfium_to_no_engine(
-        self, fixtures_dir, monkeypatch
-    ):
+    def test_inspect_maps_missing_pdfium_to_no_engine(self, fixtures_dir, monkeypatch):
         registry = default_registry()
         pdfium = registry.get("pdfium")
         assert pdfium is not None
@@ -1505,10 +1624,15 @@ class TestReportDir:
         reports = tmp_path / "reports"
         result = runner.invoke(
             app,
-            ["--report-dir", str(reports), "merge",
-             str(fixtures_dir / "simple-3page.pdf"),
-             str(fixtures_dir / "second-2page.pdf"),
-             "-o", str(out_dir / "reported.pdf")],
+            [
+                "--report-dir",
+                str(reports),
+                "merge",
+                str(fixtures_dir / "simple-3page.pdf"),
+                str(fixtures_dir / "second-2page.pdf"),
+                "-o",
+                str(out_dir / "reported.pdf"),
+            ],
         )
         assert result.exit_code == 0, result.output
         json_reports = list(reports.glob("merge-*.report.json"))

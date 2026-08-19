@@ -27,6 +27,8 @@ from markdown_it.token import Token
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityBasis,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobCancelled,
@@ -1268,6 +1270,8 @@ def md_to_pdf(
                     f"Unsupported Markdown {item.construct} at line {item.line} was dropped."
                 ),
                 severity=WarningSeverity.WARNING,
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
             for item in dropped
         ]
@@ -1279,6 +1283,8 @@ def md_to_pdf(
                     "glyph fallback; line breaks and page counts can vary across machines."
                 ),
                 severity=WarningSeverity.INFO,
+                basis=FidelityBasis.DECLARED,
+                impact=FidelityImpact.REVIEW,
             )
         )
         return ExecuteResult(

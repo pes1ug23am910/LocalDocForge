@@ -11,7 +11,13 @@ from pathlib import Path
 import pytest
 
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ConversionReport, ReportStatus, ResourceLimits
+from localdocforge.domain.models import (
+    ConversionReport,
+    FidelityBasis,
+    FidelityImpact,
+    ReportStatus,
+    ResourceLimits,
+)
 from localdocforge.domain.pages import PageRange
 from localdocforge.operations import text as text_ops
 from localdocforge.operations.organize import inspect_pdf
@@ -112,11 +118,9 @@ def test_markdown_is_structured_anchored_private_and_deterministic(
     assert coverage["pages_with_text_layer"] == 3
     assert coverage == second_report.details["coverage"]
     assert [
-        (warning.code, warning.page, warning.message)
-        for warning in first_report.fidelity_warnings
+        (warning.code, warning.page, warning.message) for warning in first_report.fidelity_warnings
     ] == [
-        (warning.code, warning.page, warning.message)
-        for warning in second_report.fidelity_warnings
+        (warning.code, warning.page, warning.message) for warning in second_report.fidelity_warnings
     ]
 
     # Reports carry only coverage metrics and warning metadata, never document text.
@@ -318,10 +322,10 @@ def test_layout_heuristics_emit_stable_labeled_warnings(
 
     assert content_marker in output.read_text(encoding="utf-8")
     assert _warning_codes(report) <= WARNING_CODES
-    warning = next(
-        warning for warning in report.fidelity_warnings if warning.code == expected_code
-    )
+    warning = next(warning for warning in report.fidelity_warnings if warning.code == expected_code)
     assert "heuristic" in warning.message.lower()
+    assert warning.basis is FidelityBasis.HEURISTIC
+    assert warning.impact is FidelityImpact.REVIEW
     coverage = _assert_coverage_shape(report)
     assert expected_code in coverage["per_page"][0]["warning_codes"]
 
@@ -386,9 +390,7 @@ def test_ruled_mixed_table_opt_in_is_gfm_unique_and_deterministic(
     assert "TABLE-MIXED-BEFORE" not in serialized_report
     assert "Quarter" not in serialized_report
     assert first_report.details["coverage"] == second_report.details["coverage"]
-    assert [
-        (warning.code, warning.message) for warning in first_report.fidelity_warnings
-    ] == [
+    assert [(warning.code, warning.message) for warning in first_report.fidelity_warnings] == [
         (warning.code, warning.message) for warning in second_report.fidelity_warnings
     ]
 
@@ -1012,9 +1014,7 @@ def test_inspect_zero_page_pdf_has_defined_empty_text_summary(fixtures_dir: Path
     }
 
 
-def test_inspect_text_stats_honor_decompressed_budget(
-    fixtures_dir: Path, tmp_path: Path
-) -> None:
+def test_inspect_text_stats_honor_decompressed_budget(fixtures_dir: Path, tmp_path: Path) -> None:
     with pytest.raises(PipelineError, match="decompressed-text limit"):
         inspect_pdf(
             fixtures_dir / "text-whitespace.pdf",

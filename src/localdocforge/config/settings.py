@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     #: network sandbox for native engines.
     strict_offline: bool = False
 
+    #: Refuse publication unless an operation completed its declared fidelity
+    #: assessment and found no warning with review or known-loss impact.
+    strict_fidelity: bool = False
+
     #: Where per-job scratch directories live. None = system temp.
     jobs_root: Path | None = None
 
@@ -94,6 +98,21 @@ class Settings(BaseSettings):
             except PathSecurityError as exc:
                 raise ValueError(str(exc)) from exc
         return self
+
+
+def with_policy_overrides(
+    settings: Settings,
+    *,
+    strict_offline: bool | None = None,
+    strict_fidelity: bool | None = None,
+) -> Settings:
+    """Rebuild settings with explicit policy overrides and rerun every validator."""
+    values = settings.model_dump(mode="python", round_trip=True)
+    if strict_offline is not None:
+        values["strict_offline"] = strict_offline
+    if strict_fidelity is not None:
+        values["strict_fidelity"] = strict_fidelity
+    return Settings.model_validate(values)
 
 
 _settings: Settings | None = None

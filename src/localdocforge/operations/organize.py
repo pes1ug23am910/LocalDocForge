@@ -19,6 +19,9 @@ from typing import Any
 from localdocforge.config.settings import Settings
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityBasis,
+    FidelityCoverage,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobContext,
@@ -43,6 +46,17 @@ from localdocforge.security.filenames import sanitize_filename
 
 class EncryptedInputError(PipelineError):
     """The input requires a password; callers may prompt and retry."""
+
+
+@dataclass(frozen=True)
+class _SignatureAssessment:
+    """Conservative result of inspecting signature-bearing PDF structures."""
+
+    present: bool = False
+    uncertain: bool = False
+
+
+_MAX_SIGNATURE_GRAPH_OBJECTS = 65_536
 
 
 def _open_pdf(path: Path, password: str | None):
@@ -84,11 +98,20 @@ def _copy_docinfo(source, target, warnings: list[FidelityWarning]) -> None:
             FidelityWarning(
                 code="docinfo-not-copied",
                 message="Document information dictionary could not be copied to the output",
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
 
 
-def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[FidelityWarning]:
+def _feature_warnings(
+    pdf,
+    source_name: str,
+    moved_pages: bool,
+    *,
+    signature_assessment: _SignatureAssessment | None = None,
+    include_signature_uncertainty: bool = True,
+) -> list[FidelityWarning]:
     """Warn about document-level features this phase does not rebuild."""
     if not moved_pages:
         return []
@@ -100,6 +123,8 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                 code="outlines-dropped",
                 message=f"Bookmarks/outline from {source_name!r} are not carried into the "
                 f"output by this operation yet",
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
     if "/AcroForm" in root:
@@ -109,6 +134,8 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                 message=f"{source_name!r} contains form fields; the output keeps their "
                 f"appearance but the interactive field tree is not rebuilt yet",
                 severity=WarningSeverity.WARNING,
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
     if "/Names" in root and "/EmbeddedFiles" in root.get("/Names", {}):
@@ -117,6 +144,8 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                 code="attachments-dropped",
                 message=f"Embedded file attachments from {source_name!r} are not carried "
                 f"into the output by this operation yet",
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
     if "/Metadata" in root:
@@ -124,6 +153,8 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
             FidelityWarning(
                 code="xmp-metadata-dropped",
                 message=f"XMP metadata from {source_name!r} is not carried into the output",
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
     if "/PageLabels" in root:
@@ -131,9 +162,29 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
             FidelityWarning(
                 code="page-labels-dropped",
                 message=f"Page labels from {source_name!r} are not rebuilt in the output",
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
+            )
+        )
+    if "/StructTreeRoot" in root:
+        warnings.append(
+            FidelityWarning(
+                code="tagged-structure-dropped",
+                message=(f"Tagged-PDF structure from {source_name!r} is not rebuilt in the output"),
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
     names = root.get("/Names", {})
+    if "/Dests" in root or "/Dests" in names:
+        warnings.append(
+            FidelityWarning(
+                code="named-destinations-dropped",
+                message=(f"Named destinations from {source_name!r} are not rebuilt in the output"),
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
+            )
+        )
     if "/OpenAction" in root or "/AA" in root or "/JavaScript" in names:
         warnings.append(
             FidelityWarning(
@@ -142,9 +193,13 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                     f"Document-level actions/JavaScript from {source_name!r} are not carried "
                     "into the output"
                 ),
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
             )
         )
-    if _has_signature_fields(pdf):
+    if signature_assessment is None:
+        signature_assessment = _assess_signature_fields(pdf)
+    if signature_assessment.present:
         warnings.append(
             FidelityWarning(
                 code="signature-semantics-dropped",
@@ -153,21 +208,193 @@ def _feature_warnings(pdf, source_name: str, moved_pages: bool) -> list[Fidelity
                     "this page-moving operation"
                 ),
                 severity=WarningSeverity.CRITICAL,
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.KNOWN_LOSS,
+            )
+        )
+    elif signature_assessment.uncertain and include_signature_uncertainty:
+        warnings.append(_signature_presence_uncertain_warning("page-moving operation"))
+    if _has_internal_links(pdf):
+        warnings.append(
+            FidelityWarning(
+                code="internal-links-may-break",
+                message=(
+                    f"Internal page links from {source_name!r} may no longer resolve after "
+                    "pages move into a new document"
+                ),
+                basis=FidelityBasis.STRUCTURAL,
+                impact=FidelityImpact.REVIEW,
+                remedy="Verify internal links and destinations in the generated PDF.",
             )
         )
     return warnings
 
 
-def _has_signature_fields(pdf) -> bool:
+def _assess_signature_fields(pdf) -> _SignatureAssessment:
+    """Inspect field, widget, and catalog signature structures without failing open."""
+
+    import pikepdf
+
+    uncertain = False
+    # Direct pikepdf wrappers have no stable objgen. Keep each wrapper alive so
+    # Python cannot recycle its id while the traversal queue is active.
+    retained_direct_objects: dict[int, Any] = {}
+
+    def identity(value) -> object:
+        objgen = getattr(value, "objgen", (0, 0))
+        if objgen != (0, 0):
+            return ("objgen", objgen)
+        direct_id = id(value)
+        retained_direct_objects.setdefault(direct_id, value)
+        return ("direct", direct_id)
+
     try:
-        pending = list(pdf.Root.AcroForm.get("/Fields", []))
-        while pending:
-            field = pending.pop()
-            if str(field.get("/FT", "")) == "/Sig":
+        root = pdf.Root
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        return _SignatureAssessment(uncertain=True)
+
+    try:
+        has_permissions = "/Perms" in root
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        has_permissions = False
+        uncertain = True
+    if has_permissions:
+        try:
+            permissions = root.get("/Perms", {})
+            if any(key in permissions for key in ("/DocMDP", "/UR", "/UR3")):
+                return _SignatureAssessment(present=True)
+            uncertain = True
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+
+    pending: list[Any] = []
+    queued: set[object] = set()
+
+    def enqueue(value: Any) -> None:
+        nonlocal uncertain
+        try:
+            value_identity = identity(value)
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+            return
+        if value_identity in queued:
+            return
+        if len(queued) >= _MAX_SIGNATURE_GRAPH_OBJECTS:
+            uncertain = True
+            return
+        queued.add(value_identity)
+        pending.append(value)
+
+    def enqueue_collection(values: Any) -> None:
+        nonlocal uncertain
+        if values is None:
+            return
+        if not isinstance(values, (pikepdf.Array, list, tuple)):
+            uncertain = True
+            return
+        try:
+            for value in values:
+                if len(queued) >= _MAX_SIGNATURE_GRAPH_OBJECTS:
+                    uncertain = True
+                    break
+                enqueue(value)
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+
+    acroform: Any = {}
+    try:
+        has_acroform = "/AcroForm" in root
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        has_acroform = False
+        uncertain = True
+    if has_acroform:
+        try:
+            candidate_acroform = root.get("/AcroForm")
+            if not isinstance(candidate_acroform, pikepdf.Dictionary):
+                uncertain = True
+            else:
+                acroform = candidate_acroform
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+    try:
+        signature_flags = acroform.get("/SigFlags", 0)
+        if type(signature_flags) is not int:
+            raise TypeError("/SigFlags must be an integer")
+        # ISO 32000 defines both low bits as affirmative signature evidence:
+        # SignaturesExist (bit 1) and AppendOnly (bit 2). Reserved bits must be
+        # zero; a reserved-only or out-of-range value is malformed evidence and
+        # therefore cannot support a clean assessment.
+        if signature_flags < 0 or signature_flags > 0xFFFF_FFFF:
+            uncertain = True
+        elif signature_flags & 0b11:
+            return _SignatureAssessment(present=True)
+        elif signature_flags & ~0b11:
+            uncertain = True
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        uncertain = True
+    try:
+        enqueue_collection(acroform.get("/Fields", []))
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        uncertain = True
+
+    try:
+        for page in pdf.pages:
+            try:
+                enqueue_collection(page.obj.get("/Annots", []))
+            except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+                uncertain = True
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        uncertain = True
+
+    while pending:
+        value = pending.pop()
+        try:
+            if str(value.get("/FT", "")) == "/Sig":
+                return _SignatureAssessment(present=True)
+            if str(value.get("/Type", "")) == "/Sig":
+                return _SignatureAssessment(present=True)
+            if "/ByteRange" in value and "/Contents" in value:
+                return _SignatureAssessment(present=True)
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+            continue
+
+        for reference_key in ("/V", "/Parent"):
+            try:
+                referenced = value.get(reference_key)
+            except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+                uncertain = True
+                continue
+            if referenced is not None and referenced is not value:
+                enqueue(referenced)
+        try:
+            enqueue_collection(value.get("/Kids", []))
+        except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+            uncertain = True
+    return _SignatureAssessment(uncertain=uncertain)
+
+
+def _has_internal_links(pdf) -> bool:
+    """Return whether internal links exist or malformed annotations make that uncertain."""
+
+    import pikepdf
+
+    try:
+        pages = pdf.pages
+        for page in pages:
+            try:
+                annotations = list(page.obj.get("/Annots", []))
+            except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
                 return True
-            pending.extend(field.get("/Kids", []))
-    except (AttributeError, TypeError):
-        return False
+            for annotation in annotations:
+                try:
+                    action = annotation.get("/A", {})
+                    if "/Dest" in annotation or str(action.get("/S", "")) == "/GoTo":
+                        return True
+                except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+                    return True
+    except (AttributeError, TypeError, ValueError, pikepdf.PdfError):
+        return True
     return False
 
 
@@ -187,16 +414,39 @@ def _page_removal_unsafe_features(pdf) -> list[str]:
     names = root.get("/Names", {})
     if "/Dests" in names:
         unsafe.append("named destinations")
-    for page in pdf.pages:
-        for annotation in page.obj.get("/Annots", []):
-            try:
-                action = annotation.get("/A", {})
-                if "/Dest" in annotation or str(action.get("/S", "")) == "/GoTo":
-                    unsafe.append("internal links")
-                    return sorted(set(unsafe))
-            except (AttributeError, TypeError):
-                continue
+    if _has_internal_links(pdf):
+        unsafe.append("internal links")
     return sorted(set(unsafe))
+
+
+def _signature_invalidated_fidelity_warning(operation: str) -> FidelityWarning:
+    return FidelityWarning(
+        code="signature-invalidated",
+        message=(
+            f"{operation} rewrites the PDF, so existing cryptographic signatures no longer "
+            "authenticate the generated file."
+        ),
+        severity=WarningSeverity.CRITICAL,
+        basis=FidelityBasis.STRUCTURAL,
+        impact=FidelityImpact.KNOWN_LOSS,
+        remedy="Retain the signed source as the authoritative copy and sign the output anew.",
+    )
+
+
+def _signature_presence_uncertain_warning(operation: str) -> FidelityWarning:
+    return FidelityWarning(
+        code="signature-presence-uncertain",
+        message=(
+            f"{operation} encountered malformed signature-related PDF structures, so "
+            "signature preservation could not be assessed completely."
+        ),
+        basis=FidelityBasis.HEURISTIC,
+        impact=FidelityImpact.REVIEW,
+        remedy=(
+            "Inspect AcroForm fields, widget parent links, and catalog permissions in the "
+            "source before relying on the generated file."
+        ),
+    )
 
 
 @dataclass
@@ -298,6 +548,8 @@ def merge_pdfs(
                     code="form-field-name-conflict",
                     message="Inputs contain form fields with identical names; identically "
                     "named fields would have mirrored values if the field tree were kept",
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.REVIEW,
                 )
             )
         staging = context.workspace / "merged.pdf"
@@ -312,6 +564,7 @@ def merge_pdfs(
                 )
             ],
             fidelity_warnings=fidelity,
+            fidelity_coverage=FidelityCoverage.PARTIAL,
             security_warnings=security,
             output_page_count=total_pages,
             details={"inputs_merged": len(artifacts)},
@@ -392,24 +645,19 @@ def split_pdf(
                     token = token.strip()
                     selection = PageRange(spec=token).resolve(total)
                     label = token.replace("-", "_")
-                    groups.append(
-                        (unique_name(f"{stem}-pages-{label}.pdf"), list(selection))
-                    )
+                    groups.append((unique_name(f"{stem}-pages-{label}.pdf"), list(selection)))
             elif every is not None:
                 for start in range(1, total + 1, every):
                     chunk = list(range(start, min(start + every, total + 1)))
                     groups.append(
                         (
-                            unique_name(
-                                f"{stem}-part-{(start - 1) // every + 1:03d}.pdf"
-                            ),
+                            unique_name(f"{stem}-part-{(start - 1) // every + 1:03d}.pdf"),
                             chunk,
                         )
                     )
             else:
                 groups = [
-                    (unique_name(f"{stem}-page-{n:03d}.pdf"), [n])
-                    for n in range(1, total + 1)
+                    (unique_name(f"{stem}-page-{n:03d}.pdf"), [n]) for n in range(1, total + 1)
                 ]
 
             fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
@@ -432,6 +680,7 @@ def split_pdf(
         return ExecuteResult(
             candidates=candidates,
             fidelity_warnings=fidelity,
+            fidelity_coverage=FidelityCoverage.PARTIAL,
             security_warnings=security,
             details={"parts": len(candidates)},
         )
@@ -457,6 +706,7 @@ def _single_output_operation(
     *,
     details: dict[str, Any] | None = None,
     render_all: bool = False,
+    fidelity_coverage: FidelityCoverage = FidelityCoverage.PARTIAL,
 ) -> ConversionReport:
     """Common shape: one input PDF, one transformed output PDF."""
     engine_name, engine_version = _engine()
@@ -467,7 +717,8 @@ def _single_output_operation(
         with _open_pdf(artifacts[0].path, options.password) as source:
             if source.is_encrypted:
                 security.append(_encryption_removed_warning(input_path.name))
-            if _has_signature_fields(source):
+            signature_assessment = _assess_signature_fields(source)
+            if signature_assessment.present:
                 security.append(
                     SecurityWarning(
                         code="signature-invalidated",
@@ -478,8 +729,17 @@ def _single_output_operation(
                         severity=WarningSeverity.CRITICAL,
                     )
                 )
+                fidelity.append(_signature_invalidated_fidelity_warning(operation))
+            elif signature_assessment.uncertain:
+                fidelity.append(_signature_presence_uncertain_warning(operation))
             _enforce_page_limit(context, len(source.pages))
-            result_pdf, expected_pages = transform(source, fidelity, security, context)
+            result_pdf, expected_pages = transform(
+                source,
+                fidelity,
+                security,
+                context,
+                signature_assessment,
+            )
             staging = context.workspace / f"{operation}.pdf"
             result_pdf.save(staging)
             if result_pdf is not source:
@@ -494,6 +754,7 @@ def _single_output_operation(
                 )
             ],
             fidelity_warnings=fidelity,
+            fidelity_coverage=fidelity_coverage,
             security_warnings=security,
             output_page_count=expected_pages,
             details=details or {},
@@ -520,7 +781,7 @@ def remove_pages(
 ) -> ConversionReport:
     options = options or OrganizeOptions()
 
-    def transform(source, fidelity, security, context):
+    def transform(source, fidelity, security, context, signature_assessment):
         total = len(source.pages)
         to_remove = sorted(set(pages.resolve(total)), reverse=True)
         if len(to_remove) >= total:
@@ -539,7 +800,11 @@ def remove_pages(
         return source, total - len(to_remove)
 
     return _single_output_operation(
-        "remove-pages", input_path, output, transform, options,
+        "remove-pages",
+        input_path,
+        output,
+        transform,
+        options,
         details={"pages_spec": pages.spec},
     )
 
@@ -553,14 +818,26 @@ def extract_pages(
 ) -> ConversionReport:
     options = options or OrganizeOptions()
 
-    def transform(source, fidelity, security, context):
+    def transform(source, fidelity, security, context, signature_assessment):
         selection = pages.resolve(len(source.pages))
-        fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
+        fidelity.extend(
+            _feature_warnings(
+                source,
+                input_path.name,
+                moved_pages=True,
+                signature_assessment=signature_assessment,
+                include_signature_uncertainty=False,
+            )
+        )
         result = _copy_pages_to_new(source, selection, fidelity, context)
         return result, len(selection)
 
     return _single_output_operation(
-        "extract-pages", input_path, output, transform, options,
+        "extract-pages",
+        input_path,
+        output,
+        transform,
+        options,
         details={"pages_spec": pages.spec},
     )
 
@@ -575,14 +852,26 @@ def organize_pdf(
     """Reorder/duplicate/drop pages according to an explicit new order."""
     options = options or OrganizeOptions()
 
-    def transform(source, fidelity, security, context):
+    def transform(source, fidelity, security, context, signature_assessment):
         selection = order.resolve(len(source.pages))
-        fidelity.extend(_feature_warnings(source, input_path.name, moved_pages=True))
+        fidelity.extend(
+            _feature_warnings(
+                source,
+                input_path.name,
+                moved_pages=True,
+                signature_assessment=signature_assessment,
+                include_signature_uncertainty=False,
+            )
+        )
         result = _copy_pages_to_new(source, selection, fidelity, context)
         return result, len(selection)
 
     return _single_output_operation(
-        "organize", input_path, output, transform, options,
+        "organize",
+        input_path,
+        output,
+        transform,
+        options,
         details={"order_spec": order.spec},
     )
 
@@ -600,7 +889,7 @@ def rotate_pages(
     options = options or OrganizeOptions()
     selection_range = pages or PageRange(spec="all")
 
-    def transform(source, fidelity, security, context):
+    def transform(source, fidelity, security, context, signature_assessment):
         total = len(source.pages)
         for number in set(selection_range.resolve(total)):
             context.check_cancelled()
@@ -608,8 +897,13 @@ def rotate_pages(
         return source, total
 
     return _single_output_operation(
-        "rotate", input_path, output, transform, options,
+        "rotate",
+        input_path,
+        output,
+        transform,
+        options,
         details={"degrees": degrees, "pages_spec": selection_range.spec},
+        fidelity_coverage=FidelityCoverage.COMPLETE,
     )
 
 
@@ -637,7 +931,7 @@ def crop_pages(
     options = options or OrganizeOptions()
     selection_range = pages or PageRange(spec="all")
 
-    def transform(source, fidelity, security, context):
+    def transform(source, fidelity, security, context, signature_assessment):
         security.append(
             SecurityWarning(
                 code="crop-is-not-redaction",
@@ -659,14 +953,15 @@ def crop_pages(
             )
             if clamped[2] <= clamped[0] or clamped[3] <= clamped[1]:
                 raise PipelineError(
-                    f"Crop box does not intersect page {number} "
-                    f"(media box is {media})"
+                    f"Crop box does not intersect page {number} (media box is {media})"
                 )
             if clamped != (x0, y0, x1, y1):
                 fidelity.append(
                     FidelityWarning(
                         code="crop-clamped",
                         message=f"Crop box clamped to the page boundary on page {number}",
+                        basis=FidelityBasis.STRUCTURAL,
+                        impact=FidelityImpact.REVIEW,
                         page=number,
                     )
                 )
@@ -675,9 +970,14 @@ def crop_pages(
         return source, total
 
     return _single_output_operation(
-        "crop", input_path, output, transform, options,
+        "crop",
+        input_path,
+        output,
+        transform,
+        options,
         details={"box": list(box), "pages_spec": selection_range.spec},
         render_all=True,
+        fidelity_coverage=FidelityCoverage.COMPLETE,
     )
 
 
@@ -705,8 +1005,7 @@ def inspect_pdf(
         page_limit = settings.limits.max_pages
         if page_limit is not None and info["page_count"] > page_limit:
             raise PipelineError(
-                f"Input has {info['page_count']} pages, over the configured limit "
-                f"of {page_limit}"
+                f"Input has {info['page_count']} pages, over the configured limit of {page_limit}"
             )
         sizes = set()
         annotation_count = 0

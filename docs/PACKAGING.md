@@ -565,6 +565,34 @@ containment, strict-offline, and disconnect probes. Its final verdict is
 `approve-with-nits`; all F1–F7 findings are resolved and no further remediation
 round is required before the user's merge decision.
 
+### 2026-08-19 S10 fidelity-contract manifest identity
+
+S10 adds the machine-readable fidelity contract, strict publication policy,
+bounded image-placement diagnostics, and API/MCP transport hardening without a
+dependency or lock change. The final 23.7-second build-only
+gate used a fresh system-temporary directory, reproduced direct and
+sdist-to-wheel builds, passed
+Twine/member/metadata checks, and refreshed only the live Windows-AMD64
+manifest. Retained `dist/` and `packaging-evidence/` records were not modified.
+
+| Identity | SHA-256 | Bytes |
+|---|---|---:|
+| package source inputs | `960fdcf1a6017416c854e7e429dac366bf29081fa8cb8d18b90a32787c1221cd` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `b2a7adf62e5a036323accd19f369e65a0b7249283f2de5211da845c153533a48` | 195,757 |
+| `localdocforge-0.1.0.tar.gz` | `1a340009f69fd33fb903e4e2ab23f0cbdcca485cbd36759d6fb1188162f4c8a9` | 184,150 |
+
+The definitive 663.6-second local verify-mode gate reproduced the identity
+above; passed native, Linux, and Darwin mypy; passed both ordinary and blocked-
+network 899-outcome suites (895 passed and four expected skips each); and
+passed reproducible builds, fresh Base/Lite/Standard/Full source and wheel
+installs, and the isolated Full test profile. Its disposable evidence SHA-256 is
+`06697396827e469cf69ea4c4c16bb76fe9c7392ab224390c375486aff68b2ff1` and
+records `release_manifest_verified: true`,
+`source_install_syntax_tested: true`, all four profiles `passed`, and
+`full_tests.status: passed`. It honestly records base revision `7b37d5e` with
+`source.working_tree_changes: true`. This local Windows evidence does not
+change the repository-wide release decision.
+
 ## Clean profile/full-test matrices
 
 Both executed interpreters used the same authenticated wheel, package-source

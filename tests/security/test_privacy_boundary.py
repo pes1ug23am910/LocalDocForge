@@ -72,6 +72,18 @@ def test_ldf_strict_offline_environment_survives_cli_without_flag(monkeypatch, t
         set_settings(previous)
 
 
+def test_ldf_strict_fidelity_environment_survives_cli_without_flag(monkeypatch, tmp_path):
+    previous = get_settings()
+    monkeypatch.setenv("LDF_STRICT_FIDELITY", "true")
+    monkeypatch.setenv("LDF_JOBS_ROOT", str(tmp_path / "jobs"))
+    try:
+        result = CliRunner().invoke(cli_app, ["doctor"])
+        assert result.exit_code == 0, result.output
+        assert get_settings().strict_fidelity is True
+    finally:
+        set_settings(previous)
+
+
 def test_strict_offline_mode_is_recorded_in_conversion_report(fixtures_dir, tmp_path):
     settings = Settings(strict_offline=True, jobs_root=tmp_path / "jobs")
     report = extract_pages(
@@ -113,6 +125,7 @@ def test_ui_privacy_wording_and_health_match_runtime_mode(
     assert "nothing leaves this machine" not in index.text
     assert health.status_code == 200
     assert health.json()["strict_offline"] is strict_offline
+    assert health.json()["strict_fidelity"] is False
     assert health.json()["loopback_only"] is True
 
 

@@ -6,6 +6,7 @@
 ┌────────────────────────────────────────────────────────────┐
 │ interfaces: cli/ (Typer, shipped)                          │
 │             api/ (FastAPI, shipped; worker-backed jobs)    │
+│             mcp/ (inherited stdio, shipped; worker-backed) │
 │             minimal HTML status shell (shipped)            │
 │             full browser job UI (planned)                  │
 ├────────────────────────────────────────────────────────────┤
@@ -13,8 +14,8 @@
 │   build an execute() closure and hand it to the runner     │
 ├────────────────────────────────────────────────────────────┤
 │ pipelines/runner.py — shared job lifecycle                 │
-│   sniff/limits → workspace → execute → validate all →      │
-│   publish each → report → cleanup                          │
+│   sniff/limits → workspace → execute/assess → preflight    │
+│   fidelity gate → validate → publish → report/cleanup      │
 ├──────────────┬─────────────────────┬───────────────────────┤
 │ engines/     │ validation/         │ reporting/            │
 │ adapters,    │ pikepdf syntax +    │ JSON + human report   │
@@ -23,10 +24,10 @@
 │ gating       │                     │                       │
 ├──────────────┴─────────────────────┴───────────────────────┤
 │ jobs/ private workspaces, publication, cleanup             │
-│ security/ sniffing, containment, filenames, subprocesses  │
+│ security/ sniffing, containment, filenames, subprocesses   │
 ├────────────────────────────────────────────────────────────┤
 │ domain/ typed models, reports, resource limits, ranges     │
-│ config/ LDF_* settings and strict-offline path policy      │
+│ config/ LDF_* settings; offline and fidelity policies      │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,8 +71,8 @@ engines and planned capabilities remain data, not placeholder actions.
 
 ### Pipeline lifecycle (`pipelines/runner.py`)
 
-1. **Input boundary.** In strict mode, recognizable network paths are refused
-   before file inspection. Binary formats use leading-byte signatures rather
+1. **Input boundary.** In strict-offline mode, recognizable network paths are
+   refused before file inspection. Binary formats use leading-byte signatures rather
    than extensions. Plain Markdown has no trustworthy magic bytes, so its
    deliberately narrow boundary requires `.md`/`.markdown`, performs a full
    strict-UTF-8 decode, and rejects NUL/binary content. Input byte totals are
@@ -82,23 +83,34 @@ engines and planned capabilities remain data, not placeholder actions.
 3. **Private workspace.** `JobWorkspace` creates an exclusive, constrained
    `ldf-job-<uuid>` directory. Candidate and temporary paths are re-contained
    beneath it.
-4. **Execution.** The operation writes candidate files only to the workspace,
-   emits progress events, and calls cooperative cancellation/timeout checks
-   between meaningful units of work. CLI operations currently execute this
-   lifecycle in-process. API operations execute it in a fresh spawned worker,
-   so the parent can preempt a native parser by terminating the contained
-   process tree. Typst is always launched through the hardened subprocess
-   runner with the remaining job timeout, bounded diagnostics, a private
-   working directory, neutral generated filenames, and isolated environment
-   directories; the CLI therefore gets a hard tool timeout even though other
-   in-process native calls remain cooperative.
-5. **Pre-publication boundaries.** Candidate paths and destinations are
-   canonicalized once; strict network-output policy, output-root containment,
+4. **Execution and assessment.** The operation writes candidate files only to
+   the workspace, emits progress events, and calls cooperative cancellation/
+   timeout checks between meaningful units of work. Its `ExecuteResult`
+   declares `fidelity_coverage` and classified fidelity warnings; the runner
+   immediately derives the run-level `fidelity_status`. CLI operations
+   currently execute this lifecycle in-process. API and MCP operations execute
+   it in fresh spawned workers, so a parent can preempt a native parser by
+   terminating the contained process tree. Typst is always launched through
+   the hardened subprocess runner with the remaining job timeout, bounded
+   diagnostics, a private working directory, neutral generated filenames, and
+   isolated environment directories; the CLI therefore gets a hard tool
+   timeout even though other in-process native calls remain cooperative.
+5. **Candidate safety, limit, and collision preflight.** Candidate paths and
+   destinations are canonicalized once; strict network-output policy,
+   output-root containment,
    duplicate destinations, and input/output aliases are checked. Aggregate
    candidate bytes are compared with `max_output_bytes`. This check occurs
    after candidate generation, so it limits publication rather than acting as
-   a workspace filesystem quota.
-6. **Validate every candidate.** PDFs must be nonempty, reopen through pikepdf,
+   a workspace filesystem quota. `collision=fail` is also checked here. These
+   invariants run before fidelity policy so that a policy refusal cannot mask
+   an escaped, missing, aliased, colliding, or oversized candidate.
+6. **Strict-fidelity policy.** When `strict_fidelity` is enabled, publication
+   proceeds only for the derived `no-known-loss` status, which is possible only
+   with `complete` assessment coverage and no `review` or `known-loss`
+   warning. Every other state is refused before content validation and before
+   any destination is touched; the failed report therefore has
+   `validation=null` rather than a fabricated validation result.
+7. **Validate every candidate.** PDFs must be nonempty, reopen through pikepdf,
    contain at least one page, have no reported parser syntax warning, match an
    expected page count when supplied, and render through PDFium. Selected
    high-risk candidates render every page; routine candidates render at most
@@ -108,19 +120,62 @@ engines and planned capabilities remain data, not placeholder actions.
    non-mutating candidate validator to the same pre-publication stage.
    `pdf-to-md` uses that hook for strict UTF-8, required coverage fields,
    Markdown/TXT anchor cardinality, and exact JSONL schema/count consistency.
-7. **Publish.** No destination is touched until every candidate passes. Each
+8. **Publish.** No destination is touched until every candidate passes. Each
    candidate is copied to a hidden staging file in its destination directory
    and fsynced. Overwrite uses `os.replace`; fail and rename use `os.link` as an
    atomic no-clobber operation. Each final name is individually atomic. For a
    handled later-artifact failure, newly published paths are removed and
    overwritten files are restored from private backups where possible. This is
    best-effort rollback, not a multi-file transaction across a crash.
-8. **Report and cleanup.** `ConversionReport` records status, engine/version,
+9. **Report and cleanup.** `ConversionReport` records status, engine/version,
    artifact metadata, counts, elapsed time, stable security/fidelity warnings,
-   validation checks, details, and strict-offline state. It intentionally omits
-   document text and passwords. Workspace removal is retried on success,
-   failure, and cancellation; an incomplete removal adds a critical warning.
-   Startup sweeps CLI workspaces older than 24 hours.
+   `fidelity_coverage`, the derived `fidelity_status`, validation checks,
+   details, and both strict-policy states. Each published `OutputArtifact`
+   repeats the conservative run-level fidelity status; it is not a finer
+   per-file assessment. Reports intentionally omit document text and passwords.
+   Workspace removal is retried on success, failure, and cancellation; an
+   incomplete removal adds a critical warning. Startup sweeps CLI workspaces
+   older than 24 hours.
+
+The fidelity state machine is deliberately conservative. Warning `severity`
+(`info`/`warning`/`critical`) expresses presentation urgency and does not drive
+the verdict. `basis` records how the observation was established
+(`declared`/`structural`/`heuristic`), while `impact` drives the verdict
+(`advisory`/`review`/`known-loss`); a warning may also provide a bounded
+`remedy`. A `known-loss` impact wins, then `review`, then complete coverage with
+only advisory/no warnings yields `no-known-loss`; otherwise the status is
+`unassessed`. Heuristic observations cannot claim known loss. Consequently,
+the absence of warnings is not a clean bill of fidelity unless coverage is
+complete, and `no-known-loss` is not a claim of bitwise identity or perfection.
+Security warnings are a separate channel and do not enter this state machine;
+callers must evaluate them independently even in strict-fidelity mode.
+
+`images-to-pdf` illustrates the distinction between run-level and nested
+coverage. Its overall assessment remains `partial` because every source-image
+metadata/profile transformation is not yet inventoried, and the declared
+`images-reencoded` warning makes the run `known-loss`. Separately,
+`details.placement_analysis.coverage` is `complete`: every frame contributes to
+the aggregate counters, although only the first 256 privacy-safe frame records
+are retained. Aggregate `severe_downscale_frames` and
+`aspect_distorted_frames` still cover all frames. `linear_scale` is the
+DPI-sensitive ratio of placed output-raster pixels to source pixels. Thresholds
+use the same six-decimal values exposed in the report. A value below `0.5` is structural known loss
+(`image-fit-downscaled`); `stretch` distortion above a `1.01` axis-scale ratio
+is structural known loss (`image-aspect-distorted`). `--page-size image`
+preserves the source pixel grid and avoids fixed-page downscaling, but does not
+remove the separate re-encoding loss.
+
+Page-moving assessment structurally inventories outlines, forms, attachments,
+XMP metadata, page labels, tagged structure, named destinations, document
+actions/JavaScript, signature semantics, and internal page links. Features not
+rebuilt are reported as known loss; internal links are `review` because they
+may break rather than being proven broken. The stricter page-removal path
+refuses page-reference-bearing outlines, forms/signatures, page labels, open
+actions, tagged structure, named destinations, and internal links instead of
+moving pages. For rewrite operations that detect a cryptographic signature,
+the same `signature-invalidated` fact is
+reported in both channels: critical security warning and structural
+known-fidelity-loss with a re-signing remedy.
 
 For `pdf-to-md`, `details.coverage` contains only bounded metadata:
 `pages_total`, `pages_with_text`, `pages_with_text_layer`, character-count
@@ -239,6 +294,13 @@ and IPC is JSON-framed and capped. Passwords cross into the child only when an
 operation requires one and are cleared from the parent record at completion;
 they never cross back in IPC.
 
+Every API operation accepts the same strict boolean `strict_fidelity` form
+field. It may strengthen the policy for one call, but `false` cannot weaken a
+server-wide `Settings.strict_fidelity=true`. A strict-fidelity refusal is an
+HTTP 422 policy response in the synchronous compatibility flow; an async job
+ends failed. Both retain the sanitized failed report, including fidelity
+coverage/status and warning codes, and publish no output.
+
 The manager enforces a bounded queue, global worker count, per-client active-job
 cap, and sliding-window submission rate. The legacy request flow waits for the
 worker and returns `201`; `Prefer: respond-async` or `?async=true` returns `202`.
@@ -263,12 +325,35 @@ false and is accepted only for Markdown. Extracted text exists only in the
 candidate and published output artifact. Public job state/report IPC carries
 coverage counts, table status/counters, and stable warning codes, never the
 document body or cell values.
+Success and failure reports share the same bounded worker-report compaction;
+successful HTTP jobs retain their complete basename download list separately.
+If the complete result envelope still cannot fit the 1 MiB IPC boundary, the
+worker returns an explicit 422 metadata-limit failure and the parent removes
+the private job root instead of converting it into an opaque fatal error.
+
+### MCP lifecycle (`mcp/`)
+
+`ldf mcp` exposes tools generated from the implemented capability registry over
+inherited stdio. Calls are synchronous and serialized in v1; stdout is reserved
+for strict UTF-8 newline protocol frames. Like the API, each call is revalidated
+and dispatched through a spawned worker into the normal operation and pipeline
+contracts. Tool schemas include the shared strict boolean `strict_fidelity`;
+per-call `false` cannot weaken a server-wide strict setting. Expected policy or
+operation failures set MCP `isError=true` and, when a failed report exists,
+retain a bounded `structuredContent.report` with fidelity status, coverage, and
+a decisive review/known-loss warning even when compaction is required. The
+human-readable error text is not the only fidelity channel.
 
 ### Error model
 
 Operations raise `PipelineError` with the failed `ConversionReport` where one
-exists. The CLI resolves an explicitly selected stdin credential lazily and
-once, after subcommand parsing but before password-capable operation setup;
+exists; strict-fidelity policy uses the dedicated `StrictFidelityRefused`
+subclass. The CLI maps it to exit 4 without pretending content validation ran,
+the synchronous API maps it to HTTP 422 with a structured report (async state
+is failed), and MCP returns an error result with that bounded report. The CLI
+resolves an explicitly selected stdin
+credential lazily and once, after subcommand parsing but before
+password-capable operation setup;
 this leaves help paths non-consuming. `EncryptedInputError` then lets the CLI
 apply its configured stdin/environment credential or perform one hidden
 interactive retry. POSIX uses `isatty()` for that decision; Windows additionally
@@ -295,9 +380,11 @@ exception values, private paths, document fragments, or parser details.
   outbound requests during document processing. It ships no telemetry, update
   check, or remote browser asset. The base/Lite closure already contains
   Uvicorn and python-multipart, so the resolved Standard-minus-Lite dependency
-  delta is FastAPI alone. Strict mode adds application-level rejection of
+  delta is FastAPI alone. Strict-offline adds application-level rejection of
   recognizable network filesystem paths and non-loopback serving; it is not
-  an OS network sandbox.
+  an OS network sandbox. Strict-fidelity is independent: it is a
+  pre-validation publication policy based on report assessment state and does
+  not add a network or parser sandbox.
 - Windows 11 x64 is the only locally executed release-hardening platform for
   the 2026-07-20 checkpoint. Portable/POSIX code and CI configuration do not
   establish Linux or macOS support without their own retained runner evidence.

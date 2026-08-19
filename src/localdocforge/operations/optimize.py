@@ -24,6 +24,9 @@ from typing import Any
 
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityBasis,
+    FidelityCoverage,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobContext,
@@ -34,10 +37,12 @@ from localdocforge.engines.adapters import OP_COMPRESS
 from localdocforge.engines.registry import default_registry
 from localdocforge.operations.organize import (
     OrganizeOptions,
+    _assess_signature_fields,
     _encryption_removed_warning,
     _enforce_page_limit,
-    _has_signature_fields,
     _open_pdf,
+    _signature_invalidated_fidelity_warning,
+    _signature_presence_uncertain_warning,
 )
 from localdocforge.pipelines.runner import (
     CandidateOutput,
@@ -160,7 +165,8 @@ def compress_pdf(
         with _open_pdf(source_path, options.password) as source:
             if source.is_encrypted:
                 security.append(_encryption_removed_warning(input_path.name))
-            if _has_signature_fields(source):
+            signature_assessment = _assess_signature_fields(source)
+            if signature_assessment.present:
                 security.append(
                     SecurityWarning(
                         code="signature-invalidated",
@@ -171,6 +177,9 @@ def compress_pdf(
                         severity=WarningSeverity.CRITICAL,
                     )
                 )
+                fidelity.append(_signature_invalidated_fidelity_warning("compress"))
+            elif signature_assessment.uncertain:
+                fidelity.append(_signature_presence_uncertain_warning("compress"))
             total = len(source.pages)
             _enforce_page_limit(context, total)
             context.emit("compress", total=total, message="rewriting document structure")
@@ -185,6 +194,8 @@ def compress_pdf(
                             "not analyze this document's resource usage safely"
                         ),
                         severity=WarningSeverity.INFO,
+                        basis=FidelityBasis.STRUCTURAL,
+                        impact=FidelityImpact.ADVISORY,
                     )
                 )
             staging = context.workspace / "compressed.pdf"
@@ -199,9 +210,7 @@ def compress_pdf(
 
         input_bytes = artifacts[0].size_bytes
         output_bytes = staging.stat().st_size
-        reduction_percent = (
-            round((1 - output_bytes / input_bytes) * 100, 2) if input_bytes else 0.0
-        )
+        reduction_percent = round((1 - output_bytes / input_bytes) * 100, 2) if input_bytes else 0.0
         if output_bytes >= input_bytes:
             fidelity.append(
                 FidelityWarning(
@@ -212,6 +221,8 @@ def compress_pdf(
                         "tightly compressed"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.ADVISORY,
                 )
             )
 
@@ -239,6 +250,7 @@ def compress_pdf(
                 )
             ],
             fidelity_warnings=fidelity,
+            fidelity_coverage=FidelityCoverage.PARTIAL,
             security_warnings=security,
             output_page_count=total,
             details={

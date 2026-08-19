@@ -25,6 +25,10 @@ from localdocforge.jobs.workspace import JobWorkspace
 class ToolRunError(RuntimeError):
     """Expected validation, policy, engine, timeout, or resource failure."""
 
+    def __init__(self, message: str, *, report: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.report = report
+
 
 class ToolInternalError(RuntimeError):
     """Unexpected worker/supervisor failure; never exposes its original text."""
@@ -136,7 +140,12 @@ async def run_tool_in_worker(
         raise ToolInternalError(outcome.error or "MCP worker failed internally") from None
     if outcome.status is not WorkerJobStatus.SUCCESS or outcome.report is None:
         message = outcome.error or "Document processing failed"
-        raise ToolRunError(message) from None
+        report = (
+            outcome.report.model_dump(mode="json")
+            if outcome.report is not None
+            else None
+        )
+        raise ToolRunError(message, report=report) from None
 
     report = outcome.report.model_dump(mode="json")
     if tool_name == "inspect":

@@ -9,6 +9,7 @@ from pathlib import Path
 from localdocforge.config.settings import Settings
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityCoverage,
     InputArtifact,
     JobContext,
     ProgressCallback,
@@ -96,7 +97,9 @@ def inspect_pdf_to_json(
             details={
                 "structural_engine": structural_info.name,
                 "text_inventory_engine": text_info.name,
+                "fidelity_scope": "non-mutating structural inventory; no document conversion",
             },
+            fidelity_coverage=FidelityCoverage.COMPLETE,
             output_page_count=inventory.get("page_count"),
         )
 

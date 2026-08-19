@@ -5,10 +5,11 @@ Order of events (see docs/ARCHITECTURE.md):
  2. enforce configured resource limits;
  3. create an isolated per-job workspace;
  4. run the operation, writing candidates only inside the workspace;
- 5. reopen and render-validate every generated PDF;
- 6. atomically publish validated candidates to their destinations;
- 7. produce a ConversionReport (JSON + human-readable);
- 8. clean the workspace on success, failure, and cancellation.
+ 5. assess fidelity, preflight candidate safety/limits, then enforce policy;
+ 6. reopen and render-validate every generated PDF;
+ 7. atomically publish validated candidates to their destinations;
+ 8. produce a ConversionReport (JSON + human-readable);
+ 9. clean the workspace on success, failure, and cancellation.
 
 Source files are never written to, and nothing appears at a destination
 unless it passed validation.
@@ -30,6 +31,8 @@ from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import (
     ArtifactKind,
     ConversionReport,
+    FidelityCoverage,
+    FidelityStatus,
     FidelityWarning,
     InputArtifact,
     JobCancelled,
@@ -63,6 +66,10 @@ class PipelineError(Exception):
         self.report = report
 
 
+class StrictFidelityRefused(PipelineError):
+    """The caller's fidelity policy rejected a staged result before publication."""
+
+
 @dataclass
 class CandidateOutput:
     """A file produced inside the workspace, awaiting validation + publish."""
@@ -88,6 +95,7 @@ class ExecuteResult:
     details: dict[str, Any] = field(default_factory=dict)
     security_warnings: list[SecurityWarning] = field(default_factory=list)
     fidelity_warnings: list[FidelityWarning] = field(default_factory=list)
+    fidelity_coverage: FidelityCoverage = FidelityCoverage.NONE
     output_page_count: int | None = None
 
 
@@ -215,6 +223,7 @@ def run_pipeline(
     report_details = dict(details or {})
     # This is authoritative runtime state, not caller-supplied descriptive data.
     report_details["strict_offline"] = settings.strict_offline
+    report_details["strict_fidelity"] = settings.strict_fidelity
     report = ConversionReport(
         operation=operation,
         status=ReportStatus.FAILED,
@@ -254,21 +263,31 @@ def run_pipeline(
         context.emit("execute", message=f"running {operation}")
         result = execute(context, inputs)
         report.details.update(result.details)
+        # Operation-specific details cannot overwrite authoritative policy
+        # state, even when a future in-tree producer accidentally reuses a key.
+        report.details["strict_offline"] = settings.strict_offline
+        report.details["strict_fidelity"] = settings.strict_fidelity
         report.security_warnings.extend(result.security_warnings)
-        report.fidelity_warnings.extend(result.fidelity_warnings)
+        report.set_fidelity_assessment(
+            coverage=result.fidelity_coverage,
+            warnings=(*report.fidelity_warnings, *result.fidelity_warnings),
+        )
         report.output_page_count = result.output_page_count
 
         if not result.candidates:
             raise PipelineError(f"{operation} produced no output", report)
 
-        # Resolve candidates once, before validation, and enforce the aggregate
-        # output bound before spending time rendering or publishing anything.
+        # Resolve candidates once and enforce safety invariants before applying
+        # result policy. A strict-fidelity refusal must not mask an escaped,
+        # missing, aliased, colliding, or oversized candidate.
         output_limit = settings.limits.max_output_bytes
         candidate_bytes = 0
         destinations: list[Path] = []
         input_paths = [artifact.path.resolve(strict=False) for artifact in inputs]
         for candidate in result.candidates:
             candidate.workspace_path = workspace.contain(candidate.workspace_path)
+            if not candidate.workspace_path.is_file():
+                raise PipelineError(f"{operation} produced a missing or non-file candidate", report)
             try:
                 candidate.destination = validate_path_before_access(
                     candidate.destination,
@@ -291,9 +310,15 @@ def run_pipeline(
                 )
             if any(_paths_alias(candidate.destination, prior) for prior in destinations):
                 raise PipelineError("Multiple outputs resolve to the same destination", report)
+            if candidate.destination.exists() and candidate.destination.is_dir():
+                raise PipelineError("Output destination is a directory", report)
+            existing_parent = candidate.destination.parent
+            while not existing_parent.exists() and existing_parent != existing_parent.parent:
+                existing_parent = existing_parent.parent
+            if existing_parent.exists() and not existing_parent.is_dir():
+                raise PipelineError("Output parent path is not a directory", report)
             destinations.append(candidate.destination)
-            if candidate.workspace_path.is_file():
-                candidate_bytes += candidate.workspace_path.stat().st_size
+            candidate_bytes += candidate.workspace_path.stat().st_size
             if output_limit is not None and candidate_bytes > output_limit:
                 raise PipelineError(
                     f"Generated outputs total {candidate_bytes:,} bytes, over the configured "
@@ -308,6 +333,15 @@ def run_pipeline(
                         f"Output already exists: {destination}. "
                         "Choose --collision rename or --collision overwrite."
                     )
+
+        if settings.strict_fidelity and report.fidelity_status is not FidelityStatus.NO_KNOWN_LOSS:
+            warning_codes = sorted({warning.code for warning in report.fidelity_warnings})
+            suffix = f" Warning codes: {', '.join(warning_codes)}." if warning_codes else ""
+            raise StrictFidelityRefused(
+                "Strict fidelity requires no-known-loss with complete assessment; "
+                f"found {report.fidelity_status.value}.{suffix}",
+                report,
+            )
 
         # Validate every candidate before anything is published.
         context.emit("validate", total=len(result.candidates))
@@ -386,6 +420,7 @@ def run_pipeline(
                         size_bytes=final_path.stat().st_size,
                         kind=candidate.kind,
                         page_count=pages,
+                        fidelity_status=report.fidelity_status,
                     )
                 )
         except BaseException:
@@ -412,7 +447,7 @@ def run_pipeline(
                 )
             raise
 
-        report.outputs = published
+        report.finalize_outputs(published)
         report.output_bytes = sum(artifact.size_bytes for artifact in published)
         report.status = ReportStatus.SUCCESS
         return report

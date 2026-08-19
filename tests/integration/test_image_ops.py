@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import get_type_hints
 
 import pikepdf
@@ -9,7 +10,14 @@ import pytest
 from PIL import Image
 
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ReportStatus, ResourceLimits
+from localdocforge.domain.models import (
+    FidelityBasis,
+    FidelityCoverage,
+    FidelityImpact,
+    FidelityStatus,
+    ReportStatus,
+    ResourceLimits,
+)
 from localdocforge.domain.pages import PageRange
 from localdocforge.jobs.workspace import CollisionPolicy
 from localdocforge.operations.images import (
@@ -21,14 +29,16 @@ from localdocforge.operations.images import (
     pdf_to_images,
     resolve_pdf_to_images_options,
 )
-from localdocforge.pipelines.runner import PipelineError
+from localdocforge.pipelines.runner import PipelineError, StrictFidelityRefused
 
 
 def page_sizes(path):
     with pikepdf.open(path) as pdf:
         return [
-            (round(float(p.mediabox[2]) - float(p.mediabox[0]), 1),
-             round(float(p.mediabox[3]) - float(p.mediabox[1]), 1))
+            (
+                round(float(p.mediabox[2]) - float(p.mediabox[0]), 1),
+                round(float(p.mediabox[3]) - float(p.mediabox[1]), 1),
+            )
             for p in pdf.pages
         ]
 
@@ -94,6 +104,180 @@ class TestImagesToPdf:
         (size,) = page_sizes(out)
         # 800x600 px at 200 dpi -> 288 x 216 pt
         assert abs(size[0] - 288.0) < 1 and abs(size[1] - 216.0) < 1
+        assert "image-fit-downscaled" not in fidelity_codes(report)
+        placement = report.details["placement_analysis"]
+        assert placement["frames_total"] == 1
+        assert placement["frames"][0]["linear_scale"] == 1.0
+        assert report.fidelity_coverage is FidelityCoverage.PARTIAL
+        assert placement["coverage"] == "complete"
+
+    def test_fixed_page_reports_severe_tall_image_downscale(self, tmp_path, out_dir):
+        source = tmp_path / "tall.png"
+        Image.new("RGB", (600, 6000), "white").save(source)
+        output = out_dir / "tall-a4.pdf"
+
+        report = images_to_pdf([source], output)
+
+        warning = next(
+            item for item in report.fidelity_warnings if item.code == "image-fit-downscaled"
+        )
+        assert warning.basis is FidelityBasis.STRUCTURAL
+        assert warning.impact is FidelityImpact.KNOWN_LOSS
+        assert warning.remedy is not None and "--page-size image" in warning.remedy
+        placement = report.details["placement_analysis"]
+        assert placement["heuristics_version"] == 1
+        assert placement["measurement_space"] == "output-raster-pixels/source-pixels"
+        assert placement["dpi_sensitive"] is True
+        assert placement["metric_precision_decimals"] == 6
+        assert placement["severe_downscale_threshold"] == 0.5
+        assert placement["severe_downscale_frames"] == 1
+        assert placement["aspect_distorted_frames"] == 0
+        assert placement["aspect_distortion_warning_scope"] == "stretch-only"
+        assert placement["frames_total"] == placement["frames_reported"] == 1
+        assert placement["truncated"] is False
+        assert placement["frames"][0]["linear_scale"] < 0.5
+        assert set(placement["frames"][0]) == {
+            "input_index",
+            "frame_index",
+            "source_width_px",
+            "source_height_px",
+            "placed_width_px",
+            "placed_height_px",
+            "linear_scale",
+            "width_scale",
+            "height_scale",
+            "aspect_distortion_ratio",
+        }
+        assert report.fidelity_status is FidelityStatus.KNOWN_LOSS
+
+    def test_downscale_threshold_is_strict_at_exact_boundary(self, tmp_path, out_dir):
+        source = tmp_path / "boundary.png"
+        # A4 at 200 DPI with the default 24 pt margins has a 2205 px inner height.
+        Image.new("RGB", (600, 4410), "white").save(source)
+
+        report = images_to_pdf([source], out_dir / "boundary.pdf")
+
+        assert report.details["placement_analysis"]["frames"][0]["linear_scale"] == 0.5
+        assert "image-fit-downscaled" not in fidelity_codes(report)
+
+    def test_stretch_reports_aspect_ratio_distortion(self, tmp_path, out_dir):
+        source = tmp_path / "narrow.png"
+        Image.new("RGB", (100, 2000), "white").save(source)
+
+        report = images_to_pdf(
+            [source],
+            out_dir / "stretched.pdf",
+            options=ImagesToPdfOptions(fit="stretch"),
+        )
+
+        warning = next(
+            item for item in report.fidelity_warnings if item.code == "image-aspect-distorted"
+        )
+        assert warning.basis is FidelityBasis.STRUCTURAL
+        assert warning.impact is FidelityImpact.KNOWN_LOSS
+        frame = report.details["placement_analysis"]["frames"][0]
+        assert frame["aspect_distortion_ratio"] > 1.01
+        assert report.details["placement_analysis"]["aspect_distorted_frames"] == 1
+
+    def test_placement_metrics_are_bounded_and_disclose_truncation(
+        self,
+        fixtures_dir,
+        out_dir,
+        monkeypatch,
+    ):
+        from localdocforge.operations import images as image_module
+
+        monkeypatch.setattr(image_module, "_MAX_REPORTED_PLACEMENT_FRAMES", 1)
+        output = out_dir / "bounded.pdf"
+        report = images_to_pdf(
+            [fixtures_dir / "images" / "scan-3page.tiff"],
+            output,
+            options=ImagesToPdfOptions(page_size="image"),
+        )
+
+        placement = report.details["placement_analysis"]
+        assert placement["frames_total"] == 3
+        assert placement["frames_reported"] == 1
+        assert placement["truncated"] is True
+        assert len(placement["frames"]) == 1
+        assert report.fidelity_coverage is FidelityCoverage.PARTIAL
+        assert placement["coverage"] == "complete"
+
+    def test_severe_frame_after_metrics_cap_still_emits_downscale_warning(
+        self,
+        tmp_path,
+        out_dir,
+        monkeypatch,
+    ):
+        from localdocforge.operations import images as image_module
+
+        monkeypatch.setattr(image_module, "_MAX_REPORTED_PLACEMENT_FRAMES", 1)
+        normal = tmp_path / "normal.png"
+        severe = tmp_path / "severe.png"
+        Image.new("RGB", (600, 600), "white").save(normal)
+        Image.new("RGB", (600, 6000), "white").save(severe)
+
+        report = images_to_pdf([normal, severe], out_dir / "bounded-risk.pdf")
+
+        placement = report.details["placement_analysis"]
+        assert placement["frames_total"] == 2
+        assert placement["frames_reported"] == 1
+        assert placement["frames"][0]["linear_scale"] >= 0.5
+        assert "image-fit-downscaled" in fidelity_codes(report)
+
+    def test_fit_quantization_does_not_claim_aspect_distortion(self, tmp_path, out_dir):
+        source = tmp_path / "extreme-aspect.png"
+        Image.new("RGB", (2, 5000), "white").save(source)
+
+        report = images_to_pdf(
+            [source],
+            out_dir / "extreme-fit.pdf",
+            options=ImagesToPdfOptions(fit="fit"),
+        )
+
+        assert "image-aspect-distorted" not in fidelity_codes(report)
+        placement = report.details["placement_analysis"]
+        assert placement["frames"][0]["aspect_distortion_ratio"] > 1.01
+        assert placement["aspect_distorted_frames"] == 0
+        assert placement["aspect_distortion_warning_scope"] == "stretch-only"
+
+    def test_placement_metrics_are_deterministic_and_path_free(self, tmp_path, out_dir):
+        source = tmp_path / "private-source-name.png"
+        Image.new("RGB", (240, 1200), "white").save(source)
+
+        first = images_to_pdf([source], out_dir / "first.pdf")
+        second = images_to_pdf([source], out_dir / "second.pdf")
+
+        first_analysis = first.details["placement_analysis"]
+        assert first_analysis == second.details["placement_analysis"]
+        serialized = json.dumps(first_analysis, sort_keys=True)
+        assert source.name not in serialized
+        assert str(source.parent) not in serialized
+
+    def test_strict_fidelity_refuses_known_loss_before_publication(
+        self,
+        fixtures_dir,
+        tmp_path,
+    ):
+        output = tmp_path / "strict.pdf"
+
+        with pytest.raises(StrictFidelityRefused) as caught:
+            images_to_pdf(
+                [fixtures_dir / "images" / "photo.jpg"],
+                output,
+                options=ImagesToPdfOptions(
+                    settings=Settings(
+                        strict_fidelity=True,
+                        jobs_root=tmp_path / "jobs",
+                    ),
+                ),
+            )
+
+        report = caught.value.report
+        assert report is not None
+        assert report.fidelity_status is FidelityStatus.KNOWN_LOSS
+        assert report.validation is None
+        assert not output.exists()
 
     def test_exif_orientation_respected(self, fixtures_dir, out_dir):
         out = out_dir / "exif.pdf"
@@ -147,18 +331,14 @@ class TestPdfToImages:
         preset = resolve_pdf_to_images_options(preset_options)
         assert preset == CONVERT_PRESETS["llm"] | {"dpi": 150}
 
-        explicit_defaults = PdfToImagesOptions(
-            image_format="png", dpi=150, jpeg_quality=90
-        )
+        explicit_defaults = PdfToImagesOptions(image_format="png", dpi=150, jpeg_quality=90)
         explicit_preset_defaults = PdfToImagesOptions(
             image_format="png", dpi=150, jpeg_quality=90, preset="llm"
         )
         assert options == explicit_defaults
         assert preset_options != explicit_preset_defaults
 
-        positional = PdfToImagesOptions(
-            "jpeg", 72, None, 80, CollisionPolicy.RENAME
-        )
+        positional = PdfToImagesOptions("jpeg", 72, None, 80, CollisionPolicy.RENAME)
         assert positional.collision is CollisionPolicy.RENAME
         assert positional.preset is None
 
@@ -171,9 +351,7 @@ class TestPdfToImages:
         assert resolved["max_dimension"] == CONVERT_PRESETS["llm"]["max_dimension"]
 
         explicit_legacy_defaults = resolve_pdf_to_images_options(
-            PdfToImagesOptions(
-                preset="llm", image_format="png", jpeg_quality=90, dpi=150
-            )
+            PdfToImagesOptions(preset="llm", image_format="png", jpeg_quality=90, dpi=150)
         )
         assert explicit_legacy_defaults["image_format"] == "png"
         assert explicit_legacy_defaults["quality"] == 90
@@ -181,9 +359,7 @@ class TestPdfToImages:
         assert explicit_legacy_defaults["max_dimension"] is None
 
     def test_explicit_dpi_disables_llm_pixel_cap(self):
-        resolved = resolve_pdf_to_images_options(
-            PdfToImagesOptions(preset="llm", dpi=200)
-        )
+        resolved = resolve_pdf_to_images_options(PdfToImagesOptions(preset="llm", dpi=200))
         assert resolved["dpi"] == 200
         assert resolved["max_dimension"] is None
         assert resolved["image_format"] == CONVERT_PRESETS["llm"]["image_format"]
@@ -238,9 +414,7 @@ class TestPdfToImages:
         assert renamed.details["dimensions"][0]["output_index"] == 0
         assert "output" not in renamed.details["dimensions"][0]
 
-    def test_llm_preset_caps_mixed_pages_without_upscaling_small_page(
-        self, fixtures_dir, out_dir
-    ):
+    def test_llm_preset_caps_mixed_pages_without_upscaling_small_page(self, fixtures_dir, out_dir):
         report = pdf_to_images(
             fixtures_dir / "mixed-sizes.pdf",
             out_dir,
@@ -270,9 +444,7 @@ class TestPdfToImages:
         assert details["dimensions"][2]["effective_dpi"] == 150.0
         assert "image-downscaled" in fidelity_codes(report)
 
-    def test_llm_preset_fractional_page_never_rounds_to_1569(
-        self, fixtures_dir, out_dir
-    ):
+    def test_llm_preset_fractional_page_never_rounds_to_1569(self, fixtures_dir, out_dir):
         report = pdf_to_images(
             fixtures_dir / "fractional-size.pdf",
             out_dir,
@@ -334,9 +506,7 @@ class TestPdfToImages:
         dpi_report = pdf_to_images(
             fixtures_dir / "mixed-sizes.pdf",
             out_dir / "dpi",
-            options=PdfToImagesOptions(
-                preset="llm", dpi=200, pages=PageRange(spec="1")
-            ),
+            options=PdfToImagesOptions(preset="llm", dpi=200, pages=PageRange(spec="1")),
         )
         with Image.open(dpi_report.outputs[0].path) as image:
             assert max(image.size) > CONVERT_PRESETS["llm"]["max_dimension"]
@@ -344,9 +514,7 @@ class TestPdfToImages:
         assert dpi_report.details["dpi_mode"] == "fixed"
         assert "image-downscaled" not in fidelity_codes(dpi_report)
 
-    def test_repeated_page_selection_gets_deterministic_unique_names(
-        self, fixtures_dir, out_dir
-    ):
+    def test_repeated_page_selection_gets_deterministic_unique_names(self, fixtures_dir, out_dir):
         report = pdf_to_images(
             fixtures_dir / "simple-3page.pdf",
             out_dir,

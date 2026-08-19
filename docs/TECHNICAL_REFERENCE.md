@@ -2,9 +2,9 @@
 
 The one-document consolidation of how LocalDocForge works, subsystem by
 subsystem, with the concrete constants, contracts, and invariants that the
-per-topic documents explain in prose. Written 2026-08-03 against the code as
-shipped (407-test suite and full release gate passing that day), with the S4
-PDF text-extraction and S6 Markdown-rendering surfaces updated on 2026-08-09. Where a
+per-topic documents explain in prose. Written 2026-08-03 against the then-current
+code, with the S4 PDF text-extraction and S6 Markdown-rendering surfaces updated
+on 2026-08-09 and the S10 fidelity contract updated on 2026-08-19. Where a
 per-topic document is the authority, it is linked; when this file and the code
 disagree, the code and its tests win.
 
@@ -14,7 +14,7 @@ Contents: [1 Stack](#1-system-identity-and-stack) · [2 Layout](#2-package-layou
 [6 Engines & capabilities](#6-engines-and-the-capability-registry) ·
 [7 Pipeline](#7-the-pipeline-lifecycle) · [8 Operations](#8-operation-catalog) ·
 [9 Limits](#9-resource-limits) · [10 Configuration](#10-configuration) ·
-[11 CLI](#11-cli) · [12 Local API](#12-local-api-and-worker-containment) ·
+[11 CLI](#11-cli) · [12 Local API/MCP](#12-local-interfaces-and-worker-containment) ·
 [13 Reporting](#13-reporting-and-scrubbing) · [14 Packaging](#14-packaging-and-reproducibility) ·
 [15 Testing](#15-testing-and-quality-gates) · [16 Security posture](#16-security-posture-in-one-view)
 
@@ -29,6 +29,7 @@ Contents: [1 Stack](#1-system-identity-and-stack) · [2 Layout](#2-package-layou
 | Renderer/text engine | pypdfium2 5.12.1 (PDFium 152.0.7947.0) | validation renders, PDF→images, compress pixel-compare, PDF→Markdown/text/JSONL, inspect text coverage |
 | Imaging | Pillow 12.x | image decode/encode, images→PDF, decompression-bomb guard |
 | Diagnostic PDF lib | pypdf (Full profile) | probed, used in tests; deliberately **not** an operation engine |
+| Agent interface | official MCP Python SDK over inherited stdio | synchronous serialized tools; spawned workers |
 | API service | FastAPI (Standard-only application layer) + Uvicorn/python-multipart (already present in the base MCP SDK closure) | loopback by default |
 | Build backend | setuptools==83.0.0, hash-pinned, isolated | see §14 |
 | Resolver/locks | uv 0.11.26 (pinned), SHA-256 marker-aware exports | see §14 |
@@ -49,12 +50,13 @@ src/localdocforge/
   jobs/        per-job workspaces, atomic publication, stale sweep
   engines/     adapter contract, live probes, capability registry
   pipelines/   runner.py — the one job lifecycle every operation uses
-  operations/  organize.py (structural) · optimize.py (compress) · images.py · text.py
+  operations/  organize.py (structural) · inspect.py · optimize.py (compress) · images.py · text.py
   validation/  pikepdf reopen + syntax + PDFium render; image/text checks
   reporting/   JSON + human report writers
   config/      LDF_* settings, precedence, strict-offline validation
   cli/         Typer app (`ldf` / `localdocforge`)
   api/         app.py (admission/transport/routes) · worker.py (containment)
+  mcp/         inherited-stdio server · generated tools · spawned runner
 ```
 
 Interfaces never call document engines directly; operations own engine calls
@@ -68,15 +70,23 @@ and hand an `execute()` closure to the pipeline runner.
   (`success`/`failed`/`cancelled`), `job_id`, `engine`+`engine_version`,
   `inputs`/`outputs` (path, media type, bytes, pages, optional sha256),
   byte/page totals, timing, `security_warnings`, `fidelity_warnings`,
-  `errors`, `validation` (per-check results), and operation-specific
-  `details`. Never contains document text or passwords; `pdf-to-md` puts only
+  `fidelity_coverage` (`none`/`partial`/`complete`), derived
+  `fidelity_status` (`unassessed`/`no-known-loss`/`review-required`/
+  `known-loss`), `errors`, `validation` (per-check results), and
+  operation-specific `details`. Every published `OutputArtifact` repeats the
+  conservative run-level fidelity status; it is not a per-artifact reassessment.
+  The report never contains document text or passwords; `pdf-to-md` puts only
   coverage counts, table status/counters, and warning codes in `details`.
   `to_human()` renders
   the CLI summary; it is a Pydantic model, so `--json` is just
   `model_dump_json()`.
-- `SecurityWarning` / `FidelityWarning` — stable `code` + message + severity
-  (`info`/`warning`/`critical`); fidelity warnings may carry a page number.
-  The code vocabulary is documented in `docs/CONVERSION_FIDELITY.md`.
+- `SecurityWarning` / `FidelityWarning` — stable `code` + message + display
+  severity (`info`/`warning`/`critical`). Fidelity warnings also classify
+  `basis` (`declared`/`structural`/`heuristic`) and verdict-driving `impact`
+  (`advisory`/`review`/`known-loss`), and may carry a page number and `remedy`.
+  Severity does not drive fidelity status; heuristic observations cannot claim
+  known loss. The code vocabulary is documented in
+  `docs/CONVERSION_FIDELITY.md`.
 - `JobContext` — runtime handle given to `execute()`: workspace path, limits,
   `check_cancelled()` (raises `JobCancelled` on cancel **or** cooperative
   timeout), and `emit()` for progress events.
@@ -174,7 +184,7 @@ them). `probe()` uses this runner for `<tool> --version`.
 
 ## 7. The pipeline lifecycle (`pipelines/runner.py`)
 
-Every operation runs the same eight steps (authoritative prose:
+Every operation runs the same nine steps (authoritative prose:
 `docs/ARCHITECTURE.md`):
 
 1. **Inputs**: strict-offline network-path refusal → signature sniff (or the
@@ -183,15 +193,23 @@ Every operation runs the same eight steps (authoritative prose:
    opening so encryption cannot bypass the page cap).
 2. **Workspace**: private `ldf-job-<uuid>`; `JobContext` carries limits +
    cancellation.
-3. **Execute**: the operation writes candidates only inside the workspace and
-   calls `check_cancelled()` between units of work (CLI timeouts are
-   cooperative; API preemption is the worker's job, §12).
-4. **Pre-publication boundaries**: canonicalize once; strict output policy,
-   `allowed_output_roots` containment, duplicate-destination and
+3. **Execute and assess**: the operation writes candidates only inside the
+   workspace, calls `check_cancelled()` between units of work, and returns
+   fidelity coverage plus classified warnings. The runner derives status
+   immediately (CLI timeouts are cooperative; API/MCP preemption belongs to
+   the worker boundary, §12).
+4. **Candidate safety and limit preflight**: canonicalize once; strict output
+   policy, `allowed_output_roots` containment, duplicate-destination and
    input-alias refusal; aggregate candidate bytes vs `max_output_bytes`
    (a publication limit, not a workspace quota).
-5. **Collision check** (`fail` short-circuits before any validation cost).
-6. **Validate every candidate** before anything is published:
+5. **Collision preflight**: `fail` short-circuits before either policy or
+   validation cost. Steps 4–5 precede fidelity enforcement so a strict refusal
+   cannot mask a missing, escaped, aliased, colliding, or oversized candidate.
+6. **Strict-fidelity policy**: when enabled, only `complete` coverage with the
+   derived `no-known-loss` status may proceed. All other states raise
+   `StrictFidelityRefused` before content validation/publication, leaving
+   `report.validation` null.
+7. **Validate every candidate** before anything is published:
    PDFs — nonempty, signature check, pikepdf reopen, ≥1 page, **zero parser
    syntax warnings** (repair is not silently performed), expected page count,
    PDFium render at scale 0.5 (~36 dpi): **all pages** for high-risk
@@ -201,28 +219,29 @@ Every operation runs the same eight steps (authoritative prose:
    fully decode. A deterministic per-candidate validator hook covers other
    media types: `pdf-to-md` requires strict UTF-8, coverage schema,
    anchor cardinality, and exact JSONL record/schema/count agreement.
-7. **Publish** all candidates atomically (§5); handled multi-output failure
+8. **Publish** all candidates atomically (§5); handled multi-output failure
    rolls back new files and restores overwrite backups (best-effort, not
    crash-transactional).
-8. **Report + cleanup**: `ConversionReport` finalized; workspace removed on
+9. **Report + cleanup**: `ConversionReport` finalized; workspace removed on
    every path; incomplete cleanup → critical warning.
 
 Failures raise `PipelineError` with the failed report attached
-(`error.report`); `EncryptedInputError` signals a password retry.
+(`error.report`); strict-fidelity refusal has its own subclass and
+`EncryptedInputError` signals a password retry.
 
 ## 8. Operation catalog
 
 | Operation | Engine | Mechanism and specifics |
 |---|---|---|
-| merge | pikepdf | whole files or per-input `PageRange`s appended into `pikepdf.new()`; docinfo copied from first source; form-field name-conflict detection; page-moving fidelity warnings (§8.1) |
-| split | pikepdf | per-token (`stem-pages-<token>.pdf`), every-N (`stem-part-NNN.pdf`), or per-page (`stem-page-NNN.pdf`); repeated selections get `-repeat-NNN` |
+| merge | pikepdf | whole files or per-input `PageRange`s appended into `pikepdf.new()`; docinfo copied from first source; form-field name-conflict detection; page-moving fidelity warnings and `partial` run-level assessment (§8.1) |
+| split | pikepdf | per-token (`stem-pages-<token>.pdf`), every-N (`stem-part-NNN.pdf`), or per-page (`stem-page-NNN.pdf`); repeated selections get `-repeat-NNN`; `partial` run-level assessment |
 | remove-pages | pikepdf | deletes in reverse order; **refuses** documents with outlines, forms/signatures, page labels, open actions, tagged structure, named destinations, or internal links it cannot safely rewrite; refuses emptying the document |
 | extract-pages / organize | pikepdf | copy selected/ordered pages to a new document (duplicates allowed in organize) |
-| rotate | pikepdf | relative `/Rotate` on selected pages; multiples of 90 only |
-| crop | pikepdf | sets `/CropBox`, clamped to the media box (`crop-clamped`); non-intersecting boxes refused; always emits `crop-is-not-redaction`; renders **all** pages at validation |
-| inspect | pikepdf + PDFium text API | read-only inventory: version, encryption, page count/sizes, annotations, outlines/AcroForm/attachments/JavaScript/open-action presence, docinfo, plus ordered per-page character/text-layer records and aggregate text coverage (no page text); configured page/decompressed-text/memory bounds apply |
-| compress | pikepdf (+ PDFium compare) | lossless only: `remove_unreferenced_resources()` (failure → `resource-cleanup-skipped`, info), then save with `compress_streams=True`, `stream_decode_level=generalized` (never decodes DCT/JPX image data), `object_stream_mode=generate`, `recompress_flate=True`, `deterministic_id=True`. Then ≤5 sampled pages of source and candidate are rendered identically (scale 1.0) and compared per-channel via `ImageChops.difference`; **any nonzero delta or size mismatch blocks publication**. `details.compression` reports exact bytes/reduction; `compress-no-reduction` (info) when output ≥ input. Presets `balanced`/`aggressive`/`archival` are refused |
-| images-to-pdf | Pillow | multipage-TIFF aware, EXIF orientation honored; fixed page sizes composed on a raster canvas at `dpi` (36–600), `fit`/`stretch`/`center`, alpha flattened onto `background`; `image` page size keeps the pixel grid; photographs pass one JPEG generation (`images-reencoded` info) |
+| rotate | pikepdf | relative `/Rotate` on selected pages; multiples of 90 only; declares `complete` fidelity assessment, with detected signature invalidation still forcing known loss |
+| crop | pikepdf | sets `/CropBox`, clamped to the media box (`crop-clamped`, review impact); non-intersecting boxes refused; always emits the independent security warning `crop-is-not-redaction`; renders **all** pages and declares `complete` fidelity assessment |
+| inspect | pikepdf + PDFium text API | read-only inventory: version, encryption, page count/sizes, annotations, outlines/AcroForm/attachments/JavaScript/open-action presence, docinfo, plus ordered per-page character/text-layer records and aggregate text coverage (no page text); configured page/decompressed-text/memory bounds apply; the pipeline-backed transport declares `complete`/`no-known-loss` for this scoped non-mutating inventory |
+| compress | pikepdf (+ PDFium compare) | lossless only: `remove_unreferenced_resources()` (failure → `resource-cleanup-skipped`, structural/advisory), then save with `compress_streams=True`, `stream_decode_level=generalized` (never decodes DCT/JPX image data), `object_stream_mode=generate`, `recompress_flate=True`, `deterministic_id=True`. Then ≤5 sampled pages of source and candidate are rendered identically (scale 1.0) and compared per-channel via `ImageChops.difference`; **any nonzero delta or size mismatch blocks publication**. `details.compression` reports exact bytes/reduction; `compress-no-reduction` is structural/advisory when output ≥ input. The run-level fidelity assessment remains `partial`; presets `balanced`/`aggressive`/`archival` are refused |
+| images-to-pdf | Pillow | multipage-TIFF aware, EXIF orientation honored; fixed page sizes composed on a raster canvas at `dpi` (36–600), `fit`/`stretch`/`center`, alpha flattened onto `background`; `image` page size keeps the source pixel grid. Every output is re-encoded (`images-reencoded`, declared known loss), so overall coverage remains `partial` and strict fidelity refuses publication. Placement analysis is separately complete across every frame: details retain the first 256 frame records plus all-frame totals; output-raster/source-pixel scale is DPI-sensitive, `<0.5` is known-loss downscaling, and `stretch` axis-ratio `>1.01` is known-loss distortion. `--page-size image` avoids the placement downscale but not re-encoding loss |
 | pdf-to-images | PDFium | 18–1200 dpi, PNG/JPEG/WebP/TIFF, page ranges; incremental pixel/byte limit checks; syntax-damaged inputs refused |
 | pdf-to-md | PDFium text API + pdfplumber (opt-in tables) | Streams selected occurrences one page at a time; UTF-8/LF + NFC; Markdown `<!-- ldf:page N -->`, TXT `--- ldf:page N ---` (or form-feed without anchors), or exact-schema JSONL. Top-to-bottom/left-to-right ordering and font-size headings are heuristics; no bidi repair or silent dehyphenation. Markdown-only `tables=True` uses explicit line grids, infers the first physical row as the GFM header, escapes backslashes/pipes/newlines, and uses pdfplumber as the sole text source inside each accepted region. Borderless, merged-cell, rotated, dense, overlapping, and low-confidence candidates remain flowed text. Per-page raw-character/memory preflight, 50,000-rectangle fallback, and fixed object/table bounds prevent unbounded layout work. Coverage/warning/table-counter metadata only in reports |
 | md-to-pdf | markdown-it-py + Typst ≥0.15.1 | Strict-UTF-8 CommonMark subset with GFM tables; known tokens become application-controlled Typst function calls and all untrusted values use a punctuation/control-escaping string serializer. A4/Letter/Legal, finite margin, optional outline/TOC. Preprocessing is capped at min(16 MiB, input bytes, memory/512, temporary/64), 100k lines, 250k tokens, and 256 image occurrences; detailed drops cap at 256 plus a summary. Relative contained raster images are signature-checked additional inputs, single-frame decoded, metadata-stripped, and normalized to neutral PNGs. Typst runs through the hardened subprocess runner with private root/home/temp/package paths, hard remaining-job timeout, bounded hidden diagnostics, static generated-source audit, empty-package and exact dependency-manifest checks. Post-compile `max_pages` plus full standard PDF validation apply. Unsupported constructs emit `markdown-construct-dropped`; font fallback emits `system-font-dependent` |
@@ -231,12 +250,40 @@ Failures raise `PipelineError` with the failed report attached
 
 Page-moving operations emit per-input codes for what this build does not yet
 rebuild (`outlines-dropped`, `form-fields-detached`, `attachments-dropped`,
-`xmp-metadata-dropped`, `page-labels-dropped`, `document-actions-dropped`,
-critical `signature-semantics-dropped`, `form-field-name-conflict`).
-Single-document rewrites (rotate/crop/compress) preserve those structures but
-emit critical `signature-invalidated` when signature fields exist and critical
-`input-encryption-removed` when an encrypted input yields an unprotected
-output. Full vocabulary: `docs/CONVERSION_FIDELITY.md`.
+`xmp-metadata-dropped`, `page-labels-dropped`,
+`tagged-structure-dropped`, `named-destinations-dropped`,
+`document-actions-dropped`, critical `signature-semantics-dropped`, and
+`form-field-name-conflict`). `internal-links-may-break` is structural review,
+not asserted loss, with an explicit verification remedy. The page-removal path
+refuses outlines, forms/signatures, page labels, open actions, tagged structure,
+named destinations, and internal links rather than silently moving them.
+
+Single-document rewrites (rotate/crop/compress, and OCR when available)
+preserve more document structure, but detected signature fields produce both a
+critical security warning and a structural, known-loss
+`signature-invalidated` fidelity warning with a re-signing remedy.
+Malformed signature-bearing structures that prevent a complete field/widget/
+catalog-permission assessment emit heuristic-review
+`signature-presence-uncertain`, so strict mode cannot fail open.
+`input-encryption-removed` remains a critical security warning when an encrypted
+input yields an unprotected output. Full vocabulary:
+`docs/CONVERSION_FIDELITY.md`.
+
+Run-level status is derived, never caller-selected:
+
+| Condition (in precedence order) | `fidelity_status` |
+|---|---|
+| Any warning has `impact=known-loss` | `known-loss` |
+| Otherwise, any warning has `impact=review` | `review-required` |
+| Otherwise, `fidelity_coverage=complete` | `no-known-loss` |
+| Otherwise | `unassessed` |
+
+Advisory warnings do not prevent `no-known-loss` when coverage is complete.
+Conversely, no warning plus `none` or `partial` coverage remains `unassessed`.
+`no-known-loss` means only that the declared assessment completed without a
+known or review-level observation; it does not promise exact identity.
+Security warnings remain an independent channel and do not change this status,
+so strict-fidelity callers must still inspect them.
 
 Text extraction emits at most one aggregate entry for each of
 `no-text-layer`, `headings-inferred`, `reading-order-uncertain`,
@@ -290,7 +337,8 @@ budget and `max_memory_bytes // 64`; over-limit candidates stay flowed text.
 
 Precedence: constructor/CLI flags → `LDF_`-prefixed environment (`__` nesting)
 → private-by-default built-ins. Key fields: `strict_offline` (also honored
-from `LDF_STRICT_OFFLINE` when the flag is absent), `jobs_root`, `collision`
+from `LDF_STRICT_OFFLINE` when the flag is absent), `strict_fidelity` (also
+honored from `LDF_STRICT_FIDELITY`), `jobs_root`, `collision`
 (`fail`/`rename`/`overwrite`), `allowed_output_roots` (optional output jail;
 empty list denies everything), `limits`, `bind_host`=127.0.0.1,
 `bind_port`=8477, and the API admission caps (§12.3). A validator rejects
@@ -298,13 +346,21 @@ non-positive admission values and applies strict path policy to configured
 roots. Library callers pass explicit `Settings` via the options objects
 instead of mutating the environment.
 
+These strict settings are orthogonal. `strict_offline` rejects recognizable
+network paths/non-loopback serving and enables application socket guards where
+document workers support them; it is not an OS firewall. `strict_fidelity`
+controls publication from the derived assessment state; it does not alter
+network access, parser hardening, or claim perfect output.
+
 ## 11. CLI (`cli/main.py`)
 
 - Entry points `ldf` and `localdocforge`; global flags before the command:
-  `--json`, `--quiet`, `--password-stdin`, `--strict-offline`, `--report-dir`,
-  `--version`.
+  `--json`, `--quiet`, `--password-stdin`, `--strict-offline`,
+  `--strict-fidelity`, `--report-dir`, `--version`.
 - Exit codes: 0 success · 1 operation failed · 2 usage · 3 no engine ·
-  4 output validation failed · 5 collision · 130 cancelled/timeout.
+  4 output validation or strict-fidelity policy failed · 5 collision ·
+  130 cancelled/timeout. A strict refusal happens before validation, so its
+  structured report has `validation=null`.
 - Encrypted-input precedence is UTF-8 `--password-stdin` →
   `LDF_PASSWORD` → one hidden TTY prompt/retry. Password values are never CLI
   arguments or report/log output; a non-interactive invocation without either
@@ -323,7 +379,7 @@ instead of mutating the environment.
   them entirely under strict-offline, and translates Windows Ctrl+Break into
   the graceful shutdown path (exit 0, session lease released).
 
-## 12. Local API and worker containment (`api/`)
+## 12. Local interfaces and worker containment
 
 ### 12.1 Session and authentication
 
@@ -341,7 +397,7 @@ responses.
 
 ```text
 GET  /                       status shell (sets cookie)
-GET  /api/health             status, version, strict_offline, loopback_only
+GET  /api/health             status, version, both strict states, loopback_only
 GET  /api/capabilities       registry-backed capability gating
 POST /api/jobs/{operation}   multipart 'files' + per-op string fields → 201
                              (Prefer: respond-async / ?async=true → 202)
@@ -353,12 +409,17 @@ POST /api/jobs/{id}/cancel   terminate the contained worker tree
 DELETE /api/jobs/{id}        delete private files, forget the job
 ```
 
-Operations = the twelve worker-backed conversion operations; allowed form fields per operation are
-allowlisted (`_OPERATION_PARAMS`) — unknown/duplicate/out-of-range fields are
-422. `pdf-to-md` honors `pages`, `format`, `page_anchors`, strict boolean
-`tables`, and `password` (`md`/true/false defaults); `tables=true` with a
-non-Markdown format is 422. Job states: `queued, running, success, failed, cancelled, timed_out,
-crashed, limit_exceeded`.
+Operations = the fourteen worker-backed conversion operations; allowed form
+fields per operation are allowlisted (`_OPERATION_PARAMS`) — unknown,
+duplicate, or out-of-range fields are
+422. Every operation shares the strict boolean `strict_fidelity`. Per-call
+`true` strengthens publication policy, while `false` cannot weaken a
+server-wide strict setting. A policy refusal is HTTP 422 with the sanitized
+failed report in the synchronous flow; an async job ends failed with that
+report. `pdf-to-md` honors `pages`, `format`, `page_anchors`, strict
+boolean `tables`, and `password` (`md`/true/false defaults); `tables=true` with
+a non-Markdown format is 422. Job states: `queued`, `running`, `success`,
+`failed`, `cancelled`, `timed_out`, `crashed`, and `limit_exceeded`.
 
 ### 12.3 Admission and transport
 
@@ -386,13 +447,16 @@ process never parses document bytes. Sequence:
 3. Gate opens (`document_gate=opened_after_containment`); the child scrubs
    its environment (temp/home redirected into the job tree, secrets dropped),
    silences stdout/stderr, optionally installs the Python socket guard
-   (strict mode), then runs the normal pipeline with outputs jailed to the
+   (strict-offline mode), then runs the normal pipeline with outputs jailed to the
    job's `out/` directory.
 4. IPC is JSON-framed, 1 MiB-capped, kinds `ready | progress | result |
    failure | fatal | probe_result`; every message is validated, and progress/
    reports/errors are scrubbed of paths and secrets before crossing.
    Passwords travel only in the private spawn channel and are cleared from
-   parent state at completion.
+   parent state at completion. Both HTTP success and failure reports use the
+   bounded report compactor; download basenames remain a separate success
+   field. A complete envelope that still exceeds 1 MiB becomes an explicit
+   422 metadata-limit failure, never a silent success-to-fatal substitution.
 5. The parent watchdog (50 ms cadence) enforces wall clock, Job-accounting
    CPU, sampled temporary and output directory sizes, and (Linux) descendant
    count; violations terminate the tree with a specific terminal state. A
@@ -414,6 +478,26 @@ process never parses document bytes. Sequence:
 The worker is a **failure and resource boundary with the user's filesystem
 authority — not an OS sandbox** (`docs/THREAT_MODEL.md`).
 
+### 12.5 MCP inherited-stdio interface (`mcp/`)
+
+`ldf mcp` uses the MCP 2025-11-25 compatibility profile. Tool definitions are
+generated from implemented `CAPABILITY_SPECS`; calls require absolute paths,
+are synchronous and serialized, and do not stream progress in v1. Stdout is
+reserved for bounded strict-UTF-8 newline protocol frames. The inherited local
+pipe is the same-user trust boundary, so there is no token layer.
+
+Every tool call is schema-validated in the server and again in a fresh spawned
+worker using the same containment controller and operation/pipeline contracts
+as the API. The shared `strict_fidelity` boolean may strengthen a call but
+cannot weaken `Settings.strict_fidelity=true`. Successful calls return
+`structuredContent` containing outputs, the report, and containment metadata;
+`inspect` consumes its private JSON transport artifact and exposes the scoped
+inventory directly, with `complete`/`no-known-loss` assessment for that
+non-mutating inventory. Expected operation or strict-policy failures set
+`isError=true` and retain the sanitized failed report when one exists. Report
+compaction preserves `fidelity_status`, `fidelity_coverage`, and a decisive
+review/known-loss warning rather than leaving only an error string.
+
 ## 13. Reporting and scrubbing
 
 `reporting/writers.py::write_report_files` emits `<basename>.report.json` +
@@ -421,9 +505,16 @@ authority — not an OS sandbox** (`docs/THREAT_MODEL.md`).
 user-selected files; API serialization replaces every path with its basename
 and recursively scrubs the private session root and secrets. Public API
 pipeline errors pass an allowlist of safe policy prefixes (limits, collisions,
-strict-offline, aliasing); anything parser-derived is genericized to
-"Document processing failed". Unexpected worker errors cross IPC only as
-generic `fatal` messages.
+strict-offline, strict-fidelity, aliasing); anything parser-derived is
+genericized to "Document processing failed". Unexpected worker errors cross
+IPC only as generic `fatal` messages.
+
+JSON and human reports always expose the derived fidelity status and assessment
+coverage. JSON warning objects include basis, impact, severity, and any remedy;
+the compact human report displays severity/impact and remedy. API and MCP
+failure serialization keeps the structured assessment when a pipeline
+report exists, including strict refusals that deliberately have no validation
+result.
 
 For text extraction, the artifact — not stdout, report files, progress, or IPC
 — is the fidelity channel. Reports expose the bounded coverage schema and

@@ -12,7 +12,11 @@ import pytest
 from pypdf import PdfReader
 
 from localdocforge.config.settings import Settings
-from localdocforge.domain.models import ReportStatus
+from localdocforge.domain.models import (
+    FidelityCoverage,
+    FidelityStatus,
+    ReportStatus,
+)
 from localdocforge.domain.pages import PageRange
 from localdocforge.jobs.workspace import CollisionPolicy
 from localdocforge.operations.organize import (
@@ -222,9 +226,26 @@ class TestRotate:
         out = out_dir / "rotated.pdf"
         report = rotate_pages(fixtures_dir / "simple-3page.pdf", out, degrees=90)
         assert report.status == ReportStatus.SUCCESS
+        assert report.fidelity_coverage is FidelityCoverage.COMPLETE
+        assert report.fidelity_status is FidelityStatus.NO_KNOWN_LOSS
         with pikepdf.open(out) as pdf:
             for page in pdf.pages:
                 assert int(page.obj.get("/Rotate", 0)) == 90
+
+    def test_strict_fidelity_has_a_real_success_path(self, fixtures_dir, tmp_path):
+        out = tmp_path / "strict-rotated.pdf"
+        report = rotate_pages(
+            fixtures_dir / "simple-3page.pdf",
+            out,
+            degrees=90,
+            options=OrganizeOptions(
+                settings=Settings(strict_fidelity=True, jobs_root=tmp_path / "jobs")
+            ),
+        )
+
+        assert report.status is ReportStatus.SUCCESS
+        assert report.fidelity_status is FidelityStatus.NO_KNOWN_LOSS
+        assert out.is_file()
 
     def test_rotate_selected_pages_is_relative(self, fixtures_dir, out_dir):
         out = out_dir / "rotated-relative.pdf"
@@ -259,6 +280,8 @@ class TestCrop:
             fixtures_dir / "simple-3page.pdf", out, box=(0, 0, 5000, 5000)
         )
         assert any(w.code == "crop-clamped" for w in report.fidelity_warnings)
+        assert report.fidelity_coverage is FidelityCoverage.COMPLETE
+        assert report.fidelity_status is FidelityStatus.REVIEW_REQUIRED
         with pikepdf.open(out) as pdf:
             box = [float(v) for v in pdf.pages[0].obj["/CropBox"]]
             media = [float(v) for v in pdf.pages[0].mediabox]

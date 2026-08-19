@@ -19,6 +19,9 @@ from typing import Any
 from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import (
     ConversionReport,
+    FidelityBasis,
+    FidelityCoverage,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobContext,
@@ -54,6 +57,12 @@ IMAGE_MEDIA_TYPES = (
 
 _heif_opener_registered = False
 
+_IMAGE_PLACEMENT_HEURISTICS_VERSION = 1
+_SEVERE_DOWNSCALE_THRESHOLD = 0.5
+_ASPECT_DISTORTION_RATIO_THRESHOLD = 1.01
+_PLACEMENT_METRIC_DECIMALS = 6
+_MAX_REPORTED_PLACEMENT_FRAMES = 256
+
 
 def _ensure_heif_opener() -> None:
     """Register the decode-only HEIF plugin with Pillow exactly once.
@@ -73,6 +82,7 @@ def _ensure_heif_opener() -> None:
         ) from exc
     register_heif_opener()
     _heif_opener_registered = True
+
 
 #: Named page sizes in PDF points (1 pt = 1/72 in).
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
@@ -151,7 +161,7 @@ def _compose_page(
     options: ImagesToPdfOptions,
     max_pixels: int | None,
 ):
-    """Place ``image`` on a page canvas of ``size_pt`` according to fit mode."""
+    """Place an image and return its canvas plus privacy-safe scale metrics."""
     from PIL import Image, ImageOps
 
     scale = options.dpi / 72.0
@@ -185,11 +195,23 @@ def _compose_page(
                 margin_px + (inner[0] - placed.width) // 2,
                 margin_px + (inner[1] - placed.height) // 2,
             )
+        placed_size = (placed.width, placed.height)
+        width_scale = placed.width / image.width
+        height_scale = placed.height / image.height
+        linear_scale = min(width_scale, height_scale)
+        aspect_distortion_ratio = max(width_scale, height_scale) / linear_scale
         canvas.paste(placed, offset, placed if "A" in placed.getbands() else None)
     finally:
         if placed is not image:
             placed.close()
-    return canvas
+    return (
+        canvas,
+        placed_size,
+        linear_scale,
+        width_scale,
+        height_scale,
+        aspect_distortion_ratio,
+    )
 
 
 def _flatten_alpha(image, background: str):
@@ -229,30 +251,59 @@ def images_to_pdf(
         fidelity: list[FidelityWarning] = [
             FidelityWarning(
                 code="images-reencoded",
-                message="Images are re-encoded while composing PDF pages; for "
-                "photographs this is a lossy JPEG step",
-                severity="info",
+                message=(
+                    "Image page pixels are re-encoded as JPEG while composing the PDF; "
+                    "original image bytes are not preserved."
+                ),
+                severity=WarningSeverity.WARNING,
+                basis=FidelityBasis.DECLARED,
+                impact=FidelityImpact.KNOWN_LOSS,
+                remedy="Retain the original image files when exact source bytes are required.",
             )
         ]
         pages = []
         decompressed_bytes = 0
+        placement_frames: list[dict[str, int | float]] = []
+        placement_frames_total = 0
+        severe_downscale_frames = 0
+        aspect_distorted_frames = 0
         try:
             for index, artifact in enumerate(artifacts):
                 context.emit(
                     "compose", current=index, total=len(artifacts), message=artifact.path.name
                 )
-                for frame in _load_image_pages(
-                    artifact.path, context.limits.max_image_pixels, artifact.media_type
+                for frame_index, frame in enumerate(
+                    _load_image_pages(
+                        artifact.path,
+                        context.limits.max_image_pixels,
+                        artifact.media_type,
+                    ),
+                    1,
                 ):
                     context.check_cancelled()
+                    source_width, source_height = frame.size
                     try:
-                        page = (
-                            _flatten_alpha(frame, options.background)
-                            if size_pt is None
-                            else _compose_page(
-                                frame, size_pt, options, context.limits.max_image_pixels
+                        if size_pt is None:
+                            page = _flatten_alpha(frame, options.background)
+                            placed_size = page.size
+                            linear_scale = 1.0
+                            width_scale = 1.0
+                            height_scale = 1.0
+                            aspect_distortion_ratio = 1.0
+                        else:
+                            (
+                                page,
+                                placed_size,
+                                linear_scale,
+                                width_scale,
+                                height_scale,
+                                aspect_distortion_ratio,
+                            ) = _compose_page(
+                                frame,
+                                size_pt,
+                                options,
+                                context.limits.max_image_pixels,
                             )
-                        )
                     except BaseException:
                         frame.close()
                         raise
@@ -266,6 +317,41 @@ def images_to_pdf(
                             f"Decoded image pages exceed the configured {byte_limit:,}-byte limit"
                         )
                     pages.append(page)
+                    placement_frames_total += 1
+                    reported_linear_scale = round(linear_scale, _PLACEMENT_METRIC_DECIMALS)
+                    reported_width_scale = round(width_scale, _PLACEMENT_METRIC_DECIMALS)
+                    reported_height_scale = round(height_scale, _PLACEMENT_METRIC_DECIMALS)
+                    reported_aspect_distortion_ratio = round(
+                        aspect_distortion_ratio,
+                        _PLACEMENT_METRIC_DECIMALS,
+                    )
+                    # Compare the same bounded values that the report exposes,
+                    # so a consumer can reproduce every threshold decision.
+                    if reported_linear_scale < _SEVERE_DOWNSCALE_THRESHOLD:
+                        severe_downscale_frames += 1
+                    if (
+                        options.fit == "stretch"
+                        and reported_aspect_distortion_ratio
+                        > _ASPECT_DISTORTION_RATIO_THRESHOLD
+                    ):
+                        aspect_distorted_frames += 1
+                    if len(placement_frames) < _MAX_REPORTED_PLACEMENT_FRAMES:
+                        placement_frames.append(
+                            {
+                                "input_index": index + 1,
+                                "frame_index": frame_index,
+                                "source_width_px": source_width,
+                                "source_height_px": source_height,
+                                "placed_width_px": placed_size[0],
+                                "placed_height_px": placed_size[1],
+                                "linear_scale": reported_linear_scale,
+                                "width_scale": reported_width_scale,
+                                "height_scale": reported_height_scale,
+                                "aspect_distortion_ratio": (
+                                    reported_aspect_distortion_ratio
+                                ),
+                            }
+                        )
                     page_limit = context.limits.max_pages
                     if page_limit is not None and len(pages) > page_limit:
                         raise PipelineError(
@@ -287,6 +373,38 @@ def images_to_pdf(
         finally:
             for page in pages:
                 page.close()
+        placement_truncated = placement_frames_total > len(placement_frames)
+        if severe_downscale_frames:
+            fidelity.append(
+                FidelityWarning(
+                    code="image-fit-downscaled",
+                    message=(
+                        f"{severe_downscale_frames} fixed-page image frame(s) were placed below "
+                        f"the {_SEVERE_DOWNSCALE_THRESHOLD:g} linear-scale threshold."
+                    ),
+                    severity=WarningSeverity.WARNING,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
+                    remedy=(
+                        "Use --page-size image to preserve source pixel dimensions, or raise "
+                        "--dpi within the configured resource limits."
+                    ),
+                )
+            )
+        if aspect_distorted_frames:
+            fidelity.append(
+                FidelityWarning(
+                    code="image-aspect-distorted",
+                    message=(
+                        f"{aspect_distorted_frames} image frame(s) changed aspect ratio beyond "
+                        f"the {_ASPECT_DISTORTION_RATIO_THRESHOLD:g} threshold."
+                    ),
+                    severity=WarningSeverity.WARNING,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
+                    remedy="Use --fit fit or --fit center to preserve the source aspect ratio.",
+                )
+            )
         return ExecuteResult(
             candidates=[
                 CandidateOutput(
@@ -297,6 +415,11 @@ def images_to_pdf(
                 )
             ],
             fidelity_warnings=fidelity,
+            # Placement is measured for every frame, but this operation does
+            # not yet inventory every source-image metadata/profile transform.
+            # Keep the run-level contract conservative while exposing complete
+            # placement sub-coverage below.
+            fidelity_coverage=FidelityCoverage.PARTIAL,
             output_page_count=page_count,
             details={
                 "page_size": options.page_size,
@@ -306,6 +429,22 @@ def images_to_pdf(
                 "dpi": options.dpi,
                 "jpeg_quality": options.jpeg_quality,
                 "source_images": len(inputs),
+                "placement_analysis": {
+                    "heuristics_version": _IMAGE_PLACEMENT_HEURISTICS_VERSION,
+                    "measurement_space": "output-raster-pixels/source-pixels",
+                    "dpi_sensitive": True,
+                    "metric_precision_decimals": _PLACEMENT_METRIC_DECIMALS,
+                    "severe_downscale_threshold": _SEVERE_DOWNSCALE_THRESHOLD,
+                    "aspect_distortion_ratio_threshold": (_ASPECT_DISTORTION_RATIO_THRESHOLD),
+                    "aspect_distortion_warning_scope": "stretch-only",
+                    "severe_downscale_frames": severe_downscale_frames,
+                    "aspect_distorted_frames": aspect_distorted_frames,
+                    "frames_total": placement_frames_total,
+                    "frames_reported": len(placement_frames),
+                    "truncated": placement_truncated,
+                    "coverage": "complete",
+                    "frames": placement_frames,
+                },
             },
         )
 
@@ -392,14 +531,12 @@ class PdfToImagesOptions:
         preset_sensitive = self.preset is not None
         return (
             self.image_format,
-            preset_sensitive
-            and isinstance(self.image_format, _ImplicitOptionString),
+            preset_sensitive and isinstance(self.image_format, _ImplicitOptionString),
             self.dpi,
             preset_sensitive and isinstance(self.dpi, _ImplicitOptionInteger),
             self.pages,
             self.jpeg_quality,
-            preset_sensitive
-            and isinstance(self.jpeg_quality, _ImplicitOptionInteger),
+            preset_sensitive and isinstance(self.jpeg_quality, _ImplicitOptionInteger),
             self.collision,
             self.settings,
             self.progress,
@@ -430,11 +567,7 @@ def resolve_pdf_to_images_options(options: PdfToImagesOptions) -> dict[str, Any]
                 if isinstance(options.jpeg_quality, _ImplicitOptionInteger)
                 else options.jpeg_quality
             ),
-            "dpi": (
-                None
-                if isinstance(options.dpi, _ImplicitOptionInteger)
-                else options.dpi
-            ),
+            "dpi": (None if isinstance(options.dpi, _ImplicitOptionInteger) else options.dpi),
         },
     )
     if not isinstance(options.dpi, _ImplicitOptionInteger):
@@ -466,10 +599,7 @@ def _pdf_render_geometry(
 ) -> tuple[float, int, int, bool]:
     """Return cap-safe PDFium scale, ceil dimensions, and whether capped."""
     if not (
-        math.isfinite(width_pt)
-        and math.isfinite(height_pt)
-        and width_pt > 0
-        and height_pt > 0
+        math.isfinite(width_pt) and math.isfinite(height_pt) and width_pt > 0 and height_pt > 0
     ):
         raise PipelineError("PDF page dimensions must be finite and positive")
 
@@ -508,8 +638,7 @@ def pdf_to_images(
     format_key = str(resolved["image_format"]).lower()
     if format_key not in _FORMAT_INFO:
         raise PipelineError(
-            f"Unsupported image format {resolved['image_format']!r}; "
-            "use png, jpeg, webp, or tiff"
+            f"Unsupported image format {resolved['image_format']!r}; use png, jpeg, webp, or tiff"
         )
     pil_format, media_type, extension = _FORMAT_INFO[format_key]
     dpi = int(resolved["dpi"])
@@ -577,13 +706,11 @@ def pdf_to_images(
                 image = None
                 try:
                     width_pt, height_pt = page.get_size()
-                    scale, predicted_width, predicted_height, capped = (
-                        _pdf_render_geometry(
-                            width_pt,
-                            height_pt,
-                            dpi=dpi,
-                            max_dimension=max_dimension,
-                        )
+                    scale, predicted_width, predicted_height, capped = _pdf_render_geometry(
+                        width_pt,
+                        height_pt,
+                        dpi=dpi,
+                        max_dimension=max_dimension,
                     )
                     pixel_count = predicted_width * predicted_height
                     pixel_limit = context.limits.max_image_pixels
@@ -653,8 +780,7 @@ def pdf_to_images(
                 output_limit = context.limits.max_output_bytes
                 if output_limit is not None and output_bytes > output_limit:
                     raise PipelineError(
-                        f"Generated images exceed the configured {output_limit:,}-byte output "
-                        "limit"
+                        f"Generated images exceed the configured {output_limit:,}-byte output limit"
                     )
                 candidates.append(
                     CandidateOutput(
@@ -686,6 +812,12 @@ def pdf_to_images(
                         f"{max_dimension} px on the long edge by preset {options.preset!r}"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
+                    remedy=(
+                        "Increase --max-dimension, choose a higher-resolution preset, or "
+                        "render without a dimension cap within configured resource limits."
+                    ),
                 )
             )
         return ExecuteResult(
@@ -804,8 +936,7 @@ def convert_images(
     format_key = str(resolved["image_format"]).lower()
     if format_key not in _FORMAT_INFO:
         raise PipelineError(
-            f"Unsupported image format {resolved['image_format']!r}; "
-            "use png, jpeg, webp, or tiff"
+            f"Unsupported image format {resolved['image_format']!r}; use png, jpeg, webp, or tiff"
         )
     pil_format, media_type, extension = _FORMAT_INFO[format_key]
     quality = int(resolved["quality"])
@@ -840,9 +971,7 @@ def convert_images(
         heif_decoded = False
 
         for index, artifact in enumerate(artifacts):
-            context.emit(
-                "convert", current=index, total=len(artifacts), message=artifact.path.name
-            )
+            context.emit("convert", current=index, total=len(artifacts), message=artifact.path.name)
             context.check_cancelled()
             if artifact.media_type == "image/heif":
                 _ensure_heif_opener()
@@ -853,9 +982,7 @@ def convert_images(
             try:
                 with Image.open(artifact.path) as source:
                     frame_total = getattr(source, "n_frames", 1)
-                    for frame_index, raw_frame in enumerate(
-                        ImageSequence.Iterator(source)
-                    ):
+                    for frame_index, raw_frame in enumerate(ImageSequence.Iterator(source)):
                         context.check_cancelled()
 
                         def swap(current, replacement):
@@ -871,8 +998,7 @@ def convert_images(
                             exif_bytes = frame.info.get("exif")
                             icc_bytes = frame.info.get("icc_profile")
                             has_xmp = bool(
-                                frame.info.get("xmp")
-                                or frame.info.get("XML:com.adobe.xmp")
+                                frame.info.get("xmp") or frame.info.get("XML:com.adobe.xmp")
                             )
                             gps_present = False
                             if exif_bytes:
@@ -896,8 +1022,7 @@ def convert_images(
                                 icc_bytes = None  # already sRGB; the tag adds nothing
 
                             if max_dimension is not None and (
-                                frame.width > max_dimension
-                                or frame.height > max_dimension
+                                frame.width > max_dimension or frame.height > max_dimension
                             ):
                                 frame = swap(
                                     frame,
@@ -909,14 +1034,10 @@ def convert_images(
                                 )
                                 downscaled += 1
 
-                            has_alpha = (
-                                "A" in frame.getbands() or "transparency" in frame.info
-                            )
+                            has_alpha = "A" in frame.getbands() or "transparency" in frame.info
                             if pil_format == "JPEG":
                                 if has_alpha:
-                                    flattened = Image.new(
-                                        "RGB", frame.size, options.background
-                                    )
+                                    flattened = Image.new("RGB", frame.size, options.background)
                                     rgba = frame.convert("RGBA")
                                     try:
                                         flattened.paste(rgba, (0, 0), rgba)
@@ -933,9 +1054,7 @@ def convert_images(
                                     frame.convert("RGBA" if has_alpha else "RGB"),
                                 )
 
-                            decompressed_bytes += (
-                                frame.width * frame.height * len(frame.getbands())
-                            )
+                            decompressed_bytes += frame.width * frame.height * len(frame.getbands())
                             byte_limit = context.limits.max_decompressed_bytes
                             if byte_limit is not None and decompressed_bytes > byte_limit:
                                 raise PipelineError(
@@ -1005,13 +1124,15 @@ def convert_images(
                 code="image-reencoded",
                 message=(
                     f"Outputs are re-encoded as {format_key.upper()}"
-                    + (
-                        f" at quality {quality} (lossy)"
-                        if pil_format in ("JPEG", "WEBP")
-                        else ""
-                    )
+                    + (f" at quality {quality} (lossy)" if pil_format in ("JPEG", "WEBP") else "")
                 ),
                 severity=WarningSeverity.INFO,
+                basis=FidelityBasis.DECLARED,
+                impact=(
+                    FidelityImpact.KNOWN_LOSS
+                    if pil_format in ("JPEG", "WEBP")
+                    else FidelityImpact.REVIEW
+                ),
             )
         ]
         if downscaled:
@@ -1023,6 +1144,11 @@ def convert_images(
                         f"{max_dimension} px on the long edge"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
+                    remedy=(
+                        "Increase --max-dimension or omit it within configured resource limits."
+                    ),
                 )
             )
         if alpha_flattened:
@@ -1034,6 +1160,8 @@ def convert_images(
                         f"onto a {options.background} background (JPEG is opaque)"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
                 )
             )
         if profiles_converted:
@@ -1047,6 +1175,8 @@ def convert_images(
                         "the profile"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.ADVISORY,
                 )
             )
         if profiles_retained:
@@ -1058,6 +1188,8 @@ def convert_images(
                         "be converted to sRGB and were kept in the output instead"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.REVIEW,
                 )
             )
         if stripped_outputs:
@@ -1075,6 +1207,9 @@ def convert_images(
                         "retain it"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
+                    remedy="Use --keep-metadata to retain supported EXIF metadata.",
                 )
             )
         if xmp_dropped:
@@ -1086,6 +1221,8 @@ def convert_images(
                         "carried into converted outputs"
                     ),
                     severity=WarningSeverity.INFO,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
                 )
             )
         security: list[SecurityWarning] = []

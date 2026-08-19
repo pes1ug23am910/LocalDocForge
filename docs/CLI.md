@@ -9,7 +9,7 @@ local-only policy.
 Global options come **before** the command:
 
 ```text
-ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] <command> …
+ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--strict-fidelity] [--report-dir DIR] <command> …
 ```
 
 - `--json` — machine-readable report or diagnostics on stdout.
@@ -27,10 +27,71 @@ ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] 
   paths, and non-loopback web serving. `LDF_STRICT_OFFLINE=true` is preserved
   when the flag is omitted. This is application enforcement, not an OS
   firewall; ordinary-looking POSIX network mounts cannot be distinguished.
+- `--strict-fidelity` — publish only when the operation's fidelity assessment
+  is `complete` and its derived status is `no-known-loss`. When the flag is
+  omitted, `LDF_STRICT_FIDELITY=true` remains in force if set. This is an
+  output-policy gate, separate from `--strict-offline` and from content
+  validation.
 - `--report-dir DIR` — for conversion commands, additionally write
-  `<operation>-<job-id>.report.json` and `.txt`. In strict mode this must be a
-  recognized local path. Metadata commands such as `agent-brief` do not create
-  report files.
+  `<operation>-<job-id>.report.json` and `.txt`. In strict-offline mode this
+  must be a recognized local path. Metadata commands such as `agent-brief` do
+  not create report files.
+
+## Fidelity report contract and strict policy
+
+Every conversion report includes these run-level fields:
+
+- `fidelity_coverage`: `none`, `partial`, or `complete`. Coverage says how much
+  of the operation's declared fidelity contract was assessed; it is not a
+  quality score.
+- `fidelity_status`: the derived conservative verdict `unassessed`,
+  `no-known-loss`, `review-required`, or `known-loss`.
+- `fidelity_warnings[]`: stable-code observations. Each entry has presentation
+  `severity` (`info`, `warning`, or `critical`), provenance `basis`
+  (`declared`, `structural`, or `heuristic`), verdict-driving `impact`
+  (`advisory`, `review`, or `known-loss`), and an optional `remedy`.
+
+Status is derived, never independently asserted: any `known-loss` impact wins;
+otherwise any `review` impact produces `review-required`; otherwise complete
+coverage produces `no-known-loss`; and none/partial coverage produces
+`unassessed`. Advisory warnings do not by themselves prevent
+`no-known-loss`. Warning severity is deliberately separate from fidelity
+impact—a warning can be urgent to notice without proving content loss, or can
+record known loss without being a security-critical event. Heuristic evidence
+may require review but is not allowed to claim known loss.
+
+An empty `fidelity_warnings` array therefore means only “no warning was emitted
+within the assessed scope.” It is not a clean verdict while coverage is `none`
+or `partial`. Published `OutputArtifact` records repeat the conservative
+run-level status until an operation has a narrower per-artifact assessor.
+
+Global `--strict-fidelity` must appear before the command:
+
+```powershell
+ldf --strict-fidelity rotate input.pdf --degrees 90 -o output.pdf
+```
+
+After an operation creates candidates, the pipeline first performs path
+containment, input/output alias, duplicate-destination, collision, and aggregate
+size safety checks. Strict fidelity then refuses every result except
+complete/no-known-loss **before content validation and before publication**.
+The failed report is still returned, `validation` remains `null`, and no output
+is written. CLI refusal exits 4; the local API responds 422; MCP returns an MCP
+tool error with a bounded structured report. Every API and MCP operation model
+also accepts the strict boolean `strict_fidelity=true`. A false per-call value
+cannot weaken `LDF_STRICT_FIDELITY=true` or a server started with global
+`--strict-fidelity`.
+
+Current coverage is intentionally conservative. `rotate` and `crop` assess
+their implemented fidelity contract completely. Pipeline-backed API/MCP
+`inspect` reports complete/no-known-loss within its explicit scope of
+“non-mutating structural inventory; no document conversion,” so server-wide
+strict fidelity does not disable read-only inspection. CLI `inspect` is direct
+and read-only and has no publication step. Page-moving operations and
+`compress` report partial coverage. `images-to-pdf` also reports partial
+run-level coverage, while its `details.placement_analysis.coverage` is complete
+for every decoded frame. Operations not yet assigned a broader assessor default
+to none; their warning impacts can still derive review-required or known-loss.
 
 ## Exit codes
 
@@ -40,18 +101,20 @@ ldf [--json] [--quiet] [--password-stdin] [--strict-offline] [--report-dir DIR] 
 | 1 | operation failed |
 | 2 | usage error (bad arguments, bad page range, missing file) |
 | 3 | no engine available for the operation |
-| 4 | generated-output validation failed before publication |
+| 4 | generated-output validation or strict-fidelity policy failed before publication |
 | 5 | output exists and collision policy is `fail` |
 | 130 | cancelled or cooperative job timeout |
 
-Every writing command accepts `--collision fail|rename|overwrite` (default
-`fail`; `rename` chooses `name (1).pdf`, then the next available suffix).
+Every writing command accepts the command-level option
+`--collision fail|rename|overwrite` **after** the subcommand (default `fail`;
+`rename` chooses `name (1).pdf`, then the next available suffix). Unlike
+`--strict-fidelity`, `--collision` is not a global option.
 Input/output aliases are refused even with `overwrite`.
 
-All candidates are validated before publication starts. Each final file is
-published atomically, but a multi-output job is not an all-files transaction
-across a process or machine crash. A handled publication failure performs
-best-effort rollback.
+Every candidate permitted past the optional fidelity gate is content-validated
+before publication starts. Each final file is published atomically, but a
+multi-output job is not an all-files transaction across a process or machine
+crash. A handled publication failure performs best-effort rollback.
 
 ## Page-range grammar
 
@@ -104,6 +167,8 @@ ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
 ldf convert-images photos/*.HEIC -d converted/ --preset llm   # AI-assistant-ready JPEGs
 ldf convert-images scan.heic -d out/ --format png --keep-metadata
 ldf convert-images big.png -d out/ --max-dimension 1024
+
+ldf --strict-fidelity rotate input.pdf --degrees 90 -o checked.pdf
 ```
 
 ### PDF text extraction
@@ -116,9 +181,10 @@ ldf pdf-to-md INPUT.pdf -o OUTPUT [--pages RANGE]
 `pdf-to-md` extracts one selected page at a time through pypdfium2/PDFium and
 atomically publishes one explicitly UTF-8 file. It never sends extracted text
 through stdout: ordinary stdout is the human report, and global `--json` emits
-the conversion report. This is intentional because an external Windows console
-or pipe may not preserve non-ANSI stdout characters; the output artifact is the
-text-fidelity channel.
+the conversion report. The CLI entry point requests UTF-8 stdout/stderr with a
+replacement fallback on streams that support reconfiguration, so legacy Windows
+console encodings do not crash Unicode reports. The published artifact—not the
+presentation/report channel—remains the strict text-fidelity channel.
 
 The CLI and API operation id is `pdf-to-md`; the pre-existing stable registry/
 doctor capability id remains `pdf-to-markdown`.
@@ -191,9 +257,9 @@ those heuristics found no evidence. The five stable fidelity codes are:
 - `table-fidelity-best-effort` — one or more confident line-grid regions were
   emitted as GFM; verify the inferred header, cell order, and spanning-cell
   fidelity.
-- `tables-flattened` — table output was disabled, or a candidate was kept as
-  flowed text because confidence, geometry, parser, or resource checks refused
-  a rectangular GFM table.
+- `tables-flattened` (heuristic/review) — table output was disabled, or a
+  candidate was kept as flowed text because confidence, geometry, parser, or
+  resource checks refused a rectangular GFM table.
 
 To keep reports bounded, `fidelity_warnings[]` contains at most one aggregate
 entry for each code. Exact attribution lives in
@@ -395,12 +461,19 @@ with `implemented=False` cannot render at all. Template coverage is checked
 before stdout is emitted, so a future capability flip without a usage entry
 fails loudly instead of producing partial guidance.
 
-The brief also carries the stable exit-code table; five agent gotchas covering
-encrypted inputs, collision policy, glob expansion, warning arrays, and output
-fitness; and the structured `verify` -> `fallback` -> `review` workflow.
-`warnings[]` is agent shorthand: current conversion reports expose the exact
-`security_warnings[]` and `fidelity_warnings[]` arrays, whose entries contain
-stable `code` values.
+The brief also carries the stable exit-code table and seven agent gotchas:
+encrypted inputs; command-level collision placement after the subcommand; glob
+expansion; warning/status interpretation; output fitness; strict fidelity; and
+the local MCP surface. Its fitness guidance recommends a 110 DPI PNG as a
+usually sufficient low-cost layout spot-check. Its strict guidance places
+global `--strict-fidelity` before the command, and its MCP guidance points to
+the synchronous `ldf mcp` stdio surface. These feed the structured
+`verify` -> `fallback` -> `review` workflow. `warnings[]` is agent shorthand:
+conversion reports expose the exact `security_warnings[]` and
+`fidelity_warnings[]` arrays.
+Fidelity entries contain stable `code`, `basis`, `impact`, and optional `remedy`
+fields; agents must check run-level `fidelity_status` and
+`fidelity_coverage` before interpreting warning silence.
 
 The feedback section resolves and prints the existing absolute path to
 `docs/AGENT_FEEDBACK.md` plus its rules: append only; an entry is required for
@@ -451,6 +524,24 @@ Notes:
 - Images-to-PDF accepts 36–600 DPI. PDF-to-images accepts 18–1200 DPI and
   PNG/JPEG/WebP/TIFF output. Resource limits may reject a value that would
   exceed configured pixel, decompressed-byte, page, or output bounds.
+- `images-to-pdf` always re-encodes through Pillow and therefore emits the
+  declared/known-loss `images-reencoded` warning, including with
+  `--page-size image`. Native page size avoids fixed-canvas resizing, not the
+  re-encode. Run-level fidelity coverage is partial because not every source
+  metadata/profile transform is inventoried; placement sub-coverage is complete.
+- `details.placement_analysis` measures every image frame in the DPI-sensitive
+  `output-raster-pixels/source-pixels` space. A fixed-page linear scale strictly
+  below `0.5` emits structural/known-loss `image-fit-downscaled` (exactly `0.5`
+  does not); changing aspect ratio beyond `1.01` under `--fit stretch` emits
+  structural/known-loss `image-aspect-distorted`. Use `--page-size image` to
+  preserve source pixel dimensions, or raise `--dpi` within resource limits;
+  use `--fit fit` or `--fit center` to preserve aspect ratio. The report keeps
+  at most 256 path-free per-frame metric records, but aggregate frame/warning
+  counts are computed over every frame. `severe_downscale_frames`,
+  `aspect_distorted_frames`, `frames_total`, `frames_reported`, `truncated`, and
+  `coverage="complete"` disclose the result and detail-list boundary. Thresholds
+  are evaluated against the reported six-decimal metrics, and
+  `aspect_distortion_warning_scope="stretch-only"` makes the warning scope explicit.
 - For `pdf-to-images`, `--preset llm` selects JPEG quality 85 and computes a
   separate render scale for every page so its long edge is at most 1568 px.
   The ordinary 150-DPI render is the ceiling: a page already below the pixel
@@ -492,10 +583,19 @@ Notes:
   inputs may not shrink, which the report states via `compress-no-reduction`.
   The planned `balanced`/`aggressive`/`archival` presets are refused with a
   usage error (exit 2).
-- Page-moving operations emit warnings for detected document-level losses.
-  `remove-pages` refuses outlines/forms/signatures/page labels/open actions,
-  named destinations, internal links, and tagged structures that this build
-  cannot safely rewrite.
+- Page-moving operations emit structural fidelity warnings for detected
+  document-level losses: `docinfo-not-copied`, `outlines-dropped`,
+  `form-fields-detached`, `attachments-dropped`, `xmp-metadata-dropped`,
+  `page-labels-dropped`,
+  `tagged-structure-dropped`, `named-destinations-dropped`,
+  `document-actions-dropped`, and `signature-semantics-dropped` are known loss;
+  `internal-links-may-break` requires review and includes a verification remedy.
+  Malformed signature-related structures emit heuristic/review
+  `signature-presence-uncertain`; strict fidelity refuses that uncertainty.
+  Merge also reports `form-field-name-conflict` for review. `remove-pages`
+  refuses outlines/forms/signatures/page labels/open actions, named
+  destinations, internal links, and tagged structures that this build cannot
+  safely rewrite.
 - CLI reports omit document text and passwords but intentionally include
   artifact filenames and user-selected output paths. Treat saved reports as
   local metadata.
@@ -520,8 +620,10 @@ Server stdout contains protocol frames only. Logs
 and bounded diagnostics go to stderr, and passwords never appear in either
 responses or diagnostics. On Windows the server writes through a private binary
 UTF-8 protocol handle instead of the console text/codepage path, so non-ANSI
-paths are preserved and cannot degrade to `?` as console-formatted CLI output
-can. JSON escaping keeps control characters and newlines inside string values;
+paths are preserved byte-exactly independent of console capabilities. The
+ordinary CLI entry point separately requests replacement-safe UTF-8 streams for
+human/report presentation. JSON escaping keeps control characters and newlines
+inside string values;
 filenames that resemble instructions or prompt injection are always treated as
 data, never executed or interpolated into protocol framing.
 
@@ -533,6 +635,11 @@ fields layered on top. A planned/unimplemented capability is therefore absent
 and a direct call to it is refused with a JSON-RPC error. A listed operation can
 still report an ordinary engine-unavailable failure when its live engine probe
 does not pass.
+
+The shared operation schema includes strict boolean `strict_fidelity`. With
+`true`, only complete/no-known-loss reports may publish. A false or omitted
+per-call value cannot weaken `LDF_STRICT_FIDELITY=true` or a server process
+started with global `--strict-fidelity`.
 
 MCP callers provide absolute input and destination paths. Windows drive paths
 use ordinary JSON escaping (for example `E:\\docs\\input.pdf` in raw JSON) and
@@ -568,6 +675,12 @@ retry merely because response details were summarized; already-published files
 remain the authoritative outputs under the requested destination and collision
 policy.
 
+A strict-fidelity refusal is an MCP tool error, not a successful empty result.
+Its `structuredContent` contains `status="error"`, the tool name, and the
+bounded failed conversion report; `validation` is null because the policy gate
+runs before content validation. Report compaction retains a decisive review or
+known-loss warning when one drives the status. No requested output is published.
+
 Strict-offline mode is selected before the command:
 
 ```powershell
@@ -578,6 +691,15 @@ It remains in force for the server lifetime and rejects recognizable remote
 inputs, outputs, and configured roots. As elsewhere, it is application policy,
 not a kernel network or filesystem sandbox. The MCP transport itself neither
 listens on a port nor makes an outbound connection.
+
+Server-wide strict fidelity is likewise selected before the command:
+
+```powershell
+ldf --strict-fidelity mcp
+```
+
+It remains in force for every tool call. Callers that need strict behavior for
+only one operation instead send `strict_fidelity=true` in that tool's arguments.
 
 Unlike `ldf web`, `ldf mcp` has no bearer token. Authentication would not add a
 meaningful boundary to private pipes inherited by a client that already starts
@@ -628,7 +750,7 @@ TLS; it is not recommended for sensitive documents.
 
 ```text
 GET  /                      capability/status page (sets token cookie)
-GET  /api/health            status, version, strict_offline, loopback_only
+GET  /api/health            status, version, strict_offline, strict_fidelity, loopback_only
 GET  /api/capabilities      API-safe engine probes + capability gating
 POST /api/jobs/{operation}  multipart files/params; worker-backed 201 by default
 GET  /api/jobs              recent in-memory jobs
@@ -652,6 +774,11 @@ poll-based; this release does not claim a streaming/SSE channel.
 Upload each
 source under multipart field `files`. The server, not the request, chooses all
 output paths. Supported string form fields are:
+
+Every operation also accepts the strict boolean form field
+`strict_fidelity=true|false`. True requests the same complete/no-known-loss
+publication policy as the global CLI flag. False or omission cannot weaken a
+web server started under `--strict-fidelity` or `LDF_STRICT_FIDELITY=true`.
 
 | Operation | Honored form fields |
 |---|---|
@@ -679,6 +806,17 @@ directory inside the private API session. Middleware also caps the total request
 with bounded overhead and limits file/field counts and non-file field size.
 Handles and the transport root are closed/removed before enqueue, including for
 malformed input and browser disconnects.
+
+A strict-fidelity policy refusal also returns 422 with the failed structured
+report and no outputs. Its `validation` field is null: candidate safety checks
+ran, but content validation and publication did not. This is distinct from a
+generated-output validation failure even though both map to CLI exit 4.
+
+Successful and failed HTTP reports use the same bounded worker compaction;
+download basenames remain separately available for successful jobs. If the
+complete success envelope still cannot fit the 1 MiB worker IPC boundary, the
+job returns an explicit 422 metadata-limit failure and removes its private
+outputs instead of degrading into an opaque internal error.
 
 Admission is reserved before multipart spooling. Defaults are two concurrent
 workers, sixteen queued jobs, four queued/running jobs per client, and thirty

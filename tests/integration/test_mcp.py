@@ -533,3 +533,76 @@ def test_strict_offline_applies_inside_mcp_workers(
     finally:
         client.close()
     client.assert_stdout_is_protocol_only()
+
+
+def test_strict_fidelity_mcp_success_and_structured_refusal(
+    fixtures_dir: Path,
+    tmp_path: Path,
+) -> None:
+    client = McpProcess()
+    rotated = (tmp_path / "strict-rotated.pdf").resolve()
+    refused = (tmp_path / "strict-images.pdf").resolve()
+    try:
+        client.initialize()
+        accepted = client.request(
+            2,
+            "tools/call",
+            {
+                "name": "rotate",
+                "arguments": {
+                    "input": str((fixtures_dir / "simple-3page.pdf").resolve()),
+                    "output": str(rotated),
+                    "degrees": 90,
+                    "strict_fidelity": True,
+                },
+            },
+        )
+        accepted_result = accepted["result"]
+        assert accepted_result["isError"] is False
+        accepted_report = accepted_result["structuredContent"]["report"]
+        assert accepted_report["fidelity_coverage"] == "complete"
+        assert accepted_report["fidelity_status"] == "no-known-loss"
+
+        inspected = client.request(
+            3,
+            "tools/call",
+            {
+                "name": "inspect",
+                "arguments": {
+                    "input": str((fixtures_dir / "simple-3page.pdf").resolve()),
+                    "strict_fidelity": True,
+                },
+            },
+        )
+        inspected_result = inspected["result"]
+        assert inspected_result["isError"] is False
+        inspected_report = inspected_result["structuredContent"]["report"]
+        assert inspected_report["fidelity_coverage"] == "complete"
+        assert inspected_report["fidelity_status"] == "no-known-loss"
+        assert rotated.is_file()
+
+        rejected = client.request(
+            4,
+            "tools/call",
+            {
+                "name": "images-to-pdf",
+                "arguments": {
+                    "inputs": [str((fixtures_dir / "images" / "photo.jpg").resolve())],
+                    "output": str(refused),
+                    "strict_fidelity": True,
+                },
+            },
+        )
+        rejected_result = rejected["result"]
+        assert rejected_result["isError"] is True
+        structured = rejected_result["structuredContent"]
+        assert structured["status"] == "error"
+        assert structured["report"]["fidelity_status"] == "known-loss"
+        assert "images-reencoded" in {
+            warning["code"]
+            for warning in structured["report"]["fidelity_warnings"]
+        }
+        assert not refused.exists()
+    finally:
+        client.close()
+    client.assert_stdout_is_protocol_only()

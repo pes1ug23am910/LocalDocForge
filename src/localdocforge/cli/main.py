@@ -20,10 +20,16 @@ from pathlib import Path
 from typing import Annotated, NoReturn
 
 import typer
+from pydantic import ValidationError
 
 from localdocforge import __version__
 from localdocforge.cli.agent_brief import AgentBriefError, build_agent_brief, render_markdown
-from localdocforge.config.settings import Settings, get_settings, set_settings
+from localdocforge.config.settings import (
+    Settings,
+    get_settings,
+    set_settings,
+    with_policy_overrides,
+)
 from localdocforge.domain.models import ConversionReport, WarningSeverity
 from localdocforge.domain.pages import PageRange, PageRangeError
 from localdocforge.engines.adapters import OP_INSPECT, OP_PDF_TO_MD
@@ -40,7 +46,7 @@ from localdocforge.operations import ocr as ocr_ops
 from localdocforge.operations import optimize as optimize_ops
 from localdocforge.operations import organize as organize_ops
 from localdocforge.operations import text as text_ops
-from localdocforge.pipelines.runner import PipelineError
+from localdocforge.pipelines.runner import PipelineError, StrictFidelityRefused
 from localdocforge.reporting.writers import write_report_files
 from localdocforge.security.paths import is_remote_path
 from localdocforge.security.sniff import ContentTypeError
@@ -181,8 +187,7 @@ def _missing_noninteractive_password() -> NoReturn:
 
 def _fail_one_password(exc: organize_ops.EncryptedInputError) -> NoReturn:
     typer.secho(
-        f"Error: {exc} One password is used for all encrypted inputs "
-        "in an invocation.",
+        f"Error: {exc} One password is used for all encrypted inputs in an invocation.",
         fg=typer.colors.RED,
         err=True,
     )
@@ -228,6 +233,14 @@ def main(
             "this application policy is recorded in reports but is not an OS firewall.",
         ),
     ] = None,
+    strict_fidelity: Annotated[
+        bool | None,
+        typer.Option(
+            "--strict-fidelity",
+            help="Publish only when fidelity was completely assessed with no known loss; "
+            "otherwise exit 4 before writing outputs.",
+        ),
+    ] = None,
     report_dir: Annotated[
         Path | None,
         typer.Option("--report-dir", help="Also write JSON + text reports into this directory."),
@@ -250,7 +263,26 @@ def main(
     _state["report_dir"] = report_dir
     # Preserve LDF_STRICT_OFFLINE when the flag was not supplied. Passing a
     # concrete False here would incorrectly outrank the environment setting.
-    settings = Settings() if strict_offline is None else Settings(strict_offline=strict_offline)
+    try:
+        settings = with_policy_overrides(
+            Settings(),
+            strict_offline=strict_offline,
+            strict_fidelity=strict_fidelity,
+        )
+    except ValidationError as exc:
+        messages = tuple(
+            dict.fromkeys(
+                str(error.get("msg", "Invalid runtime settings")).removeprefix(
+                    "Value error, "
+                )
+                for error in exc.errors(
+                    include_url=False,
+                    include_context=False,
+                    include_input=False,
+                )
+            )
+        )
+        raise typer.BadParameter("; ".join(messages)) from exc
     if report_dir is not None and settings.strict_offline and is_remote_path(report_dir):
         raise typer.BadParameter("strict-offline mode forbids a network report directory")
     set_settings(settings)
@@ -293,6 +325,8 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
         if exc.report is not None:
             _emit_report(exc.report, failed=True)
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        if isinstance(exc, StrictFidelityRefused):
+            raise typer.Exit(EXIT_VALIDATION) from exc
         cause = exc.__cause__
         if isinstance(cause, ocr_ops.OcrToolFailure):
             raise typer.Exit(cause.ldf_exit_code) from exc
@@ -314,10 +348,7 @@ def _run(operation_fn, *args, password_retry: bool = True, **kwargs) -> None:
             for warning in report.security_warnings:
                 typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
         for warning in report.fidelity_warnings:
-            if (
-                warning.severity == WarningSeverity.CRITICAL
-                and (_state["quiet"] or _state["json"])
-            ):
+            if warning.severity == WarningSeverity.CRITICAL and (_state["quiet"] or _state["json"]):
                 typer.secho(f"⚠ {warning.message}", fg=typer.colors.YELLOW, err=True)
 
 
@@ -415,6 +446,7 @@ def doctor() -> None:
         payload = {
             "version": __version__,
             "strict_offline": settings.strict_offline,
+            "strict_fidelity": settings.strict_fidelity,
             "outbound_network_client": False,
             "engines": [info.model_dump() for info in infos],
             "capabilities": [cap.model_dump() for cap in capabilities],
@@ -446,9 +478,11 @@ def doctor() -> None:
                 suffix = f"  [{'; '.join(capability.missing_requirements)}]"
             typer.secho(f"    {mark} {capability.title}{suffix}", fg=color)
     strict_state = "enabled" if settings.strict_offline else "disabled"
+    fidelity_state = "enabled" if settings.strict_fidelity else "disabled"
     typer.echo(
         "\nPrivacy: shipped engines contain no outbound network client, telemetry, "
-        f"update check, or remote resource loader. Strict-offline mode is {strict_state}."
+        f"update check, or remote resource loader. Strict-offline mode is {strict_state}.\n"
+        f"Fidelity policy: strict-fidelity publication refusal is {fidelity_state}."
     )
 
 
@@ -742,9 +776,7 @@ def merge(
             )
             raise typer.Exit(EXIT_USAGE)
         ranges = [_parse_range(page_spec) for page_spec in pages]
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.merge_pdfs,
         _expand_inputs(paths),
@@ -769,9 +801,7 @@ def split(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Split a PDF into ranges, every-N chunks, or single pages (default)."""
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.split_pdf,
         input_file,
@@ -790,9 +820,7 @@ def remove_pages_cmd(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Remove the selected pages."""
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.remove_pages,
         input_file,
@@ -810,9 +838,7 @@ def extract_pages_cmd(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Extract the selected pages into a new PDF."""
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.extract_pages,
         input_file,
@@ -830,9 +856,7 @@ def organize(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Reorder, duplicate, or drop pages using an explicit order."""
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.organize_pdf,
         input_file,
@@ -851,9 +875,7 @@ def rotate(
     collision: Collision = CollisionPolicy.FAIL,
 ) -> None:
     """Rotate the selected pages (default: all) by a multiple of 90 degrees."""
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.rotate_pages,
         input_file,
@@ -887,9 +909,7 @@ def crop(
             err=True,
         )
         raise typer.Exit(EXIT_USAGE) from None
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(
         organize_ops.crop_pages,
         input_file,
@@ -927,9 +947,7 @@ def compress(
             err=True,
         )
         raise typer.Exit(EXIT_USAGE)
-    options = organize_ops.OrganizeOptions(
-        collision=collision, password=_password_value()
-    )
+    options = organize_ops.OrganizeOptions(collision=collision, password=_password_value())
     _run(optimize_ops.compress_pdf, input_file, output, preset=preset, options=options)
 
 
@@ -1092,9 +1110,7 @@ def convert_images_cmd(
     ] = None,
     quality: Annotated[
         int | None,
-        typer.Option(
-            "--quality", min=1, max=100, help="JPEG/WebP quality (default 90)."
-        ),
+        typer.Option("--quality", min=1, max=100, help="JPEG/WebP quality (default 90)."),
     ] = None,
     max_dimension: Annotated[
         int | None,
@@ -1102,8 +1118,7 @@ def convert_images_cmd(
             "--max-dimension",
             min=16,
             max=30000,
-            help="Downscale so the long edge is at most this many pixels; "
-            "never upscales.",
+            help="Downscale so the long edge is at most this many pixels; never upscales.",
         ),
     ] = None,
     preset: Annotated[
@@ -1119,8 +1134,7 @@ def convert_images_cmd(
         bool,
         typer.Option(
             "--keep-metadata",
-            help="Retain EXIF metadata (including any GPS position) instead of "
-            "stripping it.",
+            help="Retain EXIF metadata (including any GPS position) instead of stripping it.",
         ),
     ] = False,
     background: Annotated[
@@ -1143,8 +1157,7 @@ def convert_images_cmd(
         raise typer.Exit(EXIT_USAGE)
     if image_format is not None and image_format.lower() not in image_ops.OUTPUT_IMAGE_FORMATS:
         typer.secho(
-            f"Error: --format {image_format!r} is not supported; use png, jpeg, "
-            "webp, or tiff.",
+            f"Error: --format {image_format!r} is not supported; use png, jpeg, webp, or tiff.",
             fg=typer.colors.RED,
             err=True,
         )
@@ -1167,7 +1180,7 @@ def app_entry() -> None:  # console_scripts entry point
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             try:
-                stream.reconfigure(errors="replace")
+                stream.reconfigure(encoding="utf-8", errors="replace")
             except (OSError, ValueError):
                 pass
     app()

@@ -538,10 +538,7 @@ def _sanitize_value(value: Any, replacements: tuple[str, ...]) -> Any:
     if isinstance(value, list):
         return [_sanitize_value(item, replacements) for item in value]
     if isinstance(value, dict):
-        return {
-            str(key): _sanitize_value(item, replacements)
-            for key, item in value.items()
-        }
+        return {str(key): _sanitize_value(item, replacements) for key, item in value.items()}
     return value
 
 
@@ -607,6 +604,11 @@ def _sanitized_report(
                 warning.get("message", ""),
                 replacements,
             )
+            if collection == "fidelity_warnings" and warning.get("remedy") is not None:
+                warning["remedy"] = _sanitize_value(
+                    warning.get("remedy", ""),
+                    replacements,
+                )
     payload["errors"] = [
         _sanitize_value(error, replacements) for error in payload.get("errors", [])
     ]
@@ -625,7 +627,7 @@ def _sanitized_report(
 def _compact_mcp_report(
     payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, int | bool]]:
-    """Bound a successful MCP report without relabelling published work as failure."""
+    """Bound a report for worker IPC without changing its fidelity verdict."""
     encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     if len(encoded) <= _MAX_MCP_REPORT_IPC_BYTES:
         return payload, {}
@@ -650,9 +652,7 @@ def _compact_mcp_report(
         if isinstance((value := payload.get(field_name)), list)
     }
     validation = payload.get("validation")
-    validation_checks = (
-        validation.get("checks", []) if isinstance(validation, dict) else []
-    )
+    validation_checks = validation.get("checks", []) if isinstance(validation, dict) else []
     if not isinstance(validation_checks, list):
         validation_checks = []
     counts["validation_checks_count"] = len(validation_checks)
@@ -664,9 +664,33 @@ def _compact_mcp_report(
     }
     for field_name in list_fields:
         value = payload.get(field_name)
-        compact[field_name] = (
-            value[:_MCP_REPORT_LIST_LIMIT] if isinstance(value, list) else []
-        )
+        if field_name == "fidelity_warnings" and isinstance(value, list):
+            selected = value[:_MCP_REPORT_LIST_LIMIT]
+            status = payload.get("fidelity_status")
+            required_impact = (
+                "known-loss"
+                if status == "known-loss"
+                else "review"
+                if status == "review-required"
+                else None
+            )
+            if required_impact and not any(
+                isinstance(item, dict) and item.get("impact") == required_impact
+                for item in selected
+            ):
+                required = next(
+                    (
+                        item
+                        for item in value
+                        if isinstance(item, dict) and item.get("impact") == required_impact
+                    ),
+                    None,
+                )
+                if required is not None:
+                    selected = [*selected[:-1], required] if selected else [required]
+            compact[field_name] = selected
+        else:
+            compact[field_name] = value[:_MCP_REPORT_LIST_LIMIT] if isinstance(value, list) else []
     if isinstance(validation, dict):
         compact["validation"] = {
             **validation,
@@ -686,17 +710,161 @@ def _compact_mcp_report(
         "report_truncated": True,
         **counts,
     }
-    retained_details["mcp_response"] = summary
+    retained_details["transport_compaction"] = summary
     compact["details"] = retained_details
 
     encoded = json.dumps(compact, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     if len(encoded) > _MAX_MCP_REPORT_IPC_BYTES:
-        for field_name in list_fields:
-            compact[field_name] = []
-        if isinstance(compact.get("validation"), dict):
-            compact["validation"] = {**compact["validation"], "checks": []}
-        compact["details"] = {"mcp_response": summary}
+        status = payload.get("fidelity_status")
+        required_impact = (
+            "known-loss"
+            if status == "known-loss"
+            else "review"
+            if status == "review-required"
+            else None
+        )
+        warnings = payload.get("fidelity_warnings")
+        representative = (
+            next(
+                (
+                    item
+                    for item in warnings
+                    if isinstance(item, dict) and item.get("impact") == required_impact
+                ),
+                None,
+            )
+            if isinstance(warnings, list) and required_impact
+            else None
+        )
+        compact_warning: dict[str, Any] | None = None
+        if representative is not None:
+            compact_warning = {
+                "code": _bounded_text(representative.get("code", "fidelity-warning"), 256),
+                "message": _bounded_text(representative.get("message", ""), 1024),
+                "severity": representative.get("severity", "warning"),
+                "basis": representative.get("basis", "declared"),
+                "impact": representative.get("impact", required_impact),
+            }
+            page = representative.get("page")
+            if isinstance(page, int):
+                compact_warning["page"] = page
+            remedy = representative.get("remedy")
+            if isinstance(remedy, str):
+                compact_warning["remedy"] = _bounded_text(remedy, 1024)
+
+        report_fields = (
+            "operation",
+            "status",
+            "job_id",
+            "engine",
+            "engine_version",
+            "fallback_engine",
+            "input_page_count",
+            "output_page_count",
+            "input_bytes",
+            "output_bytes",
+            "started_at",
+            "finished_at",
+            "elapsed_seconds",
+            "fidelity_status",
+            "fidelity_coverage",
+        )
+        compact = {key: payload[key] for key in report_fields if key in payload}
+        compact.update(
+            {
+                "inputs": [],
+                "outputs": [],
+                "security_warnings": [],
+                "fidelity_warnings": [compact_warning] if compact_warning else [],
+                "errors": [],
+                "details": {"transport_compaction": summary},
+            }
+        )
+        if isinstance(validation, dict):
+            compact["validation"] = {
+                "passed": bool(validation.get("passed", False)),
+                "checks": [],
+            }
+
+        # The minimal form is deliberately rebuilt rather than progressively
+        # slicing arbitrary fields. Recheck the actual UTF-8 payload so an
+        # unusually large warning can never push the enclosing IPC message over
+        # its hard one-megabyte boundary.
+        encoded = json.dumps(
+            compact,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if len(encoded) > _MAX_MCP_REPORT_IPC_BYTES and compact_warning is not None:
+            compact_warning["message"] = _bounded_text(compact_warning["message"], 128)
+            compact_warning.pop("remedy", None)
+        encoded = json.dumps(
+            compact,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if len(encoded) > _MAX_MCP_REPORT_IPC_BYTES:
+            # Worker job ids and operation names are supervisor-controlled, so
+            # this last shape is bounded while retaining the exact correlation
+            # id and the warning impact required by the fidelity status.
+            essential_warning = None
+            if compact_warning is not None:
+                essential_warning = {
+                    "code": _bounded_text(compact_warning["code"], 64),
+                    "message": "Report details were truncated for transport",
+                    "severity": compact_warning["severity"],
+                    "basis": compact_warning["basis"],
+                    "impact": compact_warning["impact"],
+                }
+            compact = {
+                "operation": payload.get("operation", "unknown"),
+                "status": payload.get("status", "failed"),
+                "job_id": payload.get("job_id", "unknown"),
+                "fidelity_status": payload.get("fidelity_status", "unassessed"),
+                "fidelity_coverage": payload.get("fidelity_coverage", "none"),
+                "fidelity_warnings": [essential_warning] if essential_warning else [],
+                "details": {"transport_compaction": summary},
+            }
     return compact, summary
+
+
+def _bounded_result_message(
+    report_payload: dict[str, Any],
+    output_names: list[str],
+    result_data: dict[str, Any],
+    *,
+    is_mcp: bool,
+) -> dict[str, Any]:
+    """Build one success envelope that cannot silently overflow worker IPC."""
+
+    compact_report, response_summary = _compact_mcp_report(report_payload)
+    if is_mcp and response_summary:
+        result_data = {**result_data, "mcp_response": response_summary}
+        output_names = output_names[:_MCP_REPORT_LIST_LIMIT]
+    payload = {
+        "kind": "result",
+        "report": compact_report,
+        "outputs": output_names,
+        "data": result_data,
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    if len(encoded) <= _MAX_IPC_BYTES:
+        return payload
+
+    public_error = "Worker result metadata exceeded the bounded IPC limit"
+    failed_report = {
+        **compact_report,
+        "status": "failed",
+        "outputs": [],
+        "output_bytes": None,
+        "errors": [public_error],
+    }
+    return {
+        "kind": "failure",
+        "error": public_error,
+        "http_status": 422,
+        "report": failed_report,
+    }
 
 
 def _public_pipeline_error(message: str) -> str:
@@ -710,6 +878,7 @@ def _public_pipeline_error(message: str) -> str:
         "Output path aliases ",
         "Output path is outside ",
         "strict-offline mode forbids ",
+        "Strict fidelity requires ",
         "OCR policy refused ",
         "OCR input has ",
         "OCR requires ",
@@ -1333,7 +1502,8 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                     api_job_id=request.job_id,
                     job_root=job_root,
                     secrets=secrets,
-                    preserve_paths=is_mcp,
+                    preserve_paths=is_mcp and request.operation != "inspect",
+                    preserve_output_paths_exact=is_mcp and request.operation != "inspect",
                 )
                 if report_payload.get("errors"):
                     report_payload["errors"] = [public_error]
@@ -1342,6 +1512,7 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
                     for check in validation.get("checks", []):
                         if isinstance(check, dict) and not check.get("passed", False):
                             check["detail"] = "failed"
+                report_payload, _summary = _compact_mcp_report(report_payload)
                 payload["report"] = report_payload
             _send_message(connection, payload)
             return
@@ -1374,20 +1545,13 @@ def _worker_process_entry(request: WorkerRequest, start_gate, connection) -> Non
             preserve_paths=is_mcp and request.operation != "inspect",
             preserve_output_paths_exact=is_mcp and request.operation != "inspect",
         )
-        if is_mcp:
-            report_payload, response_summary = _compact_mcp_report(report_payload)
-            if response_summary:
-                result_data = {**result_data, "mcp_response": response_summary}
-                output_names = output_names[:_MCP_REPORT_LIST_LIMIT]
-        _send_message(
-            connection,
-            {
-                "kind": "result",
-                "report": report_payload,
-                "outputs": output_names,
-                "data": _sanitize_result_data(result_data, replacements),
-            },
+        result_payload = _bounded_result_message(
+            report_payload,
+            output_names,
+            _sanitize_result_data(result_data, replacements),
+            is_mcp=is_mcp,
         )
+        _send_message(connection, result_payload)
     except Exception as exc:
         if fsize_limit_active and _efbig_in_chain(exc):
             _send_message(

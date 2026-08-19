@@ -23,7 +23,7 @@ from pydantic import (
     model_validator,
 )
 
-from localdocforge.config.settings import Settings
+from localdocforge.config.settings import Settings, with_policy_overrides
 from localdocforge.domain.models import ConversionReport, ProgressCallback
 from localdocforge.domain.pages import PageRange, PageRangeError
 from localdocforge.engines.base import EngineUnavailableError
@@ -50,6 +50,19 @@ class OperationParameters(BaseModel):
     """Base for typed operation fields shared by HTTP and agent transports."""
 
     model_config = ConfigDict(extra="forbid")
+
+    strict_fidelity: bool = Field(
+        default=False,
+        description=(
+            "Refuse publication unless fidelity assessment is complete and the derived "
+            "status is no-known-loss. Refusal occurs before content validation/publication."
+        ),
+    )
+
+    @field_validator("strict_fidelity", mode="before")
+    @classmethod
+    def validate_strict_fidelity(cls, value: Any) -> bool:
+        return _strict_bool(value, key="strict_fidelity")
 
 
 class _PasswordParams(OperationParameters):
@@ -558,6 +571,14 @@ def _one_input(paths: list[Path], operation: str) -> Path:
     return paths[0]
 
 
+def _effective_settings(settings: Settings, params: OperationParameters) -> Settings:
+    """Apply the per-call policy without weakening a server-wide strict policy."""
+    return with_policy_overrides(
+        settings,
+        strict_fidelity=settings.strict_fidelity or params.strict_fidelity,
+    )
+
+
 def _organize_options(
     settings: Settings,
     params: _PasswordParams,
@@ -579,6 +600,7 @@ def _run_merge(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(MergeParams, raw_params)
+    settings = _effective_settings(settings, params)
     if len(paths) < 2:
         raise _ApiError(422, "merge needs at least two files")
     ranges = None
@@ -602,6 +624,7 @@ def _run_split(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(SplitParams, raw_params)
+    settings = _effective_settings(settings, params)
     source = _one_input(paths, "split")
     return organize_ops.split_pdf(
         source,
@@ -620,6 +643,7 @@ def _run_remove_pages(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(RemovePagesParams, raw_params)
+    settings = _effective_settings(settings, params)
     return organize_ops.remove_pages(
         _one_input(paths, "remove-pages"),
         output_dir / "result.pdf",
@@ -636,6 +660,7 @@ def _run_extract_pages(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(ExtractPagesParams, raw_params)
+    settings = _effective_settings(settings, params)
     return organize_ops.extract_pages(
         _one_input(paths, "extract-pages"),
         output_dir / "result.pdf",
@@ -652,6 +677,7 @@ def _run_organize(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(OrganizeParams, raw_params)
+    settings = _effective_settings(settings, params)
     return organize_ops.organize_pdf(
         _one_input(paths, "organize"),
         output_dir / "result.pdf",
@@ -668,6 +694,7 @@ def _run_rotate(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(RotateParams, raw_params)
+    settings = _effective_settings(settings, params)
     return organize_ops.rotate_pages(
         _one_input(paths, "rotate"),
         output_dir / "rotated.pdf",
@@ -685,6 +712,7 @@ def _run_crop(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(CropParams, raw_params)
+    settings = _effective_settings(settings, params)
     return organize_ops.crop_pages(
         _one_input(paths, "crop"),
         output_dir / "cropped.pdf",
@@ -702,6 +730,7 @@ def _run_compress(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(CompressParams, raw_params)
+    settings = _effective_settings(settings, params)
     return optimize_ops.compress_pdf(
         _one_input(paths, "compress"),
         output_dir / "compressed.pdf",
@@ -718,6 +747,7 @@ def _run_ocr(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(OcrHttpParams, raw_params)
+    settings = _effective_settings(settings, params)
     options = ocr_ops.OcrOptions(
         language=params.language,
         sidecar=output_dir / "document.txt" if params.sidecar else None,
@@ -746,6 +776,7 @@ def _run_images_to_pdf(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(ImagesToPdfParams, raw_params)
+    settings = _effective_settings(settings, params)
     options = image_ops.ImagesToPdfOptions(
         page_size=params.page_size,
         fit=params.fit,
@@ -768,6 +799,7 @@ def _run_pdf_to_images(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(PdfToImagesParams, raw_params)
+    settings = _effective_settings(settings, params)
     source = _one_input(paths, "pdf-to-images")
     options = image_ops.PdfToImagesOptions(
         pages=_range_or_none(params.pages),
@@ -794,6 +826,7 @@ def _run_pdf_to_md(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(PdfToMdParams, raw_params)
+    settings = _effective_settings(settings, params)
     source = _one_input(paths, "pdf-to-md")
     options = text_ops.PdfToMdOptions(
         output_format=params.format,
@@ -828,6 +861,7 @@ def _run_md_to_pdf(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(MdToPdfParams, raw_params)
+    settings = _effective_settings(settings, params)
     aliases = {_transport_upload_alias(path): path for path in paths}
     if len(aliases) != len(paths):
         raise _ApiError(422, "Markdown uploads must have distinct sanitized basenames")
@@ -865,6 +899,7 @@ def _run_convert_images(
     progress: ProgressCallback | None = None,
 ) -> ConversionReport:
     params = cast(ConvertImagesParams, raw_params)
+    settings = _effective_settings(settings, params)
     options = image_ops.ConvertImagesOptions(
         image_format=params.format,
         quality=params.quality,

@@ -81,15 +81,23 @@ def test_usage_templates_exactly_cover_implemented_specs() -> None:
     assert "--preset llm" in USAGE_BY_CAPABILITY_ID["pdf-to-images"]
     assert USAGE_BY_CAPABILITY_ID["pdf-to-markdown"] == (
         "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
-        "[--format md|txt|jsonl] [--no-page-anchors] [--tables]"
+        "[--format md|txt|jsonl] [--no-page-anchors] [--tables] "
+        "[--collision fail|rename|overwrite]"
     )
     assert USAGE_BY_CAPABILITY_ID["markdown-to-pdf"] == (
         "ldf md-to-pdf INPUT.md -o OUTPUT.pdf "
-        "[--paper A4|Letter|Legal] [--margin MM] [--toc]"
+        "[--paper A4|Letter|Legal] [--margin MM] [--toc] "
+        "[--collision fail|rename|overwrite]"
     )
     assert USAGE_BY_CAPABILITY_ID["ocr"] == (
         "ldf ocr INPUT.pdf -o OUTPUT.pdf [--language eng] [--sidecar OUTPUT.txt] "
-        "[--skip-text | --force-ocr]"
+        "[--skip-text | --force-ocr] [--collision fail|rename|overwrite]"
+    )
+    assert "--page-size A4|image" in USAGE_BY_CAPABILITY_ID["images-to-pdf"]
+    assert all(
+        "--collision fail|rename|overwrite" in usage
+        for capability_id, usage in USAGE_BY_CAPABILITY_ID.items()
+        if capability_id != "inspect"
     )
 
 
@@ -118,6 +126,9 @@ def test_json_snapshot_mirrors_live_registry_fields() -> None:
     brief = build_agent_brief(StubRegistry(live), feedback_path=FEEDBACK_PATH)
     payload = brief.to_dict()
     entries = payload["capabilities"]
+    verify = next(item for item in payload["workflow"] if item["id"] == "verify")
+    assert "fidelity_status and fidelity_coverage" in verify["text"]
+    assert "Warning silence is not an assessment" in verify["text"]
     assert isinstance(entries, list)
     live_by_id = {capability.id: capability for capability in live}
     for entry in entries:
@@ -154,6 +165,14 @@ def test_markdown_is_deterministic_and_uses_the_same_snapshot() -> None:
     assert f"`{planned}`" not in first
     assert str(FEEDBACK_PATH.resolve()) in first
     assert "Verify -> fallback -> review" in first
+    assert "110 DPI" in first
+    assert "global --strict-fidelity before the command" in first
+    assert "complete/no-known-loss" in first
+    assert "ldf mcp" in first
+    assert "command-level option" in first
+    assert "fidelity_status and fidelity_coverage" in first
+    assert "Warning silence is not an assessment" in first
+    assert "basis, impact, and remedy" in first
 
 
 def test_feedback_path_is_absolute_existing_and_independent_of_cwd(

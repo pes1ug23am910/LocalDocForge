@@ -299,6 +299,21 @@ features are not assumed to inherit these controls automatically.
   they do not intentionally contain extracted document text or passwords.
   API reports additionally scrub server-private paths. Unexpected API errors
   return a generic message and hardening headers rather than exception details.
+- Fidelity reports separate assessment coverage from the derived verdict and
+  expose warning basis/impact/remedy. `--strict-fidelity` is a publication
+  policy, not a parser sandbox or proof of visual correctness: candidate
+  containment, destination, size, and collision preflight runs first; a result
+  other than complete/`no-known-loss` is then refused before content validation
+  or publication. API/MCP success- and failure-report compaction retains the
+  verdict and one warning supporting its worst impact while bounding and
+  redacting free text. If a complete success envelope still exceeds worker
+  IPC, it becomes an explicit bounded 422 failure and private outputs are
+  removed rather than an opaque fatal response.
+- Images-to-PDF placement diagnostics contain deterministic indices,
+  dimensions, ratios, thresholds, and counts only—never source paths or pixel
+  content. Every frame is measured, while detailed records are capped and the
+  report explicitly discloses `frames_total`, `frames_reported`, and
+  `truncated`.
 - `pdf-to-md` deliberately writes document text only to the requested output
   artifact. Its reports and worker IPC retain counts, booleans, and stable
   warning codes but never per-page text or table-cell values. The text-free
@@ -483,6 +498,10 @@ refused, never approximated.
 - PDF rendering is sampled for routine long outputs, and render success is not
   proof of fonts, reading order, links, forms, signatures, accessibility,
   compliance, or exact visual fidelity.
+- A `no-known-loss` fidelity status means only that the operation's declared
+  assessor had complete coverage and found no review/known-loss impact. It does
+  not mean byte identity, semantic equivalence, or that an unimplemented visual
+  fitness detector found the document flawless.
 - PDF text extraction relies on source text objects and deterministic geometry
   heuristics. Image-only pages have no extractable layer; multi-column,
   rotated/angled, and RTL content may be ordered incorrectly; hyphenation is

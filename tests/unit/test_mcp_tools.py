@@ -30,6 +30,42 @@ def test_tool_list_and_schemas_are_generated_from_implemented_registry() -> None
         and tool.annotations.destructiveHint is (tool.name != "inspect")
         for tool in definitions
     )
+    assert all(
+        tool.inputSchema["properties"]["strict_fidelity"]["default"] is False
+        and "strict_fidelity" not in tool.inputSchema.get("required", [])
+        for tool in definitions
+    )
+    assert all(
+        "complete" in tool.inputSchema["properties"]["strict_fidelity"]["description"]
+        and "no-known-loss" in tool.inputSchema["properties"]["strict_fidelity"]["description"]
+        and "publication" in tool.inputSchema["properties"]["strict_fidelity"]["description"]
+        for tool in definitions
+    )
+
+
+def test_mcp_strict_fidelity_argument_uses_shared_strict_boolean_model(
+    tmp_path: Path,
+) -> None:
+    base = {"input": str(tmp_path / "input.pdf")}
+    assert (
+        tool_module.validate_tool_arguments(
+            "inspect", {**base, "strict_fidelity": True}
+        ).strict_fidelity
+        is True
+    )
+    assert (
+        tool_module.validate_tool_arguments(
+            "inspect", {**base, "strict_fidelity": "false"}
+        ).strict_fidelity
+        is False
+    )
+
+    for invalid in (1, "yes", None):
+        with pytest.raises(
+            tool_module.ToolArgumentsError,
+            match="strict_fidelity: 'strict_fidelity' must be true or false",
+        ):
+            tool_module.validate_tool_arguments("inspect", {**base, "strict_fidelity": invalid})
 
 
 def test_missing_implemented_operation_binding_fails_closed(
@@ -132,21 +168,14 @@ def test_validation_errors_never_echo_password_values(tmp_path: Path) -> None:
 def test_input_list_bound_is_exposed_in_json_schema() -> None:
     definitions = {tool.name: tool for tool in tool_module.tool_definitions()}
     assert definitions["merge"].inputSchema["properties"]["inputs"]["maxItems"] == 256
-    assert (
-        definitions["convert-images"].inputSchema["properties"]["inputs"]["maxItems"]
-        == 256
-    )
+    assert definitions["convert-images"].inputSchema["properties"]["inputs"]["maxItems"] == 256
 
 
 def test_registry_generated_ocr_binding_exposes_path_and_collision_contract() -> None:
     ocr_spec = next(
-        spec
-        for spec in CAPABILITY_SPECS
-        if spec.implemented and spec.operation == "ocr"
+        spec for spec in CAPABILITY_SPECS if spec.implemented and spec.operation == "ocr"
     )
-    binding = next(
-        binding for binding in tool_module.tool_bindings() if binding.spec is ocr_spec
-    )
+    binding = next(binding for binding in tool_module.tool_bindings() if binding.spec is ocr_spec)
     definition = next(
         tool for tool in tool_module.tool_definitions() if tool.name == binding.spec.id
     )
@@ -169,9 +198,7 @@ def test_registry_generated_ocr_binding_exposes_path_and_collision_contract() ->
         "null",
     }
     sidecar_path = next(
-        variant
-        for variant in properties["sidecar"]["anyOf"]
-        if variant.get("type") == "string"
+        variant for variant in properties["sidecar"]["anyOf"] if variant.get("type") == "string"
     )
     assert sidecar_path["format"] == "path"
     assert properties["collision"]["default"] == "fail"
@@ -192,9 +219,12 @@ def test_registry_generated_ocr_binding_exposes_path_and_collision_contract() ->
             tool_module.validate_tool_arguments(binding.spec.id, arguments)
 
 
+@pytest.mark.parametrize(("configured", "requested"), [(False, True), (True, False)])
 def test_ocr_executor_forwards_validated_transport_arguments(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    configured: bool,
+    requested: bool,
 ) -> None:
     observed: dict[str, Any] = {}
     report = ConversionReport(
@@ -221,10 +251,11 @@ def test_ocr_executor_forwards_validated_transport_arguments(
             "language": "eng+deu",
             "skip_text": True,
             "force_ocr": False,
+            "strict_fidelity": requested,
             "collision": "rename",
             "password": "synthetic-password",
         },
-        Settings(jobs_root=tmp_path / "jobs"),
+        Settings(jobs_root=tmp_path / "jobs", strict_fidelity=configured),
         inspection_output=tmp_path / "inspection.json",
     )
 
@@ -236,5 +267,6 @@ def test_ocr_executor_forwards_validated_transport_arguments(
     assert options.sidecar == sidecar
     assert options.skip_text is True
     assert options.force_ocr is False
+    assert options.settings.strict_fidelity is (configured or requested)
     assert options.collision.value == "rename"
     assert options.password == "synthetic-password"

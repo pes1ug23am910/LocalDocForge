@@ -16,6 +16,8 @@ from localdocforge.config.settings import Settings, get_settings
 from localdocforge.domain.models import (
     ArtifactKind,
     ConversionReport,
+    FidelityBasis,
+    FidelityImpact,
     FidelityWarning,
     InputArtifact,
     JobCancelled,
@@ -239,7 +241,7 @@ def _snapshot_pdf(
     destination: Path,
     *,
     password: str | None,
-) -> tuple[int, bool, bool]:
+) -> tuple[int, bool, organize_ops._SignatureAssessment]:
     import pikepdf
 
     try:
@@ -262,7 +264,7 @@ def _snapshot_pdf(
                     )
                 page_count = len(pdf.pages)
                 encrypted = bool(pdf.is_encrypted)
-                has_signatures = organize_ops._has_signature_fields(pdf)
+                signature_assessment = organize_ops._assess_signature_fields(pdf)
                 if encrypted:
                     pdf.save(destination)
                 else:
@@ -278,7 +280,7 @@ def _snapshot_pdf(
         raise
     except (OSError, pikepdf.PdfError) as exc:
         raise PipelineError("OCR input could not be copied into the private job workspace") from exc
-    return page_count, encrypted, has_signatures
+    return page_count, encrypted, signature_assessment
 
 
 def _normalize_sidecar(source: Path, destination: Path) -> None:
@@ -765,6 +767,9 @@ def _engine_diagnostic_warnings(
             code=OCR_ENGINE_PAGE_SKIPPED,
             message=message,
             severity=WarningSeverity.CRITICAL,
+            basis=FidelityBasis.STRUCTURAL,
+            impact=FidelityImpact.KNOWN_LOSS,
+            remedy="Inspect the corresponding pages in the output PDF.",
         )
     ]
 
@@ -808,7 +813,7 @@ def ocr_pdf(
         candidate = context.workspace / "candidate.pdf"
         raw_sidecar = context.workspace / "ocr-sidecar.raw.txt"
         normalized_sidecar = context.workspace / "ocr-sidecar.txt"
-        page_count, was_encrypted, had_signatures = _snapshot_pdf(
+        page_count, was_encrypted, signature_assessment = _snapshot_pdf(
             artifacts[0].path,
             source_snapshot,
             password=options.password,
@@ -865,7 +870,7 @@ def ocr_pdf(
             args.append("--skip-text")
         elif options.force_ocr:
             args.append("--force-ocr")
-        if had_signatures:
+        if signature_assessment.present:
             args.append("--invalidate-digital-signatures")
         args.extend([str(source_snapshot), str(candidate)])
 
@@ -950,6 +955,11 @@ def ocr_pdf(
                     "page image."
                 ),
                 severity=WarningSeverity.WARNING,
+                basis=FidelityBasis.DECLARED,
+                impact=FidelityImpact.REVIEW,
+                remedy=(
+                    "Verify important names, numbers, and formatting against the page image."
+                ),
             )
         ]
         if options.force_ocr:
@@ -961,6 +971,8 @@ def ocr_pdf(
                         "and graphics; content fidelity may be materially reduced."
                     ),
                     severity=WarningSeverity.CRITICAL,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
                 )
             )
         if options.sidecar is not None and options.skip_text and text_layer_page_count:
@@ -972,6 +984,8 @@ def ocr_pdf(
                         "on pages skipped by --skip-text is not copied into it."
                     ),
                     severity=WarningSeverity.WARNING,
+                    basis=FidelityBasis.STRUCTURAL,
+                    impact=FidelityImpact.KNOWN_LOSS,
                 )
             )
         warnings.extend(diagnostic_warnings)
@@ -1014,7 +1028,7 @@ def ocr_pdf(
                     severity=WarningSeverity.CRITICAL,
                 )
             )
-        if had_signatures:
+        if signature_assessment.present:
             security_warnings.append(
                 SecurityWarning(
                     code="signature-invalidated",
@@ -1024,6 +1038,13 @@ def ocr_pdf(
                     ),
                     severity=WarningSeverity.CRITICAL,
                 )
+            )
+            warnings.append(
+                organize_ops._signature_invalidated_fidelity_warning("OCR")
+            )
+        elif signature_assessment.uncertain:
+            warnings.append(
+                organize_ops._signature_presence_uncertain_warning("OCR")
             )
         return ExecuteResult(
             candidates=candidates,

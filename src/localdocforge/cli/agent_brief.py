@@ -28,33 +28,61 @@ SCHEMA_VERSION = 1
 # CAPABILITY_SPECS, with live state joined from EngineRegistry.capabilities().
 USAGE_BY_CAPABILITY_ID: Final[Mapping[str, str]] = MappingProxyType(
     {
-        "merge": "ldf merge INPUT.pdf [INPUT.pdf ...] -o OUTPUT.pdf [--pages RANGE ...]",
-        "split": "ldf split INPUT.pdf -d OUTPUT_DIR [--pages RANGE | --every N]",
-        "remove-pages": "ldf remove-pages INPUT.pdf --pages RANGE -o OUTPUT.pdf",
-        "extract-pages": "ldf extract-pages INPUT.pdf --pages RANGE -o OUTPUT.pdf",
-        "organize": "ldf organize INPUT.pdf --order RANGE -o OUTPUT.pdf",
-        "rotate": "ldf rotate INPUT.pdf --degrees 90 [--pages RANGE] -o OUTPUT.pdf",
-        "crop": "ldf crop INPUT.pdf --box X0,Y0,X1,Y1 [--pages RANGE] -o OUTPUT.pdf",
+        "merge": (
+            "ldf merge INPUT.pdf [INPUT.pdf ...] -o OUTPUT.pdf [--pages RANGE ...] "
+            "[--collision fail|rename|overwrite]"
+        ),
+        "split": (
+            "ldf split INPUT.pdf -d OUTPUT_DIR [--pages RANGE | --every N] "
+            "[--collision fail|rename|overwrite]"
+        ),
+        "remove-pages": (
+            "ldf remove-pages INPUT.pdf --pages RANGE -o OUTPUT.pdf "
+            "[--collision fail|rename|overwrite]"
+        ),
+        "extract-pages": (
+            "ldf extract-pages INPUT.pdf --pages RANGE -o OUTPUT.pdf "
+            "[--collision fail|rename|overwrite]"
+        ),
+        "organize": (
+            "ldf organize INPUT.pdf --order RANGE -o OUTPUT.pdf [--collision fail|rename|overwrite]"
+        ),
+        "rotate": (
+            "ldf rotate INPUT.pdf --degrees 90 [--pages RANGE] -o OUTPUT.pdf "
+            "[--collision fail|rename|overwrite]"
+        ),
+        "crop": (
+            "ldf crop INPUT.pdf --box X0,Y0,X1,Y1 [--pages RANGE] -o OUTPUT.pdf "
+            "[--collision fail|rename|overwrite]"
+        ),
         "inspect": "ldf inspect INPUT.pdf",
-        "compress": "ldf compress INPUT.pdf -o OUTPUT.pdf",
+        "compress": "ldf compress INPUT.pdf -o OUTPUT.pdf [--collision fail|rename|overwrite]",
         "ocr": (
             "ldf ocr INPUT.pdf -o OUTPUT.pdf [--language eng] [--sidecar OUTPUT.txt] "
-            "[--skip-text | --force-ocr]"
+            "[--skip-text | --force-ocr] [--collision fail|rename|overwrite]"
         ),
-        "images-to-pdf": "ldf images-to-pdf IMAGE... -o OUTPUT.pdf [--page-size A4]",
+        "images-to-pdf": (
+            "ldf images-to-pdf IMAGE... -o OUTPUT.pdf [--page-size A4|image] "
+            "[--collision fail|rename|overwrite]"
+        ),
         "pdf-to-images": (
             "ldf pdf-to-images INPUT.pdf -d OUTPUT_DIR "
-            "[--format png --dpi 300] [--preset llm]"
+            "[--format png --dpi 300] [--preset llm] [--collision fail|rename|overwrite]"
         ),
         "pdf-to-markdown": (
             "ldf pdf-to-md INPUT.pdf -o OUTPUT.md [--pages RANGE] "
-            "[--format md|txt|jsonl] [--no-page-anchors] [--tables]"
+            "[--format md|txt|jsonl] [--no-page-anchors] [--tables] "
+            "[--collision fail|rename|overwrite]"
         ),
         "markdown-to-pdf": (
             "ldf md-to-pdf INPUT.md -o OUTPUT.pdf "
-            "[--paper A4|Letter|Legal] [--margin MM] [--toc]"
+            "[--paper A4|Letter|Legal] [--margin MM] [--toc] "
+            "[--collision fail|rename|overwrite]"
         ),
-        "convert-images": "ldf convert-images IMAGE... -d OUTPUT_DIR [--preset llm]",
+        "convert-images": (
+            "ldf convert-images IMAGE... -d OUTPUT_DIR [--preset llm] "
+            "[--collision fail|rename|overwrite]"
+        ),
     }
 )
 
@@ -63,7 +91,7 @@ _EXIT_CODES: Final[tuple[tuple[int, str], ...]] = (
     (1, "operation failed"),
     (2, "usage error (bad arguments, bad page range, or missing file)"),
     (3, "no engine available for the operation"),
-    (4, "generated-output validation failed before publication"),
+    (4, "output validation or strict-fidelity policy failed before publication"),
     (5, "output exists and collision policy is fail"),
     (130, "cancelled or cooperative job timeout"),
 )
@@ -76,8 +104,8 @@ _GOTCHAS: Final[tuple[tuple[str, str], ...]] = (
     ),
     (
         "collision-policy",
-        "Existing outputs fail with exit 5 by default; choose --collision rename or overwrite "
-        "explicitly on writing commands.",
+        "Existing outputs fail with exit 5 by default. --collision is a command-level option: "
+        "put it after the subcommand, for example `ldf merge ... --collision rename`.",
     ),
     (
         "glob-expansion",
@@ -86,22 +114,36 @@ _GOTCHAS: Final[tuple[tuple[str, str], ...]] = (
     ),
     (
         "warning-codes",
-        "Treat warning arrays (often shortened to warnings[]) as actionable. Current conversion "
-        "JSON reports expose security_warnings[] and fidelity_warnings[]; each entry has a stable "
-        "code value.",
+        "Treat warning arrays (often shortened to warnings[]) as actionable. Check "
+        "fidelity_status and fidelity_coverage first: an empty fidelity_warnings[] array is not a "
+        "clean verdict when coverage is none or partial. Each fidelity warning has a stable code, "
+        "basis, impact, and optional remedy.",
     ),
     (
         "fitness-check",
         "Originals are never modified and generated PDFs are validated before publication, "
-        "but still spot-check whether the output is fit for the requested use.",
+        "but still spot-check whether the output is fit for the requested use. A 110 DPI PNG "
+        "render is usually sufficient for a low-cost layout check.",
+    ),
+    (
+        "strict-fidelity",
+        "Use global --strict-fidelity before the command when every result other than "
+        "complete/no-known-loss must be refused before publication.",
+    ),
+    (
+        "mcp",
+        "Use `ldf mcp` for the synchronous local stdio tool surface; it is generated from the "
+        "same implemented capability registry and uses the same validation pipeline.",
     ),
 )
 
 _WORKFLOW: Final[tuple[tuple[str, str], ...]] = (
     (
         "verify",
-        "Run ldf with global --json before the command, require exit 0, inspect both warning "
-        "arrays and their code values, then check page counts, file sizes, or a rendered sample.",
+        "Run ldf with global --json before the command, require exit 0, inspect "
+        "fidelity_status and fidelity_coverage, then inspect both warning arrays (including "
+        "fidelity basis, impact, and remedy) before checking page counts, file sizes, or a "
+        "rendered sample. Warning silence is not an assessment unless coverage is complete.",
     ),
     (
         "fallback",
@@ -376,9 +418,7 @@ def _validate_and_build_capabilities(
                 f"live capability metadata does not match CAPABILITY_SPECS for {spec.id!r}"
             )
         if capability.available and capability.missing_requirements:
-            raise AgentBriefError(
-                f"available capability {spec.id!r} returned missing requirements"
-            )
+            raise AgentBriefError(f"available capability {spec.id!r} returned missing requirements")
         if not capability.available and not capability.missing_requirements:
             raise AgentBriefError(
                 f"unavailable capability {spec.id!r} did not explain its missing requirements"

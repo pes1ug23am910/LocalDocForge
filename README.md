@@ -17,6 +17,7 @@ never paste into a cloud converter.
 $ ldf compress outline-6page.pdf -o smaller.pdf
 Operation : compress
 Status    : success
+Fidelity  : unassessed (partial coverage)
 Engine    : pikepdf 10.10.0
 Input     : outline-6page.pdf (5,777 B, 6 pages)
 Output    : smaller.pdf (2,953 B, 6 pages)
@@ -40,8 +41,9 @@ source before anything was published.*
 - **It refuses to lie.** A feature is advertised only when its
   implementation *and* a live engine probe both pass (`ldf doctor` is the
   truth, not a brochure). Cropping is never called redaction. Known
-  preservation losses are reported with stable warning codes instead of
-  being dropped silently. `ldf agent-brief` turns the same registry and live
+  preservation losses are reported with stable warning codes and machine-
+  readable basis, impact, and optional remedy fields instead of being dropped
+  silently. `ldf agent-brief` turns the same registry and live
   probe state into compact Markdown or JSON for coding agents; planned
   capabilities cannot enter that output.
 
@@ -133,6 +135,7 @@ ldf crop input.pdf --box "50,50,400,500" -o out.pdf    # warns: NOT redaction
 ldf compress input.pdf -o smaller.pdf                  # lossless; images untouched
 ldf ocr scan.pdf -o searchable.pdf --sidecar scan.txt  # best-effort searchable layer
 ldf images-to-pdf scans/*.jpg -o scans.pdf --page-size A4
+ldf images-to-pdf tall-scan.png -o tall-scan.pdf --page-size image # avoid fixed-page resize
 ldf pdf-to-images input.pdf -d pages/ --format png --dpi 300
 ldf pdf-to-images scanned.pdf -d vision/ --preset llm   # per-page vision-ready JPEGs
 ldf pdf-to-md input.pdf -o content.md                    # Markdown + source-page anchors
@@ -146,12 +149,49 @@ ldf --json agent-brief            # the same ordered snapshot as structured JSON
 ldf mcp                           # MCP 2025-11-25 over stdio for local agents
 ldf --json doctor
 ldf --strict-offline web   # localhost API + status page; prints the session token
+ldf --strict-fidelity rotate input.pdf --degrees 90 -o checked.pdf
 ```
+
+Every conversion report separates `fidelity_coverage` (`none`, `partial`, or
+`complete`) from the derived run-level `fidelity_status` (`unassessed`,
+`no-known-loss`, `review-required`, or `known-loss`). An empty
+`fidelity_warnings` array is not a clean verdict when coverage is `none` or
+`partial`; only complete coverage without a review/known-loss impact derives
+`no-known-loss`. Warning `severity` controls presentation/urgency, while
+`impact` controls that verdict. Each warning also records whether its basis is
+`declared`, `structural`, or `heuristic`, and may include a remedy. A heuristic
+observation can request review but cannot claim known loss.
+
+Put global `--strict-fidelity` before the command, or set
+`LDF_STRICT_FIDELITY=true`, to publish only a complete/no-known-loss result.
+The pipeline first performs candidate path, alias, collision, and size safety
+checks, then refuses any other fidelity status before content validation or
+publication. That policy refusal uses CLI exit 4 and leaves `validation` null;
+the localhost API returns 422 and MCP returns an error with the bounded
+structured report. API and MCP operation models also accept the shared strict
+boolean `strict_fidelity=true`; a per-call false value cannot weaken a
+server-wide strict setting.
+
+`images-to-pdf` always reports the declared/known-loss `images-reencoded`
+warning because Pillow re-encodes every page. Its run-level coverage is
+`partial` and its status is `known-loss`, including with
+`--page-size image`: native page size avoids canvas resize but not re-encoding.
+For fixed pages, path-free placement diagnostics measure every frame in the
+DPI-sensitive ratio `output-raster-pixels/source-pixels`. A scale below `0.5`
+reports structural/known-loss `image-fit-downscaled`; `--fit stretch` changing
+aspect ratio beyond `1.01` reports structural/known-loss
+`image-aspect-distorted`. Detailed frame records are capped at 256, while the
+aggregate counts and placement sub-coverage still cover every frame;
+`frames_total`, `frames_reported`, `truncated`, and `coverage="complete"`
+disclose that boundary.
 
 `agent-brief` must resolve the repository's writable
 `docs/AGENT_FEEDBACK.md`. It works with a discoverable source checkout (including
 the repository-local environment above); a detached wheel/direct VCS install
 outside any checkout exits 1 rather than pointing agents at a packaged imitation.
+The generated brief contains seven agent gotchas, including command-level
+`--collision` placement, strict fidelity, and MCP; its low-cost visual review
+suggestion is a 110 DPI PNG spot-check.
 
 `ldf mcp` is configured as a subprocess by a same-user agent client; it is not
 an interactive shell command or a network listener. Its stdout is reserved for
@@ -172,6 +212,11 @@ to all encrypted inputs in an invocation. Existing outputs are never
 overwritten unless you say
 `--collision overwrite`. Full grammar, exit codes, and the HTTP API
 contract: [`docs/CLI.md`](docs/CLI.md).
+
+The CLI entry point configures supported stdout/stderr streams for UTF-8 with a
+replacement fallback so Unicode filenames and status marks do not crash legacy
+Windows consoles. Generated text artifacts remain strict UTF-8 and the MCP
+protocol uses its separate strict binary UTF-8 channel.
 
 `pdf-to-md` writes extracted content to the requested file using strict UTF-8
 and normalized LF line endings; stdout remains the report/diagnostic channel,
