@@ -1,67 +1,43 @@
 # Packaging, dependency profiles, and release gate
 
-This is the packaging source of truth for LocalDocForge 0.1.0. A version
-marker, lock resolution, package classifier, or configured CI job is a declared
-contract—not proof that an operating system passed.
+This is the packaging source of truth for LocalDocForge 0.1.0. Package metadata,
+lock resolution, configured CI, and a recorded artifact hash are declarations;
+only an executed gate is evidence for a specific operating system, architecture,
+and Python interpreter.
 
-## Declared metadata and executed runners
+## Supported Python and platform scope
 
-Package metadata declares CPython 3.12, 3.13, and 3.14
-(`Requires-Python: >=3.12,<3.15`) and carries the Windows 11 classifier for this
-primary release checkpoint. The universal lock resolves CPython markers for
-Windows, Linux, and macOS. The retained rows below predate the S8 dependency
-and lock changes; they are historical checkpoint evidence, not an S8 pass:
+The package declares CPython 3.12–3.14
+(`Requires-Python: >=3.12,<3.15`). The universal lock resolves markers for
+Windows, Linux, and macOS. The current release manifest records a
+Windows-AMD64 artifact identity. A platform without a retained, passing gate
+must not be described as release-verified merely because its CI job is
+configured or its dependencies resolve.
 
-| Runner | Python | Result | Retained evidence |
-|---|---:|---|---|
-| Windows 11 x64 build 26200 | 3.14.4 | **Historical pass** for the retained pre-S8 locks: Base/Lite/Standard/Full source+wheel install, smoke, uninstall, Ruff, mypy, normal/blocked full tests, drift, and release manifest. Its evidence records `checksum_file_verified: false`; no checksum-file pass is claimed. | `packaging-evidence/windows-3.14.4.json` |
-| Windows 11 x64 build 26200 | 3.13.5 | **Historical pass** for its retained pre-S8 side-by-side matrix and checksum file | `packaging-evidence/windows-3.13.5.json` |
-| Windows 11 x64 | 3.12 | Not run | none |
-| Linux | 3.12–3.14 | Not run after hardening | configured CI only |
-| macOS | 3.12–3.14 | Not run after hardening | configured CI only |
+## Installation profiles
 
-The preserved `.venv` CPython 3.14.4 environment was not deleted or replaced.
-CPython 3.13.5 was selected from a separate uv-managed installation and every
-matrix environment was temporary. Do not infer Windows 3.12, Linux, or macOS
-from these Windows results.
-
-## Honest installation profiles
-
-Profiles describe shipped Python dependencies, not the feature roadmap.
+Profiles describe shipped Python dependencies, not future features.
 
 | Install | Shipped behavior | Direct additions over base |
 |---|---|---|
-| default / `lite` | Library and CLI; current PDF organization, inspection, render validation, image conversion, PDF text extraction, OCR orchestration, Markdown parsing/render orchestration, and the local stdio MCP server | none; Lite is an explicit base alias |
-| `standard` | Lite plus localhost FastAPI service and status page | FastAPI, Uvicorn, python-multipart |
-| `full` | Standard plus optional pypdf diagnostic adapter | pypdf |
+| default / `lite` | Library and CLI; PDF organization, inspection, validation, image conversion, PDF text extraction, OCR orchestration, Markdown parsing/render orchestration, and the local stdio MCP server | none; Lite is an explicit base alias |
+| `standard` | Lite plus the loopback FastAPI service and status page | FastAPI, Uvicorn, python-multipart |
+| `full` | Standard plus the optional pypdf diagnostic adapter | pypdf |
 | `dev` | Full plus test, lint, type, build, and artifact tools | pytest, ReportLab, HTTPX, Ruff, mypy, build, Twine |
 
-“Full” means all shipped Python adapters. It does not add
-Office/HTML-to-PDF conversion, PDF/A/PDF/UA, editing, signatures, scanner
-support, external executables, or the planned React UI. PDF-to-Markdown text
-extraction and the `markdown-it-py>=4.2` side of Markdown-to-PDF are part of
-every profile. Opt-in PDF-to-Markdown table extraction also ships in every
-profile through `pdfplumber==0.11.10` and its locked parser/cryptography
-closure. OCRmyPDF 17.8.1 and its reviewed Python closure likewise ship in every
-profile; the separately installed Tesseract and Ghostscript executables do not.
-Typst ≥0.15.1 is separately installed and never bundled by these profiles, so
-`ldf doctor` remains the live capability authority for external-engine
-availability.
+“Full” means all shipped Python adapters. It does not add Office conversion,
+PDF/A or PDF/UA, editing, signatures, scanner support, external executables, or
+the planned browser UI. Typst, Tesseract, and Ghostscript are separately
+installed and never bundled by these profiles; `ldf doctor` is the live
+authority for their availability.
 
-The official `mcp>=1.28.1,<2` SDK is a base dependency and therefore ships in
-every profile. LocalDocForge exposes only its UTF-8 stdio transport: tool calls
-are synchronous and serialized in v1, with no progress streaming. The SDK's
-mandatory HTTP/SSE/JWT dependencies are installed but are not enabled as MCP
-transports or authentication surfaces. On Windows, the stdio transport uses
-pywin32 to preserve a private protocol descriptor while redirecting inherited
-standard handles; LocalDocForge also declares pywin32 directly on Windows
-because first-party stdio and shared worker-spawn code imports its bindings.
-The platform marker omits pywin32 elsewhere. Because the SDK's mandatory
-closure already includes Uvicorn and python-multipart, the resolved Standard-
-minus-Lite delta is FastAPI alone even though the Standard extra declares all
-three API dependencies explicitly.
+The MCP SDK is a base dependency and therefore ships in every profile.
+LocalDocForge enables only its inherited UTF-8 stdio transport. The SDK's
+HTTP-capable dependency closure is installed but not enabled as an MCP network
+transport. On Windows, LocalDocForge declares pywin32 directly because its
+stdio and worker-spawn code imports those bindings.
 
-The Windows-primary reproducible Standard install is:
+For a hash-locked Standard installation on Windows:
 
 ```powershell
 py -3.14 -m venv .venv-standard
@@ -71,13 +47,7 @@ py -3.14 -m venv .venv-standard
 .venv-standard\Scripts\ldf.exe --json doctor
 ```
 
-Ordinary resolver-driven source forms are also tested in isolated staged
-sources: `.`, `.[lite]`, `.[standard]`, and `.[full]`. For an audited install,
-dependencies come from the matching hash lock first and LocalDocForge is then
-installed with `--no-deps`, preventing silent re-resolution.
-
-The equivalent POSIX recipe is structurally supported but unverified in this
-checkpoint:
+The equivalent POSIX structure is:
 
 ```bash
 python3 -m venv .venv-standard
@@ -89,7 +59,7 @@ python3 -m venv .venv-standard
 
 ## Universal lock and regeneration
 
-`uv.lock` is the canonical universal resolution. Auditable, marker-aware,
+`uv.lock` is the canonical universal resolution. Marker-aware,
 SHA-256-enforced exports are:
 
 - `requirements/locks/lite.txt`
@@ -97,20 +67,10 @@ SHA-256-enforced exports are:
 - `requirements/locks/full.txt`
 - `requirements/locks/dev.txt`
 
-`requirements-lock.txt` is only a compatibility include for Dev. The resolver
-is pinned to uv 0.11.26. `requirements/uv-bootstrap.txt` contains hashes for
-the official PyPI uv artifacts. Resolution uses the official PyPI simple index
-and a 2026-07-19 global cutoff, with one package-scoped exception:
-cryptography uses 2026-08-01 so the locks can select 50.0.0, the first release
-fixing CVE-2026-69247. The exception does not move any other package's cutoff,
-and no insecure/trusted-host bypass is used. Adding OCRmyPDF 17.8.1 did not move
-the protected cryptography 50.0.0 or pdfminer.six 20260107 resolutions.
+`requirements-lock.txt` is a compatibility include for Dev.
+`requirements/uv-bootstrap.txt` pins the resolver bootstrap with hashes.
 
-At that global cutoff uv resolves stable `mcp==1.28.1`, whose latest supported
-protocol generation is `2025-11-25`; later stable SDK releases postdate the
-cutoff. The ten-node universal-lock delta is reviewed in
-`docs/ENGINE_DECISIONS.md`. It leaves `cryptography==50.0.0` and
-`pdfminer-six==20260107` unchanged.
+Offline drift check:
 
 ```powershell
 .venv\Scripts\python.exe -m pip install --require-hashes `
@@ -118,7 +78,7 @@ cutoff. The ten-node universal-lock delta is reviewed in
 .venv\Scripts\python.exe scripts\lock_profiles.py --check
 ```
 
-To intentionally update after reviewing dependency/advisory changes:
+Intentional update flow, after reviewing dependency and advisory changes:
 
 ```powershell
 .venv\Scripts\python.exe scripts\lock_profiles.py --write
@@ -126,11 +86,12 @@ git diff -- uv.lock requirements\locks
 .venv\Scripts\python.exe scripts\lock_profiles.py --check
 ```
 
-`--write` may contact official PyPI. `--check` forces uv offline and rejects
-canonical-lock, export, hash, profile-set, and approved-host drift.
+`--write` may contact official PyPI. `--check` forces the resolver offline and
+rejects canonical-lock, export, hash, profile-set, and approved-host drift.
 
 ## Hash-locked isolated build backend
 
+<<<<<<< .merge_file_92IPjP
 PEP 517 declares only `setuptools==83.0.0`. The separate
 `requirements/build-backend.txt` records official PyPI release hashes:
 
@@ -430,322 +391,119 @@ system-temporary artifacts; a 21.2-second precommit honesty-message delta
 repeated both direct builds and the sdist-to-wheel build and refreshed the live
 manifest below. Retained `dist/` and `packaging-evidence/` records were not
 modified.
+=======
+PEP 517 declares only `setuptools==83.0.0`.
+`requirements/build-backend.txt` records the official PyPI wheel and sdist
+hashes. The gate validates agreement with `pyproject.toml`, downloads the exact
+wheel only from HTTPS `files.pythonhosted.org`, bounds its size, rejects an
+off-host redirect, and verifies SHA-256.
+
+Normal PEP 517 isolation remains enabled. Ambient `PIP_*` configuration is
+removed and the backend is installed from a one-use, verified wheelhouse with
+index access disabled. `--no-build-isolation` is not used.
+>>>>>>> .merge_file_ENm5Mr
+
+## Reproducible artifacts and live manifest
+
+The build gate stages two independent minimal source trees and builds each wheel
+and sdist with `SOURCE_DATE_EPOCH=1704067200`. It requires byte-identical direct
+repeats, rebuilds a wheel from the sdist, and requires that wheel to match the
+direct wheel. Twine, metadata, member, and pure-wheel tag checks run before the
+result is compared with `packaging/release-artifact-manifest.json`.
+
+The manifest is platform-scoped because archive metadata and compression can
+legitimately differ across operating systems. An unrecorded platform may use
+`--allow-unrecorded-platform` only to skip the platform-identity comparison;
+reproducibility, metadata, and sdist-to-wheel checks still run and the evidence
+records that no platform identity was verified.
+
+### Current Windows-AMD64 artifact identity
+
+These values mirror the live Windows-AMD64 entry in
+`packaging/release-artifact-manifest.json`:
 
 | Identity | SHA-256 | Bytes |
 |---|---|---:|
-| package source inputs | `5359ad0a27ce728f29e25de3862bb545ffd0621768d2cd2a534470627c52a8bf` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `664e4307ffa6b8d458ea5274d339baeacaadb1f4cbe89859ad7896f425c61191` | 162,590 |
-| `localdocforge-0.1.0.tar.gz` | `41fb64892c817f70030f2ab400d4ba683c064996716da45777ef443fcc81c56a` | 148,040 |
+| package source inputs | `b296238f4ad33414a7fcc95d41454611b715c65cb942bdb228d02c4f96c0c92f` | — |
+| `localdocforge-0.1.0-py3-none-any.whl` | `b7633092b629eba6924dc8015b934293354f8a8d7f10bdca143d6f162a29f615` | 195,606 |
+| `localdocforge-0.1.0.tar.gz` | `ab4c4e63e3e94a1940b2ae4073f93ff1b8d0a5b52ec3be8048346773b60cede8` | 184,118 |
 
-The post-delta 520.3-second verify-mode full gate reproduced this identity,
-passed both 786-outcome suite modes and every source/wheel profile, and
-recorded `release_manifest_verified: true`,
-`source_install_syntax_tested: true`, and `full_tests.status: passed`.
-Disposable evidence SHA-256 was
-`b7b4bc51ea6d0d8addee1212540ac25856e105c1efe296b2800419f5ddeddc85`;
-the pre-review run honestly recorded `source.working_tree_changes: true`.
-Temporary output was removed and retained artifacts/evidence stayed untouched.
-
-#### 2026-08-11 S7 review-remediation identity
-
-The F2/F3 review remediation changed packaged OCR failure mapping and README
-sidecar guidance. A supported 27.2-second build-only gate used disposable
-system-temporary artifacts, reproduced direct and sdist-derived wheels, and
-refreshed only the live Windows manifest below. Retained `dist/` and
-`packaging-evidence/` records were not modified.
-
-| Identity | SHA-256 | Bytes |
-|---|---|---:|
-| package source inputs | `f32525313ca360ae413564365d5fe6e1afb72824b1590fff8efb2f2e678f6199` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `eae5787b0a8011454e87269a77a635639b9033648be6c6ec709fff75edf20c83` | 162,870 |
-| `localdocforge-0.1.0.tar.gz` | `d0f608450bad0f854f61e7328ac1e546d3168d94d826cff6152af9dba3438221` | 148,364 |
-
-The direct post-remediation suite collected 787 outcomes: 783 passed, four
-expected platform skips, and zero failed. The final 560.5-second verify-mode
-gate reproduced this identity, passed both suite modes and every source/wheel
-profile, and recorded `release_manifest_verified: true`,
-`source_install_syntax_tested: true`, and `full_tests.status: passed`.
-Disposable evidence SHA-256 is
-`d7ab4f3a059ec418e29c232c5f4c969c94d7a07f0406eb1c42c9630e2ad13924`;
-the pre-commit run honestly records `source.working_tree_changes: true`.
-
-### 2026-08-11 pre-rebase S8 local-agent MCP identity (superseded)
-
-S8 packages the registry-derived MCP stdio server, shared typed API operation
-models, pipeline-backed inspect transport, and official `mcp==1.28.1` runtime
-closure. A 29.9-second build-only gate used a fresh system-temporary directory,
-reproduced both direct builds and the sdist-to-wheel build, passed Twine/member/
-metadata checks, and refreshed only the live Windows-AMD64 manifest. Retained
-`dist/` and `packaging-evidence/` records were not modified.
-
-| Identity | SHA-256 | Bytes |
-|---|---|---:|
-| package source inputs | `09c44bc90ca476d9eb50bd6196dc001c5dc5529bfa46de27e0f833014d703c7d` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `7c2050a9f249d2f80dcb3a1808b87696ccf27f1cfa9706c4909582164dfdadc8` | 165,408 |
-| `localdocforge-0.1.0.tar.gz` | `a0d746ffaf320cab84e4af9109c172503fd0b9c9d77da872478b7b156b250954` | 148,012 |
-
-This build-only identity predates the required S7-first rebase and is retained
-only as implementation chronology. It is not final S8 release evidence; the
-merged S7+S8 identity and coordinated full gate supersede it below.
-
-### 2026-08-11 post-S7 S8 merged manifest identity
-
-After rebasing onto S7 at `6c42eb7`, S8 regenerated the combined uv lock and
-all profile exports, SBOMs, notices, advisory metadata, and this manifest. A
-32.2-second build-only gate used a fresh system-temporary directory, reproduced
-both direct builds and the sdist-to-wheel build, passed Twine/member/metadata
-checks, and refreshed only the live Windows-AMD64 manifest. Retained `dist/`
-and `packaging-evidence/` records were not modified.
-
-| Identity | SHA-256 | Bytes |
-|---|---|---:|
-| package source inputs | `a25ba617544ce7315b546322dfeb8bdd24785b2ec45665242d76e1265d48040a` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `8eb3bf044d85b39d1aebb989a38e58ad611782a36aa6e2a619de2c3a11315350` | 183,814 |
-| `localdocforge-0.1.0.tar.gz` | `f254b8a09ad9db833aa392a20a90df3286696d7de2f637470e8334fb4c63a5f3` | 165,260 |
-
-The post-rebase direct suite collected 814 outcomes: 810 passed, four expected
-platform skips, and zero failed in 109.18 seconds. A subsequent 638.6-second
-verify-mode gate reproduced the identity above; passed native, Linux, and
-Darwin mypy; passed both ordinary and blocked-network 814-outcome suites; and
-passed fresh Base/Lite/Standard/Full source and wheel installs plus the isolated
-Full test profile. Its disposable evidence records
-`release_manifest_verified: true`, `source_install_syntax_tested: true`, and
-`full_tests.status: passed`; SHA-256 is
-`c53b702cdfa081fcc0b560a6bdc5a433800219e3983de00d82c93525d5f47dce`.
-It also honestly records `source.working_tree_changes: true` because this was
-the executor's pre-review branch gate. The evidence remained disposable under
-the §1.8 rule; retained `packaging-evidence/` was not modified.
-
-The independent review later established that this pre-review gate preceded two final
-profile-regression cases: committed review tip `da9138c` collected 816 tests,
-not 814. The checkpoint remains implementation chronology, but it is not final
-evidence for the delivered tree and is superseded by the remediation identity
-and clean committed gate below.
-
-### 2026-08-11 S8 external-review remediation identity
-
-After the independent review, S8 preserved actionable collision failures, kept typed
-successful MCP destination paths exact under short-password redaction, added a
-dedicated MCP documentation contract, corrected stale network-client claims,
-and declared its direct Windows pywin32 imports explicitly. The dependency
-closure and locked versions did not move. A 21.2-second build-only gate used a
-fresh system-temporary directory, reproduced both direct builds and the
-sdist-to-wheel build, passed Twine/member/metadata checks, and refreshed only
-the live Windows-AMD64 manifest. Retained `dist/` and `packaging-evidence/`
-records were not modified.
-
-| Identity | SHA-256 | Bytes |
-|---|---|---:|
-| package source inputs | `096f8e316704bd84188e4cd96aee82bcf4ec67527f030e06a6f1a127d30184e7` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `c3e883f78ec0f08506bd0750b7c2c73f93dcb8ceeea66d4bafd66f930cecf12b` | 184,048 |
-| `localdocforge-0.1.0.tar.gz` | `5ad21d6e946a03913cf7f3c6ff200060e9f9124fdff9c01d669fb684053a26e7` | 165,604 |
-
-The remediation tree collects 819 tests. Its first complete run retained one
-documentation-consistency failure because this newly generated source identity
-had not yet been embedded here; all other 814 tests passed and four expected
-platform tests skipped. The corrected complete-suite and clean committed-gate
-results follow after rerun rather than relabelling that failed attempt. The
-complete rerun then passed 815 tests with the same four expected skips and zero
-failures in 109.87 seconds. The definitive 572.8-second verify-mode gate then
-ran from clean commit `673eb0fa13117d0ba38e6a97119a93c249cfeda8`. Both the
-ordinary and blocked-network 819-outcome suites passed 815 tests with four
-expected platform skips; Ruff, native/Linux/Darwin mypy over 44 files,
-lock/artifact drift, `pip check`, reproducible builds, and every
-Base/Lite/Standard/Full source-and-wheel profile also passed. The disposable
-Windows 11 x64 / CPython 3.14.4 evidence has SHA-256
-`8ceada03c3cf2e95efc37195226a3d4abcf0a6485e439409a4afac1c68f0296c` and
-records `release_manifest_verified: true`,
-`source_install_syntax_tested: true`, source revision `673eb0f`, and
-`source.working_tree_changes: false`.
-
-The required independent delta re-review independently reproduced both
-819-outcome suite modes, all lock/artifact checks, the package-source and lock
-hashes, and the real-process collision, short-password, stdout-purity,
-containment, strict-offline, and disconnect probes. Its final verdict is
-`approve-with-nits`; all F1–F7 findings are resolved and no further remediation
-round is required before the user's merge decision.
-
-### 2026-08-19 S10 fidelity-contract manifest identity
-
-S10 adds the machine-readable fidelity contract, strict publication policy,
-bounded image-placement diagnostics, and API/MCP transport hardening without a
-dependency or lock change. The final 23.7-second build-only
-gate used a fresh system-temporary directory, reproduced direct and
-sdist-to-wheel builds, passed
-Twine/member/metadata checks, and refreshed only the live Windows-AMD64
-manifest. Retained `dist/` and `packaging-evidence/` records were not modified.
-
-| Identity | SHA-256 | Bytes |
-|---|---|---:|
-| package source inputs | `960fdcf1a6017416c854e7e429dac366bf29081fa8cb8d18b90a32787c1221cd` | — |
-| `localdocforge-0.1.0-py3-none-any.whl` | `b2a7adf62e5a036323accd19f369e65a0b7249283f2de5211da845c153533a48` | 195,757 |
-| `localdocforge-0.1.0.tar.gz` | `1a340009f69fd33fb903e4e2ab23f0cbdcca485cbd36759d6fb1188162f4c8a9` | 184,150 |
-
-The definitive 663.6-second local verify-mode gate reproduced the identity
-above; passed native, Linux, and Darwin mypy; passed both ordinary and blocked-
-network 899-outcome suites (895 passed and four expected skips each); and
-passed reproducible builds, fresh Base/Lite/Standard/Full source and wheel
-installs, and the isolated Full test profile. Its disposable evidence SHA-256 is
-`06697396827e469cf69ea4c4c16bb76fe9c7392ab224390c375486aff68b2ff1` and
-records `release_manifest_verified: true`,
-`source_install_syntax_tested: true`, all four profiles `passed`, and
-`full_tests.status: passed`. It honestly records base revision `7b37d5e` with
-`source.working_tree_changes: true`. This local Windows evidence does not
-change the repository-wide release decision.
-
-## Clean profile/full-test matrices
-
-Both executed interpreters used the same authenticated wheel, package-source
-identity, manifest, profile locks, and checksum file:
+Refresh this manifest only after intentional package-source changes pass the
+focused checks and a reproducible build. Never update it merely to hide drift.
 
 ```powershell
-.venv\Scripts\python.exe scripts\profile_matrix.py `
-  --wheel-dir dist\windows-11-x64 `
-  --python .venv\Scripts\python.exe `
-  --install-source --full-tests `
-  --checksum-file packaging-evidence\windows-11-x64-SHA256SUMS.txt `
-  --evidence packaging-evidence\windows-3.14.4.json
-
-$python313 = & .venv\Scripts\uv.exe python find 3.13
-.venv\Scripts\python.exe scripts\profile_matrix.py `
-  --wheel-dir dist\windows-11-x64 `
-  --python $python313 `
-  --install-source --full-tests `
-  --checksum-file packaging-evidence\windows-11-x64-SHA256SUMS.txt `
-  --evidence packaging-evidence\windows-3.13.5.json
+.venv\Scripts\python.exe scripts\release_gate.py --steps build `
+  --update-artifact-manifest
 ```
 
-Each profile gets a fresh venv, matching hash lock, source install/import/
-uninstall, wheel install, `pip check`, `ldf doctor` plus focused core smoke, and
-wheel uninstall. In the retained pre-S8 evidence, the additional fresh Dev
-venv ran Ruff, mypy, the then-complete collected suite (639 outcomes at the S8
-kickoff), the same suite with Python DNS/non-loopback sockets denied, and
-generated-artifact drift. Current S8 evidence is the clean committed gate and
-disposable evidence identity recorded in the preceding section.
+## Clean profile and full-test matrices
 
-## SBOMs, notices, and the complete gate
+`scripts/profile_matrix.py` creates a fresh environment for each profile. It
+checks the matching hash lock, source install/import/uninstall, wheel install,
+`pip check`, `ldf doctor`, focused smoke behavior, and wheel uninstall. With
+`--full-tests`, the Dev profile also runs Ruff, mypy, the complete test suite,
+the blocked-network suite, and generated-artifact drift checks.
 
-Profile-specific artifacts are:
+Evidence files are outputs, not inputs to a claim. A passing record must identify
+the interpreter and platform, verify the intended artifact/checksum, and require
+`success` for every selected profile before the result is summarized as a pass.
+
+## SBOMs, notices, and advisory data
+
+Profile-specific generated artifacts are:
 
 - `docs/SBOM.lite.cdx.json` / `THIRD_PARTY_NOTICES.lite.md`
 - `docs/SBOM.standard.cdx.json` / `THIRD_PARTY_NOTICES.standard.md`
 - `docs/SBOM.full.cdx.json` / `THIRD_PARTY_NOTICES.full.md`
+- `docs/ADVISORY_REPORT.json`
 
-The merged 2026-08-10 S7+S8 inventory contains 56 unique runtime Python
-records, 52 versioned bundled-native records, and 19 enumerated version-unknown
-native children. Runtime Python counts are 54 Lite, 55 Standard, and 56 Full;
-profile component/dependency totals are 125/126 Lite, 126/127 Standard, and
-127/128 Full.
-Cryptography's supplier SBOM boundary retains its aggregate plus all 32
-`scope=required` Cargo children and OpenSSL 4.0.1, while excluding exactly seven
-supplier-marked build dependencies and a duplicate target record. CFFI's
-embedded libffi remains version-unknown. Composition is still explicitly
-`incomplete`: the pre-existing pydantic-core 2.46.4 embedded Cargo inventory is
-disclosed but not flattened. The uharfbuzz 0.55.0 Windows extension reports
-embedded HarfBuzz 14.2.1, so its SBOM dependency edge reuses the existing
-native HarfBuzz record also reached through Pillow rather than adding a
-duplicate component. The rpds-py 2026.6.3 wheel likewise retains a
-hash-identified supplier SBOM with 15 required and two excluded Cargo records;
-their exact versions, license expressions, and OSV results were reviewed, but
-the identities are not flattened and the wheel supplies no child copyright/
-license texts. Its redistribution notice coverage must not be represented as
-complete. The pywin32 312 wheel's entire composite license directory and MAPI
-notice must be preserved rather than reduced to its incomplete PSF metadata
-label. Other static/platform-specific children may exist.
-
-Regenerate/check them offline:
+Regenerate or verify them with:
 
 ```powershell
 .venv\Scripts\python.exe scripts\generate_release_artifacts.py --all-profiles
 .venv\Scripts\python.exe scripts\generate_release_artifacts.py --check
 ```
 
-The complete local command is:
+Generated notices and SBOMs must not be hand-edited. Advisory results are
+time-bounded findings, not guarantees that a dependency is safe.
+
+## Complete local gate
 
 ```powershell
 .venv\Scripts\python.exe scripts\release_gate.py `
-  --profile-evidence packaging-evidence\windows-3.14.4.json
+  --profile-evidence packaging-evidence\windows-current.json
 ```
 
-With all default steps selected, the profile phase also uses `--full-tests`.
-The independently runnable Python-level network instrumentation is:
+The complete gate checks lock drift, Ruff, native/Linux/Darwin mypy, Git
+whitespace, installed-environment consistency, generated artifacts, the full
+test suite, the full blocked-network suite, reproducible builds, manifest
+identity, and the clean Base/Lite/Standard/Full source-and-wheel matrix.
+
+`scripts/run_blocked_network.py` denies Python DNS and non-loopback socket
+primitives, including in spawned Python workers, while permitting loopback and
+local non-IP sockets. This is test instrumentation, not an OS firewall or OS
+network sandbox.
+
+The optional Windows firewall probe requires explicit approval and elevation:
 
 ```powershell
-.venv\Scripts\python.exe scripts\run_blocked_network.py
-```
-
-It permits loopback and local non-IP sockets while denying Python DNS and
-non-loopback socket primitives, including spawned Python workers. It is test
-instrumentation, not an OS firewall.
-
-The opt-in OS-level Windows probe is:
-
-```powershell
-# Requires explicit approval and an elevated PowerShell 7 session.
 pwsh -File scripts\run_windows_firewall_gate.ps1
 ```
 
-It temporarily creates one unique outbound Block rule scoped to the exact
-Python executable, verifies the effective rule, tests local loopback and a
-self-hosted non-loopback TCP listener, and removes/verifies removal in `finally`.
-It was **not executed** in this checkpoint. It deliberately exits 2 even after
-successful socket proof because an executable-scoped rule cannot prove denial
-of Windows DNS Client-mediated `getaddrinfo`; therefore it cannot satisfy the
-complete addendum network gate by itself.
+It is an additional host-specific diagnostic. Its executable-scoped rule cannot
+prove denial of DNS Client-mediated name resolution and therefore cannot, by
+itself, establish complete network isolation.
 
-## CI contract (not local pass evidence)
+## CI contract
 
-`.github/workflows/packaging.yml` is configured to build on Ubuntu CPython 3.14
-and to download/check that artifact across `windows-latest`, `ubuntu-latest`,
-and `macos-latest` for Python 3.12, 3.13, and 3.14. It retains distributions,
-checksums, profile evidence, SBOMs, and notices. No workflow run was executed or
-retained here; all CI rows remain unverified until their actual artifacts exist.
+`.github/workflows/packaging.yml` builds on Ubuntu and exercises the produced
+artifact on Windows, Ubuntu, and macOS for Python 3.12–3.14. Configured jobs are
+not pass evidence. Only an executed workflow with retained artifacts and logs
+supports a platform claim.
 
-## Authoritative packaging sources
+## Authoritative sources
 
-Base sources were accessed 2026-07-19 and are recorded in
-`docs/ADVISORY_REPORT.json`: PyPA packaging guidance, uv lock/resolution/export
-documentation, and official PyPI metadata for pinned release tools. On
-2026-07-20, official `https://pypi.org/pypi/setuptools/83.0.0/json` was checked
-for the exact build-backend files and hashes above. On 2026-08-08, the HEIF
-input dependency was added and reviewed: pi-heif 1.4.0 (decode-only; bundled
-libheif 1.23.0 and libde265 1.1.1) was queried against OSV and GitHub reviewed
-advisories with exact versions, its exact-tag license texts were verified, and
-the results — including two applicable OSS-Fuzz records against libheif — are
-recorded in the report's 2026-08-08 verification run. The full pillow-heif
-encoder package (GPLv2 wheels) is a dev-profile fixture tool only and is
-excluded from every runtime profile, SBOM, and notice. PyPI's current classifier
-list was also checked before replacing the OS-independent classifier with
-`Operating System :: Microsoft :: Windows :: Windows 11`.
-On 2026-08-10, S5 added pdfplumber 0.11.10 and its exact locked closure. The
-review constrained cryptography to 50.0.0 because 49.0.0 falls in the affected
-range for GHSA-g6cj-pr64-35w5/CVE-2026-69247, even though pdfminer.six does not
-call the affected PKCS#7 API. Exact PyPI, crates.io, OpenSSL, supplier-SBOM, and
-source-license evidence—including pdfminer.six's omitted pyHanko notice and
-MongoDB/PyMongo Apache-2.0 SASLprep attribution/terms, plus CFFI's omitted
-libffi notice—is recorded in the report's 2026-08-10 verification run. Empty
-advisory results remain time-bounded findings, not safety guarantees.
-
-Also on 2026-08-10, S7 added OCRmyPDF 17.8.1 plus five transitive distributions
-new to `uv.lock`; pluggy 1.6.0 was already dev-locked but was newly promoted
-into every shipped runtime profile. Exact OSV and GitHub reviewed advisory
-queries returned no records for those seven versions. Exact-tag and
-installed-wheel evidence establishes OCRmyPDF's composite
-`Apache-2.0 AND MPL-2.0 AND OFL-1.1 AND Zlib` conclusion, fpdf2's
-LGPL-3.0-only terms, img2pdf's LGPL-3.0-or-later terms, FontTools' composite
-terms, and uharfbuzz's Apache-2.0 terms plus its HarfBuzz 14.2.1 native
-relationship. The generated notices restore OFL, Apache, and Zlib asset terms
-that the OCRmyPDF wheel does not install as separate files. Empty advisory
-results remain time-bounded no-findings, and the repository-wide release
-disposition remains `not-cleared` because the pre-existing native findings are
-unchanged.
-
-On 2026-08-10, S8 added the official MCP Python SDK 1.28.1 under the global
-2026-07-19 cutoff. Official PyPI metadata, exact release-tag license texts,
-OSV, GitHub reviewed advisories, the exact CPython 3.14 Windows wheels, and the
-SDK's exact-tag protocol constants were reviewed for the ten new lock nodes and
-the three Dev-only nodes promoted into runtime profiles. The review preserves
-pywin32's composite license bundle and MAPI notice, and records rpds-py's
-unflattened 15-child Cargo SBOM and missing child notice texts as an incomplete
-composition/redistribution boundary. Exact package records and source URLs are
-in the report's S8 verification run; empty results remain time-bounded.
+Dependency versions, source URLs, licenses, notices, and dated advisory queries
+are recorded in `docs/ADVISORY_REPORT.json`. Engine selection and licensing
+boundaries are documented in `docs/ENGINE_DECISIONS.md` and
+`docs/LICENSING.md`.

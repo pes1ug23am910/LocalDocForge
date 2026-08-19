@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import json
+import os
 import sys
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from importlib.metadata import PackageNotFoundError, distribution
 from pathlib import Path
 from types import MappingProxyType
 from typing import Final, Protocol
-from urllib.parse import urlsplit
-from urllib.request import url2pathname
 
 from localdocforge import __version__
 from localdocforge.domain.models import Capability
@@ -158,7 +155,11 @@ _WORKFLOW: Final[tuple[tuple[str, str], ...]] = (
 )
 
 _FEEDBACK_RULES: Final[tuple[tuple[str, str], ...]] = (
-    ("append-only", "Append new entries at the end; never edit or delete existing entries."),
+    (
+        "append-only",
+        "Create the user-local file on the first recorded outcome; after that, append new "
+        "entries and never edit or delete existing entries.",
+    ),
     (
         "required-outcomes",
         "An entry is required for a failed or unsatisfactory run and whenever you fall back; "
@@ -166,8 +167,8 @@ _FEEDBACK_RULES: Final[tuple[tuple[str, str], ...]] = (
     ),
     (
         "write-scope",
-        "Do not change anything else in the LocalDocForge repository unless the user explicitly "
-        "commissioned development work.",
+        "Recording an outcome does not authorize changes to LocalDocForge source or "
+        "documentation; make product changes only when the user requests them.",
     ),
     (
         "privacy",
@@ -176,11 +177,13 @@ _FEEDBACK_RULES: Final[tuple[tuple[str, str], ...]] = (
     ),
 )
 
-_FEEDBACK_RELATIVE_PATH: Final[Path] = Path("docs") / "AGENT_FEEDBACK.md"
+_FEEDBACK_FILENAME: Final[str] = "feedback.md"
+_FEEDBACK_DIRECTORY: Final[str] = "localdocforge"
+_UNSAFE_FEEDBACK_PATH_CHARACTERS: Final[frozenset[str]] = frozenset({"\r", "\n", "`"})
 
 
 class AgentBriefError(RuntimeError):
-    """The registry, usage templates, or feedback path cannot form an honest brief."""
+    """The registry, usage templates, or local feedback path cannot form an honest brief."""
 
 
 class CapabilityRegistry(Protocol):
@@ -303,65 +306,68 @@ class AgentBrief:
         }
 
 
-def _direct_url_root(*, strict_offline: bool) -> Path | None:
-    """Return a local checkout recorded by pip's direct_url metadata, if any."""
+def _resolve_feedback_path(path: Path, *, strict_offline: bool) -> Path:
+    """Resolve one render-safe feedback path and enforce strict locality."""
     try:
-        raw = distribution("localdocforge").read_text("direct_url.json")
-    except (OSError, PackageNotFoundError):
-        return None
-    if not raw:
-        return None
-    try:
-        url = json.loads(raw).get("url")
-    except (AttributeError, json.JSONDecodeError):
-        return None
-    if not isinstance(url, str):
-        return None
-    parsed = urlsplit(url)
-    if parsed.scheme != "file" or parsed.netloc not in ("", "localhost"):
-        return None
-    root = Path(url2pathname(parsed.path))
-    if strict_offline and is_remote_path(root):
-        return None
-    return root
-
-
-def _feedback_candidate_roots(*, strict_offline: bool) -> Iterator[str | Path]:
-    """Yield checkout roots lazily so a valid early candidate short-circuits."""
-    module_path = Path(__file__)
-    if len(module_path.parents) > 3:
-        yield module_path.parents[3]
-    direct_url_root = _direct_url_root(strict_offline=strict_offline)
-    if direct_url_root is not None:
-        yield direct_url_root
-    yield Path(sys.prefix).parent
-    yield from (entry for entry in sys.path if entry)
-    current = Path.cwd()
-    yield current
-    yield from current.parents
+        if _UNSAFE_FEEDBACK_PATH_CHARACTERS.intersection(os.fspath(path)):
+            raise AgentBriefError("could not resolve the user-local feedback path")
+        if strict_offline and is_remote_path(path):
+            raise AgentBriefError(
+                "strict-offline mode requires the user-local feedback path to be on a local drive"
+            )
+        resolved = path.resolve()
+        if _UNSAFE_FEEDBACK_PATH_CHARACTERS.intersection(os.fspath(resolved)):
+            raise AgentBriefError("could not resolve the user-local feedback path")
+        if strict_offline and is_remote_path(resolved):
+            raise AgentBriefError(
+                "strict-offline mode requires the user-local feedback path to be on a local drive"
+            )
+        return resolved
+    except AgentBriefError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise AgentBriefError("could not resolve the user-local feedback path") from exc
 
 
 def resolve_feedback_log_path(*, strict_offline: bool = False) -> Path:
-    """Locate the tracked feedback log without a machine-specific hardcoded path."""
-    for raw_root in _feedback_candidate_roots(strict_offline=strict_offline):
-        try:
-            root = Path(raw_root)
-            if strict_offline and is_remote_path(root):
-                continue
-            root = root.resolve()
-            candidate = (root / _FEEDBACK_RELATIVE_PATH).resolve()
-            if strict_offline and is_remote_path(candidate):
-                continue
-            if candidate.is_file() and (root / "src" / "localdocforge").is_dir():
-                return candidate
-        except (OSError, RuntimeError, TypeError, ValueError):
-            continue
+    """Return a deterministic user-local feedback path without creating it."""
+    try:
+        environment_root = (
+            os.environ.get("LOCALAPPDATA")
+            if sys.platform == "win32"
+            else os.environ.get("XDG_STATE_HOME")
+        )
 
-    raise AgentBriefError(
-        "could not locate an existing docs/AGENT_FEEDBACK.md in a LocalDocForge source "
-        "checkout; detached wheel/VCS installs must run from a checkout because the writable "
-        "feedback log is intentionally not packaged"
-    )
+        state_root: Path | None = None
+        if environment_root is not None:
+            candidate_root = Path(environment_root)
+            remote_environment_root = is_remote_path(candidate_root)
+            if strict_offline and remote_environment_root:
+                raise AgentBriefError(
+                    "strict-offline mode requires the user-local feedback path to be on a "
+                    "local drive"
+                )
+            if (
+                candidate_root.is_absolute()
+                and not remote_environment_root
+                and not _UNSAFE_FEEDBACK_PATH_CHARACTERS.intersection(environment_root)
+            ):
+                state_root = candidate_root
+
+        if state_root is None:
+            state_root = Path.home() / ".local" / "state"
+            state_root_text = os.fspath(state_root)
+            if (
+                not state_root.is_absolute()
+                or _UNSAFE_FEEDBACK_PATH_CHARACTERS.intersection(state_root_text)
+            ):
+                raise AgentBriefError("could not resolve the user-local feedback path")
+        unresolved = state_root / _FEEDBACK_DIRECTORY / _FEEDBACK_FILENAME
+    except AgentBriefError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise AgentBriefError("could not resolve the user-local feedback path") from exc
+    return _resolve_feedback_path(unresolved, strict_offline=strict_offline)
 
 
 def _validate_and_build_capabilities(
@@ -455,13 +461,13 @@ def build_agent_brief(
         live_capabilities,
         USAGE_BY_CAPABILITY_ID,
     )
-    resolved_feedback = (
-        resolve_feedback_log_path(strict_offline=strict_offline)
-        if feedback_path is None
-        else feedback_path.resolve()
-    )
-    if not resolved_feedback.is_file():
-        raise AgentBriefError(f"agent feedback log does not exist: {resolved_feedback}")
+    if feedback_path is None:
+        resolved_feedback = resolve_feedback_log_path(strict_offline=strict_offline)
+    else:
+        resolved_feedback = _resolve_feedback_path(
+            feedback_path,
+            strict_offline=strict_offline,
+        )
     return AgentBrief(
         schema_version=SCHEMA_VERSION,
         localdocforge_version=__version__,

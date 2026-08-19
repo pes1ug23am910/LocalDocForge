@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "LocalDocForge contributors" }]
+authors = [{ name = "Yash Verma", email = "pes1ug23am910@pesu.pes.edu" }]
 keywords = ["pdf", "local", "privacy", "document", "conversion"]
 classifiers = [
     "Development Status :: 3 - Alpha",

@@ -2507,7 +2507,7 @@
         },
         {
           "name": "localdocforge:advisoryRemediation",
-          "value": "Keep pdfminer.six exactly pinned without moving the S5-reviewed cryptography floor, contain parsing, and repeat exact-version review on OCRmyPDF, pdfplumber, or pdfminer.six upgrades."
+          "value": "Keep pdfminer.six exactly pinned without moving the reviewed cryptography floor, contain parsing, and repeat exact-version review on OCRmyPDF, pdfplumber, or pdfminer.six upgrades."
         },
         {
           "name": "localdocforge:advisoryReviewDate",
@@ -11114,7 +11114,7 @@
       },
       {
         "name": "localdocforge:advisoryReportSha256",
-        "value": "fafd092580d614f0296e97dae2a5af85c4635d8ac5dd5db36d5e8622d729737a"
+        "value": "d581cbdb56711efaa4f50ea10da66b46a4bf2c746589f88b40ab9f9728e11246"
       },
       {
         "name": "localdocforge:advisoryReview",

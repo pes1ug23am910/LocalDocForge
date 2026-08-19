@@ -2,11 +2,10 @@
 
 The one-document consolidation of how LocalDocForge works, subsystem by
 subsystem, with the concrete constants, contracts, and invariants that the
-per-topic documents explain in prose. Written 2026-08-03 against the then-current
-code, with the S4 PDF text-extraction and S6 Markdown-rendering surfaces updated
-on 2026-08-09 and the S10 fidelity contract updated on 2026-08-19. Where a
-per-topic document is the authority, it is linked; when this file and the code
-disagree, the code and its tests win.
+per-topic documents explain in prose. It covers the current PDF text-extraction,
+Markdown-rendering, and fidelity-assessment surfaces. Where a per-topic document
+is the authority, it is linked; when this file and the code disagree, the code
+and its tests win.
 
 Contents: [1 Stack](#1-system-identity-and-stack) · [2 Layout](#2-package-layout) ·
 [3 Domain](#3-domain-layer) · [4 Security primitives](#4-security-primitives) ·
@@ -547,11 +546,10 @@ Authoritative: `docs/PACKAGING.md`. In brief:
   output differ across build hosts, so identities are recorded per
   `System-Machine` key and `--allow-unrecorded-platform` lets CI build
   platforms without a recorded identity skip only the comparison.
-- **Canonical identity (2026-08-03)**: source tree `150b4aeb…`; wheel
-  `049345cb…` (98,083 B); sdist `531c4084…` (84,593 B); authenticated by
-  `packaging-evidence/windows-11-x64-SHA256SUMS.txt`; superseded sets are
-  archived under `dist/windows-11-x64-2026-07-20/` and the two
-  `dist/windows-11-x64-2026-08-03-superseded*/` directories.
+- **Canonical identity**: the current platform-scoped source, wheel, and sdist
+  hashes and sizes are recorded in
+  `packaging/release-artifact-manifest.json`. Verification output belongs
+  outside the source tree and must be regenerated for the exact candidate.
 - **SBOMs/notices** per profile (CycloneDX 1.6) are generated and
   drift-checked; advisory review is dated in `docs/ADVISORY_REPORT.json`.
 
@@ -561,8 +559,8 @@ Authoritative: `docs/PACKAGING.md`. In brief:
   consistency), `tests/integration` (operations, CLI contract, API flows),
   `tests/security` (filesystem/Windows-path regressions, privacy boundary,
   worker isolation with real spawned processes and a live-uvicorn
-  disconnect case, release-artifact checks), `tests/packaging`. 407 tests as
-  of 2026-08-03; fixtures are synthetic and generated
+  disconnect case, release-artifact checks), `tests/packaging`. Fixtures are
+  synthetic and generated
   (`tests/fixtures/make_fixtures.py`) — no third-party documents.
 - The blocked-network harness (`scripts/run_blocked_network.py`) re-runs the
   complete suite with Python DNS and non-loopback sockets denied, including
@@ -573,11 +571,11 @@ Authoritative: `docs/PACKAGING.md`. In brief:
   blocked-network suite → reproducible builds + Twine + sdist→wheel
   equivalence → artifact manifest → clean Base/Lite/Standard/Full
   install/smoke/uninstall matrix (+ dev full-test venv), writing refreshed
-  evidence to `packaging-evidence/`. A pass applies only to the executed
-  OS/architecture/interpreter.
-- `tests/unit/test_documentation_consistency.py` pins README/STATUS/
-  ARCHITECTURE/THREAT_MODEL/CLI/FEATURE_MATRIX claims to shipped reality —
-  documentation is part of the change, enforced.
+  evidence to an explicitly selected external path. A pass applies only to
+  the executed OS/architecture/interpreter.
+- `tests/unit/test_documentation_consistency.py` pins README, architecture,
+  threat-model, CLI, feature-matrix, fidelity, and packaging claims to shipped
+  reality — documentation is part of the change, enforced.
 
 ## 16. Security posture in one view
 
@@ -591,8 +589,8 @@ Authoritative: `docs/PACKAGING.md`. In brief:
 | Network | HTTP-capable libraries exist in the MCP SDK closure, but LocalDocForge enables only MCP stdio and makes no outbound document-processing requests; loopback-only API by default; token auth; strict-offline = app policy + Python socket guards — **not** an OS firewall |
 | Not provided | OS sandboxing of parsers, forensic erasure, crash-transactional multi-output publish, cross-platform execution evidence beyond Windows 11 x64 |
 
-Open release blockers and the sensitive-document FAIL decision:
-`docs/STATUS.md`. Full adversarial analysis: `docs/THREAT_MODEL.md`.
+The sensitive-document limitations and trust boundaries are documented in
+`docs/THREAT_MODEL.md`.
 
 ---
 

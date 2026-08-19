@@ -395,7 +395,7 @@ def test_machine_readable_review_is_complete_precise_and_source_attributed():
         "unknown": 1,
     }
     assert report["method"]["rpdsEmbeddedSbomBoundary"]["inclusionRule"]
-    assert "osv-pypi-exact-s8-2026-08-10" in report["method"]["querySets"]
+    assert "osv-pypi-exact-2026-08-10" in report["method"]["querySets"]
     components = report["components"]
     assert len({component["bomRef"] for component in components}) == 108
     assert Counter(component["kind"] for component in components) == {
@@ -686,7 +686,6 @@ def test_notice_index_and_profile_notices_disclose_required_uncertainty():
             in notices
         )
         assert "wheel supplies no child copyright/license texts" in notices
-        assert "S5 review" not in notices
         assert "No optional external executable was enabled" not in notices
         assert "not a safety guarantee" in notices
         assert (

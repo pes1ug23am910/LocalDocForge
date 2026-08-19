@@ -1,9 +1,8 @@
 # Developer Guide
 
 How to set up, navigate, extend, and verify this codebase without violating
-its central rule: **nothing is claimed that was not executed.** Written
-2026-08-03, immediately after the lossless-compression slice was added using
-exactly the workflow below.
+its central rule: **nothing is claimed that was not executed.** The workflow
+below applies to every capability change.
 
 ## 1. Environment setup
 
@@ -49,16 +48,17 @@ HTTPX, build, and Twine on top of the full runtime set.
 ## 3. Quality gates and how to run them
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests -q          # full suite (407 tests)
+.venv\Scripts\python.exe -m pytest tests -q          # full suite
 .venv\Scripts\python.exe -m pytest tests/integration/test_optimize_ops.py -q   # one file
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy                     # config in pyproject.toml
 .venv\Scripts\python.exe scripts\lock_profiles.py --check       # lock drift (offline)
 .venv\Scripts\python.exe scripts\generate_release_artifacts.py --check  # SBOM/notices drift
 
-# Everything at once (~6 min), exactly what the release decision cites:
+# Everything at once; retain artifacts and evidence outside the source tree:
 .venv\Scripts\python.exe scripts\release_gate.py `
-  --profile-evidence packaging-evidence\windows-3.14.4.json
+  --dist-dir C:\path\to\empty-release-output `
+  --profile-evidence C:\path\to\release-evidence.json
 ```
 
 Notes that save time:
@@ -74,14 +74,14 @@ Notes that save time:
 - The full suite runs again with Python DNS/non-loopback sockets denied in
   the gate (`scripts\run_blocked_network.py`) — code that quietly reaches the
   network fails there.
-- `tests/unit/test_documentation_consistency.py` asserts that README/STATUS/
-  FEATURE_MATRIX/CLI docs match shipped reality. If you change what ships,
-  the docs are part of the change, and this test is the reminder.
+- `tests/unit/test_documentation_consistency.py` asserts that README,
+  FEATURE_MATRIX, CLI, architecture, fidelity, and packaging claims match
+  shipped reality. If you change what ships, the docs are part of the change.
 
 ## 4. How to add a capability (the golden path)
 
-This is the exact sequence the compression slice followed. "Flip + pipeline +
-tests in the same change" is enforced by `tests/unit/test_registry.py`.
+"Flip + pipeline + tests in the same change" is enforced by
+`tests/unit/test_registry.py`.
 
 1. **Operation module** under `src/localdocforge/operations/`: a function
    that validates its parameters, builds an `execute(context, artifacts) ->
@@ -108,11 +108,12 @@ tests in the same change" is enforced by `tests/unit/test_registry.py`.
 7. **Docs, same change**: `FEATURE_MATRIX.md` row (status, engine, verified-by,
    limitations), `CLI.md` (command + API table + remove from the planned
    list), `CONVERSION_FIDELITY.md` (what is preserved/lost + warning codes),
-   `STATUS.md`, `README.md`, and a string assertion in
-   `test_documentation_consistency.py` so the claims can't silently rot.
-8. **Verify**: focused tests → ruff → mypy → full suite → the complete
-   release gate, plus one real end-to-end run of the new command on files you
-   generated (the machine-readiness report shows the shape).
+   `README.md`, and a string assertion in `test_documentation_consistency.py`
+   so the claims cannot silently rot.
+8. **Verify**: focused tests → Ruff → mypy → full suite → the complete
+   release gate, plus one real end-to-end run of the new command on synthetic
+   files you generated. Retain the commands and outcomes in the gate evidence
+   path selected for that run.
 
 What is *not* acceptable: enabling a capability whose engine is missing,
 wiring a probe-only external tool into `supported_operations()` "because it's
@@ -148,13 +149,14 @@ declared contract — not proof. Executed proof lives in:
 
 - `packaging-evidence/*.json` — gate/profile matrix runs (refreshed by
   `release_gate.py --profile-evidence …`).
-- `docs/MACHINE_READINESS.md` — dated per-machine verification runs.
-- `docs/STATUS.md` — the running release decision and its blockers.
+- `packaging/release-artifact-manifest.json` — the current platform artifact
+  identities verified by the release gate.
+- `docs/PACKAGING.md` — the gate contract, platform scope, and retained
+  reproducible-build identities.
 
-When you run the gate, it rewrites the evidence file you point it at; the
-historical side records (e.g. `windows-3.14.4-final-gate.json`) stay put. Do
-not edit evidence files by hand, and never update
-`packaging/release-artifact-manifest.json` to hide drift.
+The gate writes the evidence path you provide. Treat evidence JSON as generated
+output: do not edit it by hand, and never update
+`packaging/release-artifact-manifest.json` merely to hide drift.
 
 ## 7. Dependency changes
 
@@ -176,4 +178,4 @@ review dates in `docs/PACKAGING.md`).
 `docs/ARCHITECTURE.md` (contracts in depth) · `docs/LIBRARY_API.md` (the
 Python surface) · `docs/THREAT_MODEL.md` (what the boundaries actually hold)
 · `docs/PACKAGING.md` (profiles, locks, reproducible builds) ·
-`docs/STATUS.md` (what is true right now)
+`docs/FEATURE_MATRIX.md` (what is implemented and its limitations)

@@ -15,6 +15,7 @@ from click.utils import strip_ansi
 from typer.testing import CliRunner
 
 import localdocforge.cli.main as cli_main
+from localdocforge.cli.agent_brief import resolve_feedback_log_path
 from localdocforge.cli.main import (
     EXIT_COLLISION,
     EXIT_FAILED,
@@ -108,7 +109,7 @@ class TestDoctor:
 
 
 class TestAgentBrief:
-    def test_human_markdown_lists_only_implemented_specs_and_feedback_path(self):
+    def test_human_markdown_lists_only_implemented_specs_and_user_feedback_path(self):
         result = runner.invoke(app, ["agent-brief"])
         assert result.exit_code == 0, combined_output(result)
         assert result.stderr_bytes == b""
@@ -119,8 +120,7 @@ class TestAgentBrief:
                 assert marker in result.output
             else:
                 assert marker not in result.output
-        feedback = (ROOT / "docs" / "AGENT_FEEDBACK.md").resolve()
-        assert str(feedback) in result.output
+        assert str(resolve_feedback_log_path()) in result.output
         assert "## Exit codes" in result.output
         assert "## Agent gotchas" in result.output
         assert "## Verify -> fallback -> review" in result.output

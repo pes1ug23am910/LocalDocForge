@@ -21,7 +21,7 @@ from localdocforge.domain.models import Capability
 from localdocforge.engines.registry import CAPABILITY_SPECS, CapabilitySpec
 
 ROOT = Path(__file__).resolve().parents[2]
-FEEDBACK_PATH = ROOT / "docs" / "AGENT_FEEDBACK.md"
+FEEDBACK_PATH = ROOT / ".localdocforge" / "feedback.md"
 
 
 class StubRegistry:
@@ -175,55 +175,187 @@ def test_markdown_is_deterministic_and_uses_the_same_snapshot() -> None:
     assert "basis, impact, and remedy" in first
 
 
-def test_feedback_path_is_absolute_existing_and_independent_of_cwd(
+def test_feedback_path_is_user_local_and_independent_of_cwd(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    state_root = tmp_path / "state"
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_STATE_HOME", str(state_root))
     monkeypatch.chdir(tmp_path)
     resolved = resolve_feedback_log_path()
-    assert resolved == FEEDBACK_PATH.resolve()
+    assert resolved == (state_root / "localdocforge" / "feedback.md").resolve()
     assert resolved.is_absolute()
-    assert resolved.is_file()
+    assert not resolved.exists()
 
 
-def test_feedback_path_short_circuits_before_malformed_fallback(
+def test_feedback_path_uses_local_app_data_on_windows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_root = tmp_path / "LocalAppData"
+    monkeypatch.setattr(agent_brief.sys, "platform", "win32")
+    monkeypatch.setenv("LOCALAPPDATA", str(state_root))
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    assert resolve_feedback_log_path() == (
+        state_root / "localdocforge" / "feedback.md"
+    ).resolve()
+
+
+def test_windows_does_not_treat_xdg_state_home_as_its_platform_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = tmp_path / "home"
+    monkeypatch.setattr(agent_brief.sys, "platform", "win32")
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg-must-not-be-used"))
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: home))
+
+    assert resolve_feedback_log_path() == (
+        home / ".local" / "state" / "localdocforge" / "feedback.md"
+    ).resolve()
+
+
+def test_feedback_path_falls_back_to_home_state_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: tmp_path))
+    assert resolve_feedback_log_path() == (
+        tmp_path / ".local" / "state" / "localdocforge" / "feedback.md"
+    ).resolve()
+
+
+@pytest.mark.parametrize(
+    ("platform", "environment_name"),
+    (("win32", "LOCALAPPDATA"), ("linux", "XDG_STATE_HOME")),
+)
+def test_relative_environment_feedback_root_falls_back_without_using_cwd(
+    platform: str,
+    environment_name: str,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class MalformedPath:
-        def __fspath__(self) -> str:
-            raise OSError("synthetic inaccessible sys.path entry")
+    home = tmp_path / "home"
+    first_cwd = tmp_path / "first"
+    second_cwd = tmp_path / "second"
+    first_cwd.mkdir()
+    second_cwd.mkdir()
+    monkeypatch.setattr(agent_brief.sys, "platform", platform)
+    monkeypatch.setenv(environment_name, "relative-state")
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: home))
 
-    monkeypatch.setattr(agent_brief.sys, "path", [MalformedPath()])
-    assert resolve_feedback_log_path() == FEEDBACK_PATH.resolve()
+    monkeypatch.chdir(first_cwd)
+    first = resolve_feedback_log_path(strict_offline=True)
+    monkeypatch.chdir(second_cwd)
+    second = resolve_feedback_log_path(strict_offline=True)
+
+    expected = (home / ".local" / "state" / "localdocforge" / "feedback.md").resolve()
+    assert first == second == expected
 
 
-def test_feedback_path_fails_closed_without_a_checkout(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("unsafe_character", ("\n", "\r", "`"))
+def test_markup_unsafe_environment_feedback_root_falls_back(
+    unsafe_character: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    package_file = tmp_path / "venv" / "site-packages" / "localdocforge" / "cli" / "agent_brief.py"
-    package_file.parent.mkdir(parents=True)
-    package_file.touch()
-    unrelated_cwd = tmp_path / "unrelated"
-    unrelated_cwd.mkdir()
-    monkeypatch.setattr(agent_brief, "__file__", str(package_file))
-    monkeypatch.setattr(agent_brief, "_direct_url_root", lambda **_kwargs: None)
-    monkeypatch.setattr(agent_brief.sys, "prefix", str(tmp_path / "venv"))
-    monkeypatch.setattr(agent_brief.sys, "path", [str(package_file.parent)])
-    monkeypatch.chdir(unrelated_cwd)
+    home = tmp_path / "home"
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / f"state{unsafe_character}injected"))
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: home))
 
-    with pytest.raises(AgentBriefError, match="detached wheel/VCS installs"):
+    assert resolve_feedback_log_path() == (
+        home / ".local" / "state" / "localdocforge" / "feedback.md"
+    ).resolve()
+
+
+def test_invalid_home_feedback_fallback_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    monkeypatch.setattr(
+        agent_brief.Path,
+        "home",
+        classmethod(lambda cls: Path("relative-home")),
+    )
+
+    with pytest.raises(AgentBriefError, match="could not resolve"):
         resolve_feedback_log_path()
 
 
-def test_feedback_path_skips_remote_fallback_in_strict_offline(
+def test_feedback_path_fails_closed_for_remote_state_in_strict_offline(
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    remote = Path(r"\\server\share")
-    monkeypatch.setattr(
-        agent_brief,
-        "_feedback_candidate_roots",
-        lambda **_kwargs: iter((remote, ROOT)),
+    state_root = tmp_path / "remote-state"
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_STATE_HOME", str(state_root))
+    monkeypatch.setattr(agent_brief, "is_remote_path", lambda _path: True)
+    with pytest.raises(AgentBriefError, match="local drive"):
+        resolve_feedback_log_path(strict_offline=True)
+
+
+def test_remote_environment_feedback_root_falls_back_outside_strict_offline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_root = tmp_path / "remote-state"
+    home = tmp_path / "home"
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_STATE_HOME", str(state_root))
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(agent_brief, "is_remote_path", lambda path: path == state_root)
+
+    assert resolve_feedback_log_path() == (
+        home / ".local" / "state" / "localdocforge" / "feedback.md"
+    ).resolve()
+
+
+def test_remote_home_feedback_fallback_fails_closed_in_strict_offline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(agent_brief.sys, "platform", "linux")
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    monkeypatch.setattr(agent_brief.Path, "home", classmethod(lambda cls: tmp_path / "home"))
+    monkeypatch.setattr(agent_brief, "is_remote_path", lambda _path: True)
+
+    with pytest.raises(AgentBriefError, match="local drive"):
+        resolve_feedback_log_path(strict_offline=True)
+
+
+def test_explicit_feedback_path_does_not_have_to_exist(tmp_path: Path) -> None:
+    feedback_path = tmp_path / "new" / "feedback.md"
+    brief = build_agent_brief(
+        StubRegistry(_live_capabilities()), feedback_path=feedback_path
     )
-    assert resolve_feedback_log_path(strict_offline=True) == FEEDBACK_PATH.resolve()
+    assert brief.feedback.path == feedback_path.resolve()
+    assert not feedback_path.exists()
+
+
+def test_explicit_feedback_path_fails_closed_when_remote_in_strict_offline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(agent_brief, "is_remote_path", lambda _path: True)
+    with pytest.raises(AgentBriefError, match="local drive"):
+        build_agent_brief(
+            StubRegistry(_live_capabilities()),
+            feedback_path=tmp_path / "feedback.md",
+            strict_offline=True,
+        )
+
+
+@pytest.mark.parametrize("unsafe_character", ("\n", "\r", "`"))
+def test_explicit_feedback_path_rejects_markup_injection(
+    unsafe_character: str,
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(AgentBriefError, match="could not resolve"):
+        build_agent_brief(
+            StubRegistry(_live_capabilities()),
+            feedback_path=tmp_path / f"feedback{unsafe_character}injected.md",
+        )
 
 
 def test_exit_code_table_matches_cli_constants() -> None:

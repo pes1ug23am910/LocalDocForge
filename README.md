@@ -61,11 +61,12 @@ source before anything was published.*
 | Local web API | loopback FastAPI service + status page; every conversion runs in a fresh OS-contained worker process |
 
 Everything above is covered by the repository's test suite and full release
-gate; dated counts and platform-scoped evidence are recorded in
-[`docs/STATUS.md`](docs/STATUS.md). Office conversion, lossy compression presets,
-redaction, signatures, and the rest of the roadmap are **not implemented
-yet** and are honestly reported as unavailable by `ldf doctor` — see
-[`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md).
+gate. Capability status, verifying tests, and known limitations are recorded in
+[`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md); reproducible-build and
+platform-scope details are in [`docs/PACKAGING.md`](docs/PACKAGING.md). Office
+conversion, lossy compression presets, redaction, signatures, and the rest of
+the roadmap are **not implemented yet** and are honestly reported as
+unavailable by `ldf doctor`.
 
 ## Install
 
@@ -185,10 +186,13 @@ aggregate counts and placement sub-coverage still cover every frame;
 `frames_total`, `frames_reported`, `truncated`, and `coverage="complete"`
 disclose that boundary.
 
-`agent-brief` must resolve the repository's writable
-`docs/AGENT_FEEDBACK.md`. It works with a discoverable source checkout (including
-the repository-local environment above); a detached wheel/direct VCS install
-outside any checkout exits 1 rather than pointing agents at a packaged imitation.
+`agent-brief` reports a user-local feedback-log path without creating it:
+`%LOCALAPPDATA%\localdocforge\feedback.md` on Windows, or
+`$XDG_STATE_HOME/localdocforge/feedback.md` elsewhere. If the platform-specific
+state root is absent, relative, or malformed, the command falls back to
+`~/.local/state/localdocforge/feedback.md`. A recognized remote override also
+falls back normally and is refused in strict-offline mode. The command works
+from source, wheel, and direct VCS installs without depending on a tracked file.
 The generated brief contains seven agent gotchas, including command-level
 `--collision` placement, strict fidelity, and MCP; its low-cost visual review
 suggestion is a 110 DPI PNG spot-check.
@@ -268,26 +272,26 @@ terminal state is published only after the process tree is verified gone.
 
 ## Status and maturity
 
-**Early alpha, honestly scoped.** Phase 0 (foundation), the core of Phase 1
-(structural PDF tools + image conversion), the first Phase 2 slice
-(lossless compression, 2026-08-03), the core Phase 3 PDF text-extraction path,
-and the local-agent MCP stdio surface are implemented.
+**Early alpha, honestly scoped.** Structural PDF tools, image conversion,
+lossless compression, PDF text extraction, Markdown rendering, OCR
+orchestration, the local web API, and the local MCP stdio surface are
+implemented. [`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md) is the complete
+capability and limitation inventory.
 
-- **For everyday, non-sensitive documents:** working and validated — the
-  full release gate (locks, lint, types, two full test-suite runs including
-  a network-blocked one, reproducible builds, clean install matrix) passes,
-  and every capability has been exercised end-to-end on real files.
-- **For sensitive documents:** **not yet cleared, by the project's own
-  release decision.** The open blockers (a bundled-dependency advisory,
-  no OS-enforced outbound-network denial proof, in-process CLI parsing,
-  platform scope) are recorded plainly in [`docs/STATUS.md`](docs/STATUS.md)
-  — nothing is hidden, and nothing is promised early.
-- **Platforms:** Windows 11 x64 is the release-hardened platform with
-  retained local evidence. Linux and macOS pass the full test suite and
-  clean-install matrix in CI (CPython 3.12–3.14, first executed
-  2026-08-03); they are CI-tested, not yet release-hardened. Deleting temp
-  files is best-effort, not forensic erasure, and `--strict-offline` is an
-  application policy — not an OS firewall; see
+- **For everyday, non-sensitive documents:** the shipped operations have
+  synthetic end-to-end coverage. The full release gate checks locks, lint,
+  types, ordinary and network-blocked suites, reproducible builds, and clean
+  install profiles; see [`docs/PACKAGING.md`](docs/PACKAGING.md) for the gate
+  contract and current platform-scoped evidence.
+- **For sensitive documents:** **not yet cleared.** The current limitations
+  include bundled-dependency advisories, no OS-enforced outbound-network
+  denial proof, in-process CLI parsing, and narrow release-hardened platform
+  scope. See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the boundaries.
+- **Platforms:** the current release manifest records Windows-AMD64. Linux and
+  macOS jobs are configured for CPython 3.12–3.14, but configuration alone is
+  not pass evidence; consult the executed workflow and retained artifacts for
+  a platform claim. Deleting temp files is best-effort, not forensic erasure,
+  and `--strict-offline` is application policy — not an OS firewall; see
   [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the boundaries stated
   without marketing.
 
@@ -320,15 +324,15 @@ The full index is at [`docs/README.md`](docs/README.md). Highlights:
 [`docs/TECHNICAL_REFERENCE.md`](docs/TECHNICAL_REFERENCE.md) (every
 subsystem in one document) · [`docs/CLI.md`](docs/CLI.md) (reference) ·
 [`docs/GETTING_STARTED_WINDOWS.md`](docs/GETTING_STARTED_WINDOWS.md)
-(task-oriented walkthrough) · [`docs/MACHINE_READINESS.md`](docs/MACHINE_READINESS.md)
-(dated verification evidence) · [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+(task-oriented walkthrough) · [`docs/PACKAGING.md`](docs/PACKAGING.md)
+(release gates and reproducible builds) · [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 (contributing and the capability golden path).
 
 ## Development
 
 ```powershell
 pwsh -File scripts\bootstrap.ps1                # dev venv, locks, tests, lint, types
-.venv\Scripts\python.exe -m pytest tests -q    # current count: see docs/STATUS.md
+.venv\Scripts\python.exe -m pytest tests -q
 .venv\Scripts\python.exe -m ruff check src tests scripts
 .venv\Scripts\python.exe -m mypy
 ```
@@ -345,9 +349,8 @@ reality. Start at [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 Lossy compression presets, repair, Office↔PDF, PDF/A, and
 advanced PDF→Markdown borderless/merged-cell table and semantic reconstruction,
 editor, forms, encryption, redaction, signatures, compare, scanner
-acquisition, full browser UI — phased plan in
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), current truth
-in [`docs/STATUS.md`](docs/STATUS.md).
+acquisition, and the full browser UI remain planned. The unavailable rows in
+[`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md) are the authoritative scope.
 
 ## License
 

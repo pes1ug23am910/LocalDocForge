@@ -1,12 +1,9 @@
 # Getting Started on Windows
 
-A practical, task-oriented guide to using LocalDocForge on Windows 11. Every
-original command set in this guide was executed and verified on the primary
-workstation on 2026-08-03 (see `docs/MACHINE_READINESS.md` for that evidence
-run); the S4 text-extraction, S6 Markdown-rendering, and S7 OCR additions are recorded
-in `docs/STATUS.md`. The authoritative reference for flags, grammar, exit
-codes, and the API contract remains `docs/CLI.md`; this guide does not replace
-it.
+A practical, task-oriented guide to using LocalDocForge on Windows 11. The
+authoritative reference for flags, grammar, exit codes, and the API contract is
+`docs/CLI.md`; live engine availability comes from `ldf doctor`, and per-feature
+limitations are in `docs/FEATURE_MATRIX.md`.
 
 > **Scope honesty:** LocalDocForge is early alpha. What this guide shows —
 > PDF organization, page editing, lossless compression, PDF text extraction,
@@ -15,17 +12,16 @@ it.
 > compression presets, Office conversion, redaction, signatures, and the
 > rest of the roadmap are **not available** and no command in this build
 > pretends otherwise. The project's
-> own release gate currently marks the tool **not cleared for sensitive
-> documents** (`docs/STATUS.md`).
+> current security posture is **not cleared for sensitive documents**; see
+> `docs/THREAT_MODEL.md` for the exact boundaries.
 
-## 1. The environment on this workstation
+## 1. Set up your checkout
 
 | Item | Value |
 |---|---|
-| Repository | `C:\Projects\LocalDocForge` |
-| Virtual environment | `.venv` — CPython 3.14.4, dev profile (all extras + test/lint/build tools) |
+| Repository | Your LocalDocForge checkout |
+| Virtual environment | `.venv` — a supported CPython 3.12–3.14 environment |
 | Entry points | `.venv\Scripts\ldf.exe` and `.venv\Scripts\localdocforge.exe` (identical) |
-| Other interpreters via `py` | 3.14.4 (default), 3.13.5 (Astral/uv-managed), 3.10.11 (unsupported by this package) |
 | Shell assumed here | PowerShell 7 |
 
 The commands use `C:\Projects\LocalDocForge` as an example checkout path;
@@ -35,16 +31,16 @@ Three equivalent ways to run the CLI:
 
 ```powershell
 # 1. Full path — works from any directory, nothing to set up
-C:\Projects\LocalDocForge\.venv\Scripts\ldf.exe doctor
+C:\path\to\LocalDocForge\.venv\Scripts\ldf.exe doctor
 
 # 2. Activate the venv for the session, then use the short name
-cd C:\Projects\LocalDocForge
+cd C:\path\to\LocalDocForge
 .venv\Scripts\Activate.ps1
 ldf doctor
 
 # 3. Put it on PATH permanently (current user; new shells only)
 [Environment]::SetEnvironmentVariable('Path',
-  $env:Path + ';C:\Projects\LocalDocForge\.venv\Scripts', 'User')
+  $env:Path + ';C:\path\to\LocalDocForge\.venv\Scripts', 'User')
 ```
 
 The examples below assume `ldf` resolves (option 2 or 3).
@@ -194,10 +190,9 @@ ldf ocr mixed.pdf -o searchable.pdf --skip-text
 
 The command is implemented but available only when `ldf doctor` sees locked
 OCRmyPDF ≥17.8.1, Tesseract ≥4.1.1 except exact upstream-incompatible 5.4.0
-with the requested language pack, and a
-compatible separately installed Ghostscript. This workstation currently has
-OCRmyPDF 17.8.1, Tesseract 5.4.0.20240606 (`eng`, `osd`), and Ghostscript
-10.07.1; all three live probes pass and OCR is available.
+with the requested language pack, and a compatible separately installed
+Ghostscript. Run `ldf doctor` on your machine; it names any missing or
+incompatible requirement.
 Default mode refuses even a whitespace-only existing text layer. `--force-ocr`
 rasterizes/re-encodes every page and carries a critical warning. Every result
 is best effort and every PDF page is reopened, syntax-checked, rendered, and
@@ -209,10 +204,11 @@ checked for extractable OCR text before atomic publication.
 ldf md-to-pdf notes.md -o notes.pdf --paper A4 --margin 20 --toc
 ```
 
-This machine's Typst 0.15.1 probe enables the command. Inputs must be strict
-UTF-8 `.md`/`.markdown` files. The supported subset covers ordinary CommonMark,
-code, safe web/mail/telephone links, and GFM tables; local raster images may be
-referenced relative to the Markdown file but cannot escape its directory.
+The command is available when `ldf doctor` reports a compatible Typst ≥0.15.1
+probe. Inputs must be strict UTF-8 `.md`/`.markdown` files. The supported subset
+covers ordinary CommonMark, code, safe web/mail/telephone links, and GFM tables;
+local raster images may be referenced relative to the Markdown file but cannot
+escape its directory.
 Remote assets, imports/packages, raw HTML, footnotes, and math are not executed;
 unsupported constructs are dropped with source-line warnings. All generated
 PDF pages are reopened, syntax-checked, and rendered before publication. See
@@ -313,9 +309,9 @@ Every accepted job runs in a **fresh spawned worker process**; on Windows the
 worker is assigned to a Job Object (kill-on-close, memory, CPU-time, and
 active-process limits) before it is allowed to touch document bytes, and a job
 only reports success after Job accounting proves the process tree exited empty.
-This was observed live on this machine (`docs/MACHINE_READINESS.md`, §4). The
-worker is a failure boundary with the user's filesystem authority — not an OS
-sandbox; see `docs/THREAT_MODEL.md`.
+This containment path is covered by integration and security regression tests.
+The worker remains a failure boundary with the user's filesystem authority —
+not an OS sandbox; see `docs/THREAT_MODEL.md`.
 
 Defaults: 2 concurrent workers, 16 queued jobs, 4 active jobs per client,
 30 submissions/60 s per client, 2 GiB upload cap. Over-limit requests get
@@ -353,43 +349,43 @@ to `None` is disabled — see `ResourceLimits` in
 
 ## 7. What is *not* here yet, and the external engines
 
-`ldf doctor` on this machine shows the truth; summarized:
+`ldf doctor` on your machine is the live authority. Relevant external engines
+and their roles are:
 
-| External engine | Installed here? | Needed by |
-|---|---|---|
-| Typst 0.15.1 | ✅ (winget) | Markdown→PDF — **wired and available when the ≥0.15.1 probe passes** |
-| qpdf CLI | ❌ `winget install qpdf.qpdf` | repair/compression diagnostics (P2) |
-| Tesseract 5.4.0.20240606 | ✅ (winget; `eng` + `osd`) | OCR — **wired** |
-| OCRmyPDF 17.8.1 | ✅ (locked Python dependency and venv console script) | OCR — **wired** |
-| Ghostscript 10.07.1 | ✅ (official Artifex x64 installer) | OCR availability gate and future PDF/A work |
-| LibreOffice | ❌ `winget install TheDocumentFoundation.LibreOffice` | Office→PDF (P2) |
-| Pandoc | ❌ `winget install JohnMacFarlane.Pandoc` | possible future document paths; not used by pdf-to-md |
-| veraPDF | ❌ verapdf.org installer | PDF/A validation (P2/P5) |
+| External engine | Role |
+|---|---|
+| Typst ≥0.15.1 | Enables the implemented Markdown→PDF path when its probe passes |
+| Tesseract ≥4.1.1 (except exact 5.4.0) plus requested language data | Required by the implemented OCR path |
+| OCRmyPDF ≥17.8.1 | Locked Python runtime for the implemented OCR path |
+| Compatible Ghostscript | Required by the OCR availability gate; also relevant to future PDF/A work |
+| qpdf CLI | Possible future repair/compression diagnostics; not used by current operations |
+| LibreOffice | Future Office→PDF work; not used by current operations |
+| Pandoc | Possible future document paths; not used by `pdf-to-md` |
+| veraPDF | Future PDF/A validation; not used by current operations |
 
 Installing an executable alone does not unlock a capability: its pipeline,
 registry bit, tests, and compatible live probe must all agree
-(`docs/FEATURE_MATRIX.md` rules). Typst and the OCR engine chain are wired and
-available on this host. The other listed tools remain future inputs.
+(`docs/FEATURE_MATRIX.md` rules). Typst and the OCR engine chain are wired into
+implemented operations but remain unavailable whenever their live probes fail.
+The other listed tools are not current operation dependencies.
 
 ## 8. Sensitive documents — read before trusting it with them
 
-The project's own release gate currently says **FAIL / not cleared for
-sensitive documents** (`docs/STATUS.md`), even though everything above works.
-The honest reasons, condensed:
+The current security posture is **not cleared for sensitive documents**, even
+though the documented operations work. The reasons, condensed:
 
 - Bundled OpenJPEG 2.5.4 and libheif 1.23.0 have recorded advisories; PDFium and
   the other version-unknown native inventory total 19 advisory-unknown children.
 - `--strict-offline` is application policy plus Python-level socket guards —
-  **not** an OS firewall. No OS-enforced outbound+DNS denial has been proven on
-  this machine.
+  **not** an OS firewall and not proof of host-level outbound or DNS denial.
 - CLI parsing runs in-process (cooperative timeouts only); API workers retain
   your filesystem authority — containment is a failure boundary, not a sandbox.
 - Deleting temp files on an SSD is best-effort, not forensic erasure; crop is
   never redaction; there is no redaction.
 
 For ordinary local documents this is a working, validated toolset. For
-documents whose exposure would hurt you, wait for the blockers in
-`docs/STATUS.md` to close, or add OS-level isolation yourself.
+documents whose exposure would hurt you, add OS-level isolation and review the
+boundaries in `docs/THREAT_MODEL.md` before proceeding.
 
 ## 9. Troubleshooting
 
@@ -402,7 +398,7 @@ documents whose exposure would hurt you, wait for the blockers in
 | File rejected before conversion | Content sniffing found an extension/content mismatch, or the PDF is syntax-damaged (repair is not implemented — the tool won't silently "fix" your file). |
 | `compress` barely shrinks a file | The input is image-heavy or already optimized; lossless mode never re-encodes images. The report's `compression` details show exact before/after bytes. |
 | `pdf-to-md` reports `no-text-layer` | The page is scanned/image-only. Use `pdf-to-images --preset llm`, or `ocr` when doctor reports its engines available. |
-| `ocr` is unavailable / exits 3 | Run `ldf doctor`; install or repair the named OCRmyPDF, Tesseract/language-pack, or Ghostscript requirement. This host currently passes all three live gates. |
+| `ocr` is unavailable / exits 3 | Run `ldf doctor`; install or repair the named OCRmyPDF, Tesseract/language-pack, or Ghostscript requirement, then rerun the probe. |
 | `ocr` refuses an existing text layer | Deliberate. Use `--skip-text` for mixed documents or `--force-ocr` only if rasterization/re-encoding is acceptable. |
 | 401 from every API call | Missing/wrong `X-LDF-Token` header — a browser cookie alone never authorizes API calls. |
 | 429/503 from the API | Queue/rate/per-client caps (§5). Honor `Retry-After`. |
@@ -411,10 +407,11 @@ documents whose exposure would hurt you, wait for the blockers in
 ## 10. Keeping the installation healthy
 
 ```powershell
-# Full local release gate (~5 min): locks, lint, types, both full test runs,
+# Full local release gate: locks, lint, types, both full test runs,
 # reproducible builds, artifact drift, clean profile matrix
 .venv\Scripts\python.exe scripts\release_gate.py `
-  --profile-evidence packaging-evidence\windows-3.14.4.json
+  --dist-dir C:\path\to\empty-release-output `
+  --profile-evidence C:\path\to\release-evidence.json
 
 # Faster individual checks
 .venv\Scripts\python.exe -m pytest tests -q
@@ -425,15 +422,14 @@ documents whose exposure would hurt you, wait for the blockers in
 ```
 
 Dependency updates go through `scripts\lock_profiles.py --write` (see
-`docs/PACKAGING.md`) — never edit lock files by hand. Built artifacts live in
-`dist\windows-11-x64\`; executed evidence in `packaging-evidence\`.
+`docs/PACKAGING.md`) — never edit lock files by hand. Supply an empty external
+`--dist-dir` when artifacts must be retained; otherwise the gate uses and
+removes a temporary build directory. Keep executed evidence outside the source
+tree as well.
 
 ## Related documents
 
-- `docs/MACHINE_READINESS.md` — the dated readiness verdict and full evidence
-  run for this workstation
 - `docs/CLI.md` — complete CLI/API reference
 - `docs/FEATURE_MATRIX.md` — per-capability status, tests, limitations
 - `docs/PACKAGING.md` — install profiles, locks, reproducible builds
 - `docs/THREAT_MODEL.md` — what is and is not defended against
-- `docs/STATUS.md` — release posture and remaining blockers

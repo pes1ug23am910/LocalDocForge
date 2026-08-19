@@ -21,7 +21,7 @@ extraction (PDFium) are different failure domains; no single library is trusted 
 both. A pypdf production fallback remains a future implementation task; an
 installed library alone is not reported as an executable operation engine.
 
-### MCP SDK dependency decision (S8)
+### MCP SDK dependency decision
 
 The official `mcp` SDK was selected instead of a hand-written JSON-RPC subset.
 Repo-pinned uv 0.11.26, using the global `exclude-newer = 2026-07-19`

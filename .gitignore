@@ -29,3 +29,13 @@ Thumbs.db
 # Local working files
 /docs/private/
 /work/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+.pypirc
+*.key
+*.pem
+*.p12
+*.pfx

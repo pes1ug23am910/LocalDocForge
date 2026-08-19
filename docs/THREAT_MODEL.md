@@ -106,8 +106,9 @@ features are not assumed to inherit these controls automatically.
   control is reported unsupported and `RLIMIT_AS` is not claimed reliable
   there. Archive entry/expansion fields remain future controls because no
   archive/Office workflow is implemented.
-- POSIX/Linux/macOS containment is implemented but was not executed in the
-  Windows-only 2026-07-20 checkpoint. It is not cross-platform pass evidence.
+- POSIX/Linux/macOS containment is implemented but is not covered by the
+  recorded Windows-only release evidence. That evidence is not a
+  cross-platform pass.
 
 ### T2. Active or hidden content
 
@@ -516,7 +517,7 @@ refused, never approximated.
   be made crash-transactional or forensically erasing at application level.
 - Strict-offline is an application policy with platform-specific path
   detection, not an OS network sandbox.
-- The 2026-07-20 checkpoint has no OS-enforced outbound-denial result, no real
+- The recorded Windows evidence has no OS-enforced outbound-denial result, no real
   mapped-drive mount, and no symbolic-link creation privilege. Mapped-drive
   behavior is mocked and junction evidence does not substitute for a symlink.
 - Linux and macOS hardening gates were not run; portable implementation and CI

@@ -75,7 +75,7 @@ class FidelityWarning(BaseModel):
     message: str
     severity: WarningSeverity = WarningSeverity.WARNING
     page: int | None = None
-    # Defaults preserve validation of reports written before the S10 schema.
+    # Defaults preserve validation of reports written before fidelity metadata.
     # In-tree producers classify every warning explicitly.
     basis: FidelityBasis = Field(default=FidelityBasis.DECLARED, frozen=True)
     impact: FidelityImpact = Field(default=FidelityImpact.REVIEW, frozen=True)

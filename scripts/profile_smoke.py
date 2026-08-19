@@ -67,6 +67,20 @@ def _doctor() -> dict[str, Any]:
     return payload
 
 
+def _agent_brief() -> None:
+    result = _run_cli("--json", "agent-brief")
+    payload = json.loads(result.stdout)
+    feedback = payload.get("feedback")
+    if not isinstance(feedback, dict):
+        raise AssertionError("agent-brief omitted its feedback contract")
+    feedback_path = feedback.get("path")
+    if not isinstance(feedback_path, str) or not Path(feedback_path).is_absolute():
+        raise AssertionError("agent-brief did not report an absolute user-local path")
+    parsed_path = Path(feedback_path)
+    if parsed_path.name != "feedback.md" or parsed_path.parent.name != "localdocforge":
+        raise AssertionError("agent-brief reported an unexpected feedback path")
+
+
 def _core_operation_smoke(root: Path) -> None:
     import pikepdf
     from PIL import Image
@@ -140,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     payload = _doctor()
+    _agent_brief()
     with tempfile.TemporaryDirectory(prefix=f"ldf-{args.profile}-smoke-") as temp:
         root = Path(temp)
         _core_operation_smoke(root)

@@ -182,11 +182,6 @@ def test_ocr_slice_is_documented_consistently() -> None:
     assert "canonical-path and child-selection binding" in threat
     assert "Raw OCRmyPDF" in threat and "paths are withheld" in threat
 
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "repair, OCR" not in status
-    assert "S7" in status and "OCR" in status
-
-
 def test_mcp_slice_is_documented_consistently() -> None:
     paths = {
         name: (ROOT / relative).read_text(encoding="utf-8")
@@ -195,7 +190,6 @@ def test_mcp_slice_is_documented_consistently() -> None:
             "cli": "docs/CLI.md",
             "feature": "docs/FEATURE_MATRIX.md",
             "threat": "docs/THREAT_MODEL.md",
-            "status": "docs/STATUS.md",
             "technical": "docs/TECHNICAL_REFERENCE.md",
             "architecture": "docs/ARCHITECTURE.md",
         }.items()
@@ -260,13 +254,6 @@ def test_mcp_slice_is_documented_consistently() -> None:
     ):
         assert phrase in threat, phrase
 
-    status = flat["status"]
-    assert "post-S7 local-agent MCP stdio, S8" in status
-    assert "synchronous MCP 2025-11-25 compatibility-profile server" in status
-    assert "Calls serialize in v1 with no progress streaming" in status
-    assert "Stdout contains protocol frames only" in status
-    assert "MCP has no token; the HTTP API retains its separate bearer-token" in status
-
     for name in ("technical", "architecture"):
         document = flat[name]
         assert "base MCP SDK closure includes HTTP-capable" in document
@@ -276,14 +263,6 @@ def test_mcp_slice_is_documented_consistently() -> None:
     assert "enables only the inherited-stdio MCP transport" in flat["architecture"]
     assert "no outbound network client" not in paths["technical"].lower()
     assert "no shipped outbound network client" not in paths["architecture"].lower()
-
-
-def test_implementation_plan_records_shipped_api_and_pending_react_ui() -> None:
-    plan = (ROOT / "docs" / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
-
-    assert "API/UI pending" not in plan
-    assert "core + CLI + local API; React UI pending" in plan
-    assert "full React browser UI" in plan
 
 
 def test_engine_decisions_record_typst_as_wired_but_separately_installed() -> None:
@@ -301,12 +280,10 @@ def test_engine_decisions_record_typst_as_wired_but_separately_installed() -> No
 def test_live_docs_describe_worker_and_packaging_state_consistently() -> None:
     paths = [
         ROOT / "README.md",
-        ROOT / "docs" / "STATUS.md",
         ROOT / "docs" / "ARCHITECTURE.md",
         ROOT / "docs" / "THREAT_MODEL.md",
         ROOT / "docs" / "CLI.md",
         ROOT / "docs" / "FEATURE_MATRIX.md",
-        ROOT / "docs" / "IMPLEMENTATION_PLAN.md",
         ROOT / "docs" / "PACKAGING.md",
     ]
     live_docs = "\n".join(path.read_text(encoding="utf-8") for path in paths)
@@ -350,10 +327,6 @@ def test_heic_convert_images_slice_is_documented_consistently() -> None:
     ):
         assert code in fidelity, code
 
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "convert-images slice" in status
-    assert "libheif 1.23.0" in status  # the advisory finding is not hidden
-
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "ldf convert-images" in readme
 
@@ -370,10 +343,6 @@ def test_compression_slice_is_documented_consistently() -> None:
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
     assert "ldf compress" in cli
     assert "`compress`, `repair`" not in cli  # removed from the planned list
-
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "No Phase 2 document feature was started" not in status
-    assert "lossless compression slice" in status
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "ldf compress" in readme
@@ -415,11 +384,6 @@ def test_pdf_to_images_llm_preset_is_documented_consistently() -> None:
     assert "1568-px long-edge bound" in pdf_images
     assert "image-downscaled" in pdf_images
     assert "effective DPI" in pdf_images
-
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "pdf-to-images LLM preset, S2" in status
-    assert "fractional-size page" in status
-
 
 def test_password_stdin_slice_is_documented_consistently() -> None:
     cli = (ROOT / "docs" / "CLI.md").read_text(encoding="utf-8")
@@ -466,15 +430,9 @@ def test_password_stdin_slice_is_documented_consistently() -> None:
         in architecture_flat
     )
 
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    status_flat = " ".join(status.split())
-    assert "non-interactive PDF passwords, S1" in status
-    assert "464 outcomes: 462 passed and two expected" in status
-    assert "639 outcomes at the S8 kickoff" in status_flat and "2026-08-10" in status
-
     packaging = (ROOT / "docs" / "PACKAGING.md").read_text(encoding="utf-8")
-    assert "2026-08-08 S1 manifest identity" in packaging
-    assert "remain honest historical" in packaging
+    assert "Current Windows-AMD64 artifact identity" in packaging
+    assert "mirror the live Windows-AMD64 entry" in packaging
     manifest = json.loads(
         (ROOT / "packaging" / "release-artifact-manifest.json").read_text(
             encoding="utf-8"
@@ -503,23 +461,18 @@ def test_agent_brief_slice_is_documented_consistently() -> None:
         "security_warnings[]",
         "fidelity_warnings[]",
         "verify` -> `fallback` -> `review",
-        "docs/AGENT_FEEDBACK.md",
+        "user-local path",
         "user-visible output is stdout only",
         "no local API job endpoint",
-        "standalone wheel or direct VCS install",
     ):
         assert phrase in cli, phrase
+    assert "source, wheel, and direct VCS installs" in " ".join(cli.split())
 
     feature = (ROOT / "docs" / "FEATURE_MATRIX.md").read_text(encoding="utf-8")
     assert "| Registry-derived agent brief | ✅ |" in feature
     assert "ldf doctor --json" not in feature
     assert "every implemented command appears with live availability" in feature
-    assert "requires a discoverable source checkout" in feature
-
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "registry-derived agent brief, S3" in status
-    assert "implemented-but-unavailable state" in status
-    assert "504-outcome suites" in status  # dated S3 evidence remains historical
+    assert "reports a user-local feedback path" in feature
 
     fidelity = (ROOT / "docs" / "CONVERSION_FIDELITY.md").read_text(
         encoding="utf-8"
@@ -660,14 +613,6 @@ def test_pdf_to_md_slice_is_documented_consistently() -> None:
     assert "Markdown-only `--tables` (default off)" in technical_flat
     assert "4 MiB of normalized table-cell UTF-8" in technical_flat
 
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "`pdf-to-md` text extraction, S4" in status
-    assert "no new runtime dependency" in status
-    assert "`pdf-to-md` tables via pdfplumber, S5" in status
-    assert "cryptography-only 2026-08-01 cutoff" in status
-    assert "639 outcomes" in status
-
-
 def test_md_to_pdf_slice_is_documented_consistently() -> None:
     matching = [spec for spec in CAPABILITY_SPECS if spec.id == "markdown-to-pdf"]
     assert len(matching) == 1
@@ -723,6 +668,3 @@ def test_md_to_pdf_slice_is_documented_consistently() -> None:
     for symbol in ("MdToPdfOptions", "md_to_pdf", "image_inputs"):
         assert symbol in library
     assert "max_memory_bytes / 512" in library
-
-    status = (ROOT / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    assert "`md-to-pdf` via Typst, S6" in status

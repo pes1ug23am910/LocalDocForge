@@ -63,7 +63,7 @@ requires both engines.
 
 A capability is available only when both conditions hold:
 
-1. its implementation bit is true in the same code/test slice; and
+1. its implementation bit is true in the same code-and-test change; and
 2. a compatible engine probe succeeds at runtime.
 
 The CLI, API, and status shell consume that same registry result. Missing
@@ -245,8 +245,8 @@ hosts where `SIGXFSZ` is inherited-ignored (observed on WSL and GitHub's
 Ubuntu runners) the child reports the resulting `EFBIG` write failure as a
 typed limit message over IPC. Repository-launched external tools
 remain in that group, but arbitrary same-user code can call `setsid()` and
-escape it. These POSIX/macOS paths were not executed in the Windows-only
-2026-07-20 checkpoint and are not cross-platform pass evidence.
+escape it. These POSIX/macOS paths are not covered by the recorded Windows-only
+release evidence and therefore are not cross-platform pass evidence.
 
 The parent also samples the contained job tree for aggregate temporary and
 output bytes. Those directory monitors can overshoot between samples, macOS has
@@ -385,8 +385,8 @@ exception values, private paths, document fragments, or parser details.
   an OS network sandbox. Strict-fidelity is independent: it is a
   pre-validation publication policy based on report assessment state and does
   not add a network or parser sandbox.
-- Windows 11 x64 is the only locally executed release-hardening platform for
-  the 2026-07-20 checkpoint. Portable/POSIX code and CI configuration do not
+- Windows 11 x64 is the only platform covered by the recorded local
+  release-hardening evidence. Portable/POSIX code and CI configuration do not
   establish Linux or macOS support without their own retained runner evidence.
 - CLI state is ephemeral except user-requested outputs and optional report
   files. API job history is memory-only, while successful output bytes occupy

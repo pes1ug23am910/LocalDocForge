@@ -1,12 +1,10 @@
 # Using LocalDocForge as a Python Library
 
 The CLI and the local API are thin layers over a typed Python library. This
-reference covers that library surface for scripting and embedding. Every code
-original sample set below was executed against this repository on 2026-08-03;
-the S4 extraction, S6 Markdown-rendering, and S7 OCR samples are backed by
-dated integration coverage in `docs/STATUS.md`.
-Import paths are stable within 0.x only in the sense that
-`docs/STATUS.md` records interface decisions; this is an early-alpha project.
+reference covers that library surface for scripting and embedding. The examples
+below are covered by the repository's integration tests. This is an early-alpha
+project, so import-path compatibility is guaranteed only within the documented
+0.x surface and may change in a future minor release.
 
 The same guarantees apply as everywhere else: sources are never modified,
 candidates are validated for their media type before an atomic publish (PDF

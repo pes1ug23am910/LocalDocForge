@@ -1,4 +1,4 @@
-"""Optimization operations. Current slice: lossless PDF compression.
+"""Optimization operations for lossless PDF compression.
 
 The implemented ``lossless`` preset rewrites the document container without
 touching decoded content: streams are recompressed (generalized filters only —

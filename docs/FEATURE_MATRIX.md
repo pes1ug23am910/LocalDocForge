@@ -53,16 +53,16 @@ a separate channel that callers must still inspect.
 | Validate (PDF/A, PDF/UA) | ❌ planned P5 | needs veraPDF | — | — | Generated-PDF validation reopens with pikepdf/qpdf, rejects syntax warnings, checks expected page counts, and renders through PDFium; text/image outputs use their own validators. None of these establishes PDF/A or PDF/UA conformance |
 | Scan to PDF (hardware) | ❌ planned P5 | — | — | — | |
 | Batch YAML/JSON jobs | ❌ planned P2 | — | — | — | |
-| Registry-derived agent brief | ✅ | `CAPABILITY_SPECS` + live capability probes | CLI | `test_agent_brief.py`, `test_cli.py::TestAgentBrief`, `test_documentation_consistency.py` | Read-only Markdown/JSON on stdout; every implemented command appears with live availability and one-line usage, while unimplemented capabilities are structurally excluded; requires a discoverable source checkout because the writable feedback log is intentionally not packaged; no API/UI endpoint |
+| Registry-derived agent brief | ✅ | `CAPABILITY_SPECS` + live capability probes | CLI | `test_agent_brief.py`, `test_cli.py::TestAgentBrief`, `test_documentation_consistency.py` | Read-only Markdown/JSON on stdout; every implemented command appears with live availability and one-line usage, while unimplemented capabilities are structurally excluded; reports a user-local feedback path without creating it and works from source, wheel, or direct VCS installs; no API/UI endpoint |
 | Local-agent MCP stdio (`ldf mcp`) | ✅ | official MCP Python SDK + spawned workers | MCP | MCP stdio integration/process tests | Synchronous MCP 2025-11-25 compatibility profile; tools are generated from implemented `CAPABILITY_SPECS`; strict UTF-8 newline JSON with stdout reserved for protocol; absolute same-user paths; serialized calls and no progress streaming in v1. Shared strict-fidelity parameters cannot weaken server policy, and expected strict failures retain a bounded structured report with status/coverage plus a decisive warning; no token auth because the inherited local process pipes are the trust boundary |
 | Local web API (`ldf web`) | ✅ | FastAPI/uvicorn + spawned workers | API | `test_api.py`, `test_privacy_boundary.py`, `test_worker_isolation.py` + live localhost verification | Loopback-only by default; strict-offline forbids non-loopback even with the exposure opt-in; token auth; bounded queue/rate/concurrency controls; synchronous compatibility or explicit async states/progress/cancel. Every operation accepts strict fidelity; synchronous refusal is HTTP 422 and async state is failed, both with a sanitized structured report; per-call false cannot weaken server policy. Workers retain user filesystem authority and are not an OS sandbox; browser UI not built |
-| Browser UI (React) | ❌ next slice | — | — | — | current index page is an honest capability listing, no fake tools |
+| Browser UI (React) | ❌ planned | — | — | — | current index page is an honest capability listing, no fake tools |
 
 Rules: a ❌ capability is not visible as enabled anywhere (doctor lists it
 under "not implemented in this build"); flipping to ✅ requires pipeline +
 tests in the same change, enforced by `test_registry.py`.
 
-Explicitly unavailable in this checkpoint include lossy compression presets,
+Explicitly unavailable in this release include lossy compression presets,
 repair, Office-to-PDF, HTML-to-PDF, advanced PDF text
 reconstruction (including table extraction), PDF/A/PDF/UA conformance,
 interactive editing/forms, cryptographic signatures, secure redaction, and

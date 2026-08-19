@@ -208,7 +208,7 @@ Formats and separators are deterministic:
 
 `--tables` is opt-in, defaults off, and is valid only with `--format md`.
 Combining it with TXT or JSONL is a usage error (exit 2); those formats retain
-their exact S4 schemas and flowed-text behavior.
+their stable schemas and flowed-text behavior.
 
 Output order follows the shared page-range grammar, including descending,
 repeated, and reverse selections. Page numbers remain the 1-based source page
@@ -475,20 +475,22 @@ Fidelity entries contain stable `code`, `basis`, `impact`, and optional `remedy`
 fields; agents must check run-level `fidelity_status` and
 `fidelity_coverage` before interpreting warning silence.
 
-The feedback section resolves and prints the existing absolute path to
-`docs/AGENT_FEEDBACK.md` plus its rules: append only; an entry is required for
-failed or unsatisfactory output and whenever the agent falls back; a one-line
-smooth-success entry is optional; no other repository file may be changed
-unless the user explicitly commissioned development work;
-and entries must describe documents generically without sensitive paths or
-document text.
+The feedback section prints an absolute, user-local path plus its rules. On
+Windows the default is `%LOCALAPPDATA%\localdocforge\feedback.md`; elsewhere it
+uses `$XDG_STATE_HOME/localdocforge/feedback.md`. If that platform-specific root
+is absent, relative, or not a Markdown-safe single-line path, the command uses
+`~/.local/state/localdocforge/feedback.md`. A recognized remote override also
+uses that fallback outside strict-offline mode; strict-offline mode refuses it.
+The command does not create the file.
+Create it on the first required entry, then append only; an entry is required
+for failed or unsatisfactory output and whenever a fallback is used, while a
+one-line smooth-success entry is optional. Recording an outcome does not
+authorize source or documentation changes, and entries must describe documents
+generically without sensitive paths or document text. Strict-offline mode
+refuses a feedback path on a recognized network filesystem.
 
-The writable feedback log is intentionally not copied into wheels. Therefore a
-standalone wheel or direct VCS install with no discoverable source checkout
-exits 1 before writing stdout instead of inventing a feedback path. Run
-`agent-brief` from a LocalDocForge source checkout (the repository-local
-environment is supported); the checkout may still be discovered after changing
-to another working directory.
+The path is independent of repository contents, so source, wheel, and direct
+VCS installs all expose the same feedback contract from any working directory.
 
 `agent-brief` opens no user document, creates no job/report/output directory,
 does not consume `--password-stdin`, and bypasses stale-workspace cleanup. Its
@@ -571,10 +573,9 @@ Notes:
   strips EXIF/XMP metadata — including GPS positions — by default;
   `--keep-metadata` retains EXIF and emits a `location-metadata-retained`
   warning when GPS data is kept. `--preset llm` is shorthand for JPEG at
-  quality 85 with the long edge bounded to 1568 px — the largest size current
-  AI assistants ingest without
-  server-side downscaling. Explicit flags override preset values; images are
-  never upscaled.
+  quality 85 with the long edge bounded to 1568 px, a compact
+  vision-assistant-oriented default. Explicit flags override preset values;
+  images are never upscaled.
 - Crop sets the PDF CropBox. Hidden content remains; it is not redaction.
 - `compress` implements only the `lossless` preset: streams are recompressed,
   object streams generated, and unused page resources pruned — image data is
@@ -733,9 +734,9 @@ logs, diagnostics, and protocol responses.
 
 ## The local API (`ldf web`)
 
-The API design is portable, but this checkpoint's executed release evidence is
-Windows 11 x64 only. Linux and macOS remain unverified until their own retained
-runner gates pass.
+The API design is portable, but the recorded release evidence is Windows 11
+x64 only. Linux and macOS remain unverified until their own retained runner
+gates pass.
 
 The default service binds to `127.0.0.1`. A random token is printed at startup;
 every `/api` request must send it in `X-LDF-Token`. The status page sets a
@@ -835,7 +836,8 @@ Windows/POSIX mechanism in job state. On Windows, `verified_empty` is used only
 after an established Job Object reports zero active processes. A bootstrap
 leader that exits before assignment leaves the document gate `never_opened` and
 reports only `pre_gate_leader_verified`; any other unverifiable exit fails
-closed. POSIX containment was not executed in this Windows-only checkpoint.
+closed. POSIX containment has not been established by the recorded Windows-only
+release evidence.
 Output publication and `success` are atomic under the job lock; a download holds
 an active lease through the entire file stream, so DELETE/eviction cannot race
 it. Download rejects queued, running, failed, cancelled, timed-out, crashed, and
