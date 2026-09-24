@@ -37,7 +37,7 @@ documents — unchanged from the project's own release decision.**
 | OS | Windows 11 Home Single Language, build 10.0.26200 (x64) |
 | CPU / RAM | Intel Core Ultra 7 155H · 15.4 GB |
 | Shell | PowerShell 7.6.4 |
-| Repository | `C:\Projects\LocalDocForge` @ `7e49624` + release-hardening worktree changes |
+| Repository | `<local checkout>` @ `7e49624` + release-hardening worktree changes |
 | Working venv | `.venv` — CPython **3.14.4**, dev profile, `localdocforge 0.1.0` installed |
 | Other interpreters (`py --list`) | 3.14.4 (default) · 3.13.5 (Astral/uv-managed) · 3.10.11 (below `requires-python`, unused) |
 | uv | 0.11.26 at `.venv\Scripts\uv.exe` (not on system PATH — expected) |
@@ -224,7 +224,7 @@ git diff --check
 ```
 
 A passing result applies **only** to this OS build, architecture, and
-interpreter — the project's standing rule, restated here.
+interpreter.
 
 ## 7. Same-day addendum — Phase 2 compression slice (2026-08-03, afternoon)
 

@@ -28,6 +28,9 @@ it.
 | Other interpreters via `py` | 3.14.4 (default), 3.13.5 (Astral/uv-managed), 3.10.11 (unsupported by this package) |
 | Shell assumed here | PowerShell 7 |
 
+The commands use `C:\Projects\LocalDocForge` as an example checkout path;
+replace it with your own repository directory.
+
 Three equivalent ways to run the CLI:
 
 ```powershell

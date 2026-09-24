@@ -43,7 +43,7 @@ parsed by native libraries in the long-lived application process.
 
 | Item | Evidence |
 |---|---|
-| Repository | `C:\Projects\LocalDocForge` |
+| Repository | `<local checkout>` |
 | Branch / starting commit | `main` / `0966b924da41d10ec36798af77cb97e8c2b2db54` |
 | Starting Git state | clean; only the audit edits described here are now present |
 | OS | Microsoft Windows 11 Home Single Language, `10.0.26200`, x64 |

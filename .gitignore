@@ -25,3 +25,7 @@ node_modules/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Local working files
+/docs/private/
+/work/
