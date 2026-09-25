@@ -376,6 +376,7 @@ def test_real_stdio_handshake_registry_merge_errors_and_purity(
         }
         assert "crop-is-not-redaction" in warning_codes
 
+        newline_output = (tmp_path / "frame\ninjection.pdf").resolve()
         injected_name = client.request(
             11,
             "tools/call",
@@ -386,17 +387,33 @@ def test_real_stdio_handshake_registry_merge_errors_and_purity(
                         str((fixtures_dir / "simple-3page.pdf").resolve()),
                         str((fixtures_dir / "second-2page.pdf").resolve()),
                     ],
-                    "output": str(tmp_path / "frame\ninjection.pdf"),
+                    "output": str(newline_output),
                 },
             },
         )
         responses.append(injected_name)
-        assert injected_name["result"]["isError"] is True
+        if os.name == "nt":
+            # Windows rejects control characters in filenames.
+            assert injected_name["result"]["isError"] is True
+        else:
+            # POSIX filenames may contain newlines; JSON must preserve them as data.
+            assert injected_name["result"]["isError"] is False
+            newline_structured = injected_name["result"]["structuredContent"]
+            assert newline_structured["outputs"] == [str(newline_output)]
+            assert [artifact["path"] for artifact in newline_structured["report"]["outputs"]] == [
+                str(newline_output)
+            ]
+            with pikepdf.open(newline_output) as pdf:
+                assert len(pdf.pages) == 5
     finally:
         client.close()
 
     client.assert_stdout_is_protocol_only()
+    assert len(client.stdout_chunks) == len(responses)
     protocol = b"".join(client.stdout_chunks)
+    assert b"frame\ninjection.pdf" not in protocol
+    if os.name != "nt":
+        assert b"frame\\ninjection.pdf" in protocol
     diagnostics = b"".join(client.stderr_chunks)
     assert password.encode() not in protocol
     assert password.encode() not in diagnostics
