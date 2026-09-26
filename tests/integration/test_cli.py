@@ -104,7 +104,7 @@ class TestDoctor:
         )
 
         assert result.exit_code == EXIT_USAGE
-        rendered = " ".join(combined_output(result).replace("│", " ").split())
+        rendered = " ".join(strip_ansi(combined_output(result)).replace("│", " ").split())
         assert "UNC or mapped network-drive path" in rendered
 
 
