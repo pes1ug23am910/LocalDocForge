@@ -186,7 +186,7 @@ disable_error_code = ["type-arg"]
 required-version = "==0.11.26"
 default-groups = []
 exclude-newer = "2026-07-19T00:00:00Z"
-exclude-newer-package = { cryptography = "2026-08-01T00:00:00Z" }
+exclude-newer-package = { cryptography = "2026-08-01T00:00:00Z", pillow = "2026-10-17T00:00:00Z" }
 environments = [
     "sys_platform == 'win32' and implementation_name == 'cpython'",
     "sys_platform == 'linux' and implementation_name == 'cpython'",
